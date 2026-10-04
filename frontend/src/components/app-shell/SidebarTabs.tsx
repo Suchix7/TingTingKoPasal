@@ -17,8 +17,10 @@ import {
   Tag,
   LayoutDashboard,
   Calculator,
+  LogOut,
 } from "lucide-react";
 import { useDashboardOverview } from "@/hooks/useDashboard";
+import { useAuthStore } from "@/store/auth.store";
 
 export type MainTab =
   | "dashboard"
@@ -116,6 +118,7 @@ export default function SidebarTabs({
 }: SidebarTabsProps) {
   const [isOpen, setIsOpen] = useState(true);
 
+  const logout = useAuthStore((state) => state.logout);
   const { data: dashboardData } = useDashboardOverview({
     chartDays: 7,
     topLimit: 5,
@@ -221,6 +224,18 @@ export default function SidebarTabs({
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-6 mb-4 border-t border-gray-800 pt-4">
+        <button
+          type="button"
+          onClick={logout}
+          title="Log out"
+          className="w-full cursor-pointer px-4 py-2 flex items-center text-left text-red-300 hover:bg-gray-800 hover:text-red-200 transition-colors"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          {showLabelsHere && <span className="ml-2">Log out</span>}
+        </button>
       </div>
     </>
   );
