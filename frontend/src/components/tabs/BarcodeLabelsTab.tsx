@@ -17,10 +17,34 @@ import {
   type ReprintConflict,
 } from "@/components/barcode-labels/ReprintConfirmDialog";
 
+// One printable sticker source: a plain product, or a single phone model
+// (batch) of a product - each model has its own barcode so a scan deducts
+// the right one.
+type LabelSource = Product & { batchId?: string };
+
 type SelectedProduct = {
-  product: Product;
+  product: LabelSource;
   quantity: number;
 };
+
+function expandToLabelSources(products: Product[]): LabelSource[] {
+  return products.flatMap((product): LabelSource[] => {
+    const batches = (product.batches ?? []).filter((b) => b.barcode);
+    if (batches.length === 0) return [product];
+
+    return batches.map((batch) => ({
+      ...product,
+      id: batch.id,
+      batchId: batch.id,
+      product_name: `${product.product_name} - ${batch.batch_number}`,
+      barcode: batch.barcode,
+      sale_price: batch.sale_price,
+      stock_quantity: batch.quantity,
+      barcode_last_printed_at: null,
+      barcode_last_printed_quantity: 0,
+    }));
+  });
+}
 
 // GS1 mod-10 check digit, shared by EAN-8/UPC-A/EAN-13 (only the length
 // differs). Used to figure out which symbology a stored barcode actually
@@ -56,7 +80,7 @@ function pickBarcodeSymbology(code: string): "ean13" | "upca" | "ean8" | "code12
 // How many units still don't have a sticker on them: stock minus whatever
 // was already printed. Never negative - if stock dropped below what was
 // printed (e.g. some sold since), there's nothing new to print.
-function remainingUnprinted(product: Product): number {
+function remainingUnprinted(product: LabelSource): number {
   const stock = Math.floor(product.stock_quantity || 0);
   const printed = Math.floor(product.barcode_last_printed_quantity || 0);
   return printed > 0 ? Math.max(stock - printed, 0) : stock;
@@ -71,7 +95,10 @@ export default function BarcodeLabelsTab() {
     search: debouncedSearch,
   });
 
-  const products = data?.data || [];
+  const products = useMemo(
+    () => expandToLabelSources(data?.data || []),
+    [data],
+  );
   const markBarcodePrinted = useMarkBarcodePrinted();
 
   const [selected, setSelected] = useState<Record<string, SelectedProduct>>(
@@ -87,7 +114,7 @@ export default function BarcodeLabelsTab() {
   >(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const toggleProduct = (product: Product) => {
+  const toggleProduct = (product: LabelSource) => {
     if (!product.barcode) return;
 
     setSelected((prev) => {
@@ -111,6 +138,8 @@ export default function BarcodeLabelsTab() {
     setIsDownloading(true);
     try {
       selectedList.forEach(({ product, quantity }) => {
+        // Print tracking is per product; model stickers aren't tracked
+        if (product.batchId) return;
         markBarcodePrinted.mutate({ id: product.id, quantity });
       });
 

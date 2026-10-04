@@ -23,6 +23,8 @@ export function isValidEAN13(code) {
   return computeEAN13CheckDigit(code.slice(0, 12)) === Number(code[12]);
 }
 
+// Products and batches draw from the same counter, so a code is never reused
+// across the two and a scan resolves to exactly one of them.
 export async function generateProductBarcode() {
   const counter = await Counter.findByIdAndUpdate(
     "product_barcode",

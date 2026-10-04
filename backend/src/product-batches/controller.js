@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
 import { serializeBatch } from "../utils/serialize.js";
+import { generateProductBarcode } from "../utils/barcode.js";
 
 export const createProductBatch = async (req, res) => {
   try {
@@ -72,6 +73,7 @@ export const createProductBatch = async (req, res) => {
       quantity: parsedQuantity,
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
+      barcode: await generateProductBarcode(),
     });
 
     if (parsedQuantity > 0) {

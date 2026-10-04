@@ -12,6 +12,7 @@ export type ProductBatch = {
   id: string;
   product_id: string;
   batch_number: string;
+  barcode?: string | null;
   quantity: number;
   cost_price: number;
   sale_price: number;
@@ -34,6 +35,7 @@ export type Product = {
   barcode_last_printed_quantity?: number;
   description?: string | null;
   batches?: ProductBatch[];
+  matched_batch_id?: string | null;
   photo_url?: string | null;
   photo_public_id?: string | null;
   created_at?: string;

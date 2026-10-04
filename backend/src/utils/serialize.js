@@ -40,6 +40,7 @@ export function serializeBatch(doc, extra = {}) {
     id: String(obj._id),
     product_id: String(obj.productId),
     batch_number: obj.batchNumber,
+    barcode: obj.barcode || null,
     quantity: obj.quantity,
     cost_price: obj.costPrice,
     sale_price: obj.salePrice,

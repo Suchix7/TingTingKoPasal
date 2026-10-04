@@ -7,8 +7,6 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useUploadProductPhoto,
-  useReprintBarcode,
-  useRegenerateBarcode,
   type Product,
 } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
@@ -21,8 +19,7 @@ import PhoneModelPicker from "./PhoneModelPicker";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
-import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
-import { Camera, Barcode as BarcodeIcon, ImagePlus, RotateCcw, RefreshCw } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 
 export default function ProductModal({
   closeModal,
@@ -41,8 +38,6 @@ export default function ProductModal({
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
   const uploadPhotoMutation = useUploadProductPhoto();
-  const reprintBarcodeMutation = useReprintBarcode();
-  const regenerateBarcodeMutation = useRegenerateBarcode();
 
   const isSubmitting =
     createProductMutation.isPending ||
@@ -54,7 +49,6 @@ export default function ProductModal({
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showCostPriceDialog, setShowCostPriceDialog] = useState(false);
   const [originalCostPrice, setOriginalCostPrice] = useState<number>(0);
-  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
@@ -129,11 +123,6 @@ export default function ProductModal({
   const toggleMobileCover = (on: boolean) => {
     setIsMobileCover(on);
     if (!on) setFormData((prev) => ({ ...prev, variants: [] }));
-  };
-
-  const handleBarcodeScanned = (barcode: string) => {
-    handleChange("barcode", barcode);
-    toast.success("Barcode added to form");
   };
 
   const validateForm = () => {
@@ -573,105 +562,6 @@ export default function ProductModal({
                 </select>
               </div>
 
-              {/* Barcode Field with Scanner */}
-              <div className="sm:col-span-2">
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Barcode
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <BarcodeIcon
-                      size={18}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Enter barcode or scan"
-                      value={formData.barcode}
-                      onChange={(e) => handleChange("barcode", e.target.value)}
-                      disabled={isSubmitting}
-                      className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
-                    />
-                    {formData.barcode && (
-                      <button
-                        type="button"
-                        onClick={() => handleChange("barcode", "")}
-                        disabled={isSubmitting}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsBarcodeScannerOpen(true)}
-                    disabled={isSubmitting}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Camera size={16} />
-                    Scan
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  Enter barcode manually or use camera to scan. New products
-                  get a barcode generated automatically once saved.
-                </p>
-
-                {isEditMode && selectedProduct?.barcode && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={reprintBarcodeMutation.isPending}
-                      onClick={async () => {
-                        try {
-                          await reprintBarcodeMutation.mutateAsync(
-                            selectedProduct.id,
-                          );
-                          toast.success(
-                            "Barcode ready to print again from the Barcode Labels tab.",
-                          );
-                        } catch (error) {
-                          console.error("Reprint barcode error:", error);
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <RotateCcw size={14} />
-                      Reprint Label
-                    </button>
-                    <button
-                      type="button"
-                      disabled={regenerateBarcodeMutation.isPending}
-                      onClick={async () => {
-                        const confirmed = window.confirm(
-                          "This will invalidate the current printed sticker for this product and assign a brand new barcode. Any old stickers still in the field will be flagged as retired when scanned. Continue?",
-                        );
-                        if (!confirmed) return;
-
-                        try {
-                          const result: any =
-                            await regenerateBarcodeMutation.mutateAsync(
-                              selectedProduct.id,
-                            );
-                          const newBarcode =
-                            result?.data?.barcode ?? result?.barcode;
-                          if (newBarcode) {
-                            handleChange("barcode", newBarcode);
-                          }
-                        } catch (error) {
-                          console.error("Regenerate barcode error:", error);
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <RefreshCw size={14} />
-                      Regenerate Barcode
-                    </button>
-                  </div>
-                )}
-              </div>
-
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Description
@@ -717,14 +607,6 @@ export default function ProductModal({
           </form>
         </div>
       </div>
-
-      {/* Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={isBarcodeScannerOpen}
-        onClose={() => setIsBarcodeScannerOpen(false)}
-        onBarcodeScanned={handleBarcodeScanned}
-        buttonLabel="Scan Product Barcode"
-      />
 
       {/* Cost Price Change Dialog */}
       {showCostPriceDialog && (

@@ -18,10 +18,10 @@ export const createProduct = async (req, res) => {
       stock_quantity,
       unit,
       status,
-      barcode,
       description,
       variants,
     } = req.body;
+    // Barcodes are always auto-generated; any client-supplied value is ignored.
 
     // Optional phone-model variants: [{ model, quantity }], each tracked as
     // its own stock line (a product batch named after the model).
@@ -100,7 +100,7 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const trimmedBarcode = barcode ? barcode.trim() : null;
+    const trimmedBarcode = null;
     const trimmedSku = sku ? String(sku).trim() : "";
 
     const existingProduct = await Product.findOne({
@@ -154,6 +154,7 @@ export const createProduct = async (req, res) => {
           quantity: variant.quantity,
           costPrice: parsedCostPrice,
           salePrice: parsedSalePrice,
+          barcode: await generateProductBarcode(),
         });
 
         if (variant.quantity > 0) {
@@ -195,7 +196,7 @@ export const createProduct = async (req, res) => {
       data: serializeProduct(newProduct),
     });
   } catch (error) {
-    console.error("Create product error:", error.message);
+    console.error("Create product error:", error);
 
     return res.status(500).json({
       success: false,
@@ -227,24 +228,9 @@ export const updateProduct = async (req, res) => {
       stock_quantity,
       unit,
       status,
-      barcode,
       description,
     } = req.body;
-
-    if (barcode) {
-      const trimmedBarcode = barcode.trim();
-      const existingWithSameBarcode = await Product.findOne({
-        barcode: trimmedBarcode,
-        _id: { $ne: id },
-      });
-
-      if (existingWithSameBarcode) {
-        return res.status(409).json({
-          success: false,
-          message: "Product with same barcode already exists",
-        });
-      }
-    }
+    // Barcodes are system-managed; edits never change them.
 
     const updatedProductName =
       product_name !== undefined ? product_name : existingProduct.productName;
@@ -268,8 +254,6 @@ export const updateProduct = async (req, res) => {
         : Number(existingProduct.stock?.currentStock || 0);
     const updatedUnit = unit !== undefined ? unit : existingProduct.unit;
     const updatedStatus = status !== undefined ? status : existingProduct.status;
-    const updatedBarcode =
-      barcode !== undefined ? barcode || null : existingProduct.barcode;
     const updatedDescription =
       description !== undefined ? description || "" : existingProduct.description;
 
@@ -302,7 +286,6 @@ export const updateProduct = async (req, res) => {
     existingProduct.salePrice = updatedSalePrice;
     existingProduct.unit = updatedUnit;
     existingProduct.status = updatedStatus;
-    existingProduct.barcode = updatedBarcode;
     existingProduct.description = updatedDescription;
     existingProduct.stock.currentStock = updatedStockQuantity;
 
@@ -578,6 +561,23 @@ export const getProductByBarcode = async (req, res) => {
       retired = !!product;
     }
 
+    // Not a product code: it may be a model/batch sticker, which identifies
+    // both the product and the exact model to deduct.
+    let matchedBatchId = null;
+    if (!product) {
+      const matchedBatch = await ProductBatch.findOne({
+        barcode: trimmed,
+        isDeleted: false,
+      });
+      if (matchedBatch) {
+        product = await Product.findOne({
+          _id: matchedBatch.productId,
+          isDeleted: false,
+        });
+        matchedBatchId = matchedBatch._id;
+      }
+    }
+
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -599,6 +599,7 @@ export const getProductByBarcode = async (req, res) => {
       data: {
         ...serializeProduct(product),
         batches: batches.map((b) => serializeBatch(b)),
+        matched_batch_id: matchedBatchId ? String(matchedBatchId) : null,
       },
     });
   } catch (error) {

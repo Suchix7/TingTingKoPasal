@@ -85,8 +85,24 @@ export default function ProductGrid({
         return;
       }
 
-      // Check if product has batches
-      if (product.batches && product.batches.length > 0) {
+      // A model sticker names the exact model: deduct that one directly
+      const scannedBatch = product.matched_batch_id
+        ? product.batches?.find((b) => b.id === product.matched_batch_id)
+        : null;
+
+      if (scannedBatch) {
+        if (scannedBatch.quantity <= 0) {
+          toast.error(
+            `${product.product_name} (${scannedBatch.batch_number}) is out of stock`,
+          );
+          setScannedBarcode("");
+          setIsProcessingBarcode(false);
+          return;
+        }
+        addToCart(product, scannedBatch.sale_price, scannedBatch.id);
+        showScanConfirmation(product, scannedBatch.batch_number);
+      } else if (product.batches && product.batches.length > 0) {
+        // Check if product has batches
         setBatchSelectionProduct(product);
         showScanConfirmation(product);
       } else {
@@ -112,7 +128,7 @@ export default function ProductGrid({
 
   // Brief visual confirmation (photo + name) so the operator can catch a
   // mislabeled sticker before it becomes a sale.
-  const showScanConfirmation = (product: Product) => {
+  const showScanConfirmation = (product: Product, model?: string) => {
     toast.custom(
       (t) => (
         <div
@@ -136,6 +152,7 @@ export default function ProductGrid({
           <div>
             <p className="text-sm font-semibold text-gray-900">
               {product.product_name}
+              {model ? ` — ${model}` : ""}
             </p>
             <p className="text-xs text-gray-500">Added to cart</p>
           </div>
@@ -196,8 +213,32 @@ export default function ProductGrid({
     }
 
     const localProduct = products.find((p) => p.barcode === trimmedBarcode);
+    const localModelOwner = localProduct
+      ? undefined
+      : products.find((p) =>
+          p.batches?.some((b) => b.barcode === trimmedBarcode),
+        );
 
-    if (localProduct) {
+    if (localModelOwner) {
+      const batch = localModelOwner.batches!.find(
+        (b) => b.barcode === trimmedBarcode,
+      )!;
+      if (localModelOwner.status !== "Active") {
+        toast.error(
+          `${localModelOwner.product_name} is currently ${localModelOwner.status.toLowerCase()}`,
+        );
+        return;
+      }
+      if (batch.quantity <= 0) {
+        toast.error(
+          `${localModelOwner.product_name} (${batch.batch_number}) is out of stock`,
+        );
+        return;
+      }
+      addToCart(localModelOwner, batch.sale_price, batch.id);
+      showScanConfirmation(localModelOwner, batch.batch_number);
+      setIsBarcodeScannerOpen(false);
+    } else if (localProduct) {
       processProduct(localProduct);
     } else {
       const toastId = toast.loading("Searching for product...");
