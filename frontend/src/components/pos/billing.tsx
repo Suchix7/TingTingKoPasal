@@ -89,6 +89,7 @@ interface BillingSectionProps {
 const getPaymentMethodIcon = (type: string) => {
   switch (type?.toLowerCase()) {
     case "qr":
+    case "online":
     case "digital":
       return <QrCode className="h-4 w-4" />;
 
@@ -907,9 +908,15 @@ export default function BillingSection({
                                   {method.payment_method}
                                 </p>
 
-                                <p className="text-xs capitalize text-gray-500">
+                                <span
+                                  className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    method.type === "Cash"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-blue-100 text-blue-700"
+                                  }`}
+                                >
                                   {method.type}
-                                </p>
+                                </span>
                               </div>
 
                               {isSelected && (

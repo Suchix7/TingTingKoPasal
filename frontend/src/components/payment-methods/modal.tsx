@@ -189,9 +189,8 @@ export default function PaymentMethodModal({
               <option value="" disabled>
                 Select type
               </option>
-              <option value="Digital">Digital</option>
               <option value="Cash">Cash</option>
-              <option value="Bank">Bank</option>
+              <option value="Online">Online</option>
             </select>
           </div>
 

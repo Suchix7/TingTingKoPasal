@@ -137,8 +137,7 @@ function PaymentMethodBalanceCard({
   const getTypeColor = (type: string) => {
     const colors = {
       Cash: "bg-green-100 text-green-700 border-green-200",
-      Digital: "bg-blue-100 text-blue-700 border-blue-200",
-      Bank: "bg-purple-100 text-purple-700 border-purple-200",
+      Online: "bg-blue-100 text-blue-700 border-blue-200",
     };
     return (
       colors[type as keyof typeof colors] ||
@@ -149,8 +148,7 @@ function PaymentMethodBalanceCard({
   const getTypeIcon = (type: string) => {
     const icons = {
       Cash: <Wallet size={16} />,
-      Digital: <Smartphone size={16} />,
-      Bank: <Building size={16} />,
+      Online: <Smartphone size={16} />,
     };
     return icons[type as keyof typeof icons] || <Wallet size={16} />;
   };

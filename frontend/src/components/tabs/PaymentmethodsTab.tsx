@@ -499,9 +499,15 @@ export default function PaymentMethodsPage() {
                           <h3 className="font-semibold text-neutral-900">
                             {item.payment_method}
                           </h3>
-                          <p className="text-sm text-neutral-500">
+                          <span
+                            className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              item.type === "Cash"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
                             {item.type}
-                          </p>
+                          </span>
                         </div>
                       </div>
 
