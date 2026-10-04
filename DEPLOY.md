@@ -1,4 +1,4 @@
-# Deploying ByaparDesk
+# Deploying Ting Ting ko pasal
 
 The app is two independently deployable services plus two managed cloud dependencies you already have set up:
 

@@ -28,7 +28,7 @@ export function prepareReceiptData(
   const now = new Date();
 
   // Safe store fallbacks
-  const storeName = options?.store?.store_name?.trim() || "ByaparDesk";
+  const storeName = options?.store?.store_name?.trim() || "Ting Ting ko pasal";
   const storeAddress = options?.store?.address?.trim() || "Nepal";
   const storePhone = options?.store?.phone?.trim() || "";
   const storeVat = options?.store?.pan_vat_number?.trim() || "";

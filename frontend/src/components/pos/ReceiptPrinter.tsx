@@ -221,7 +221,7 @@ export default function ReceiptPrinter({ data, onClose }: ReceiptPrinterProps) {
           <div class="receipt">
             <!-- Store Header -->
             <div class="header">
-              <div class="store-name">${data.store_name || "ByaparDesk"}</div>
+              <div class="store-name">${data.store_name || "Ting Ting ko pasal"}</div>
               ${data.store_address ? `<div class="store-info">${data.store_address}</div>` : ""}
               ${data.store_phone ? `<div class="store-info">Tel: ${data.store_phone}</div>` : ""}
               ${data.store_vat ? `<div class="store-info">VAT: ${data.store_vat}</div>` : ""}

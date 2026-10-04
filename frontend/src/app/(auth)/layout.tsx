@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ByaparDesk - Your Complete Business Manager",
+  title: "Ting Ting ko pasal - Your Complete Business Manager",
   description: "By Abishek Shrestha",
 };
 

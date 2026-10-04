@@ -59,7 +59,7 @@ export default function Page() {
             <Building2 className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome to your ByaparDesk
+            Welcome to Ting Ting ko pasal
           </h1>
           <p className="mt-2 text-sm text-gray-500">
             Secure access to your management dashboard
