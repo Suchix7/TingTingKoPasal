@@ -67,10 +67,11 @@ export const createProduct = async (req, res) => {
     }
 
     const trimmedBarcode = barcode ? barcode.trim() : null;
+    const trimmedSku = sku ? String(sku).trim() : "";
 
     const existingProduct = await Product.findOne({
       $or: [
-        { sku: sku.trim() },
+        ...(trimmedSku ? [{ sku: trimmedSku }] : []),
         { productName: product_name.trim() },
         ...(trimmedBarcode ? [{ barcode: trimmedBarcode }] : []),
       ],
@@ -84,10 +85,12 @@ export const createProduct = async (req, res) => {
     }
 
     const finalBarcode = trimmedBarcode || (await generateProductBarcode());
+    // SKU is optional in the form; fall back to one derived from the barcode
+    const finalSku = trimmedSku || `SKU-${finalBarcode}`;
 
     const newProduct = await Product.create({
       productName: product_name.trim(),
-      sku: sku.trim(),
+      sku: finalSku,
       categoryId: category_id,
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
@@ -175,7 +178,8 @@ export const updateProduct = async (req, res) => {
 
     const updatedProductName =
       product_name !== undefined ? product_name : existingProduct.productName;
-    const updatedSku = sku !== undefined ? sku : existingProduct.sku;
+    const updatedSku =
+      sku !== undefined && String(sku).trim() ? String(sku) : existingProduct.sku;
     const updatedCategory =
       category_id !== undefined && category_id !== ""
         ? category_id
