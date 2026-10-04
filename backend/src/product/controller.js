@@ -200,7 +200,7 @@ export const createProduct = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: `Internal server error: ${error.message}`,
     });
   }
 };
