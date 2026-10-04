@@ -212,7 +212,7 @@ export default function ProductModal({
           ...payload,
           id: selectedProduct.id,
         });
-        await uploadPhotoIfNeeded(selectedProduct.id);
+        void uploadPhotoIfNeeded(selectedProduct.id);
       }
 
       closeModal();
@@ -275,13 +275,14 @@ export default function ProductModal({
           ...payload,
           id: selectedProduct.id,
         });
-        await uploadPhotoIfNeeded(selectedProduct.id);
+        // Photo uploads can be slow on mobile; don't keep the form open for it
+        void uploadPhotoIfNeeded(selectedProduct.id);
       } else {
         const result: any =
           await createProductMutation.mutateAsync(payload);
         const newProductId = result?.data?.id ?? result?.id;
         if (newProductId) {
-          await uploadPhotoIfNeeded(newProductId);
+          void uploadPhotoIfNeeded(newProductId);
         }
       }
 
