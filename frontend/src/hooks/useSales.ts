@@ -204,6 +204,43 @@ export const useUpdateSale = () => {
   });
 };
 
+export const useRevokeSale = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ saleId, reason }: { saleId: string; reason: string }) => {
+      const res = await axiosInstance.post(`/sales/${saleId}/revoke`, { reason });
+      return res.data;
+    },
+    onSuccess: () => {
+      for (const key of [
+        "sales",
+        "products",
+        "salePayments",
+        "inventory",
+        "inventory-transactions",
+        "overview",
+        "eoq",
+        "daybook",
+        "customers",
+        "saleItems",
+        "dashboard",
+        "analytics",
+        "payment-transactions",
+        "paymentMethods",
+        "productBatches",
+        "abc-classification",
+        "activity-logs",
+      ]) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Failed to revoke sale.");
+    },
+  });
+};
+
 export const useDeleteSale = () => {
   const queryClient = useQueryClient();
 

@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
 import { generateProductBarcode } from "../utils/barcode.js";
+import { logActivity } from "../utils/activityLog.js";
 import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
 
@@ -174,6 +175,20 @@ export const createProduct = async (req, res) => {
       });
     }
 
+    await logActivity({
+      action: "PRODUCT_CREATED",
+      entityType: "Product",
+      entityId: newProduct._id,
+      summary: `Product "${newProduct.productName}" created${
+        hasVariants ? ` with ${variantList.length} phone models` : ""
+      }`,
+      details: {
+        sale_price: parsedSalePrice,
+        cost_price: parsedCostPrice,
+        stock: hasVariants ? variantList : parsedStockQuantity,
+      },
+    });
+
     return res.status(201).json({
       success: true,
       message: "Product created successfully",
@@ -303,6 +318,18 @@ export const updateProduct = async (req, res) => {
       });
     }
 
+    await logActivity({
+      action: "PRODUCT_UPDATED",
+      entityType: "Product",
+      entityId: existingProduct._id,
+      summary: `Product "${existingProduct.productName}" updated`,
+      details: {
+        sale_price: existingProduct.salePrice,
+        cost_price: existingProduct.costPrice,
+        stock: existingProduct.stock?.currentStock,
+      },
+    });
+
     return res.status(200).json({
       success: true,
       message: "Product updated successfully",
@@ -365,6 +392,13 @@ export const deleteProduct = async (req, res) => {
     existingProduct.isDeleted = true;
     existingProduct.deletedAt = new Date();
     await existingProduct.save();
+
+    await logActivity({
+      action: "PRODUCT_DELETED",
+      entityType: "Product",
+      entityId: existingProduct._id,
+      summary: `Product "${existingProduct.productName}" deleted`,
+    });
 
     return res.status(200).json({
       success: true,

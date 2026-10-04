@@ -5,10 +5,25 @@ import {
   PAYMENT_METHOD_POPULATE,
 } from "../services/saleService.js";
 import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
+import { logActivity } from "../utils/activityLog.js";
+
+const rs = (n) => `Rs. ${Number(n || 0).toLocaleString("en-NP")}`;
 
 export const createSale = async (req, res) => {
   try {
     const sale = await saleService.createSale(req.body);
+    await logActivity({
+      action: "SALE_CREATED",
+      entityType: "Sale",
+      entityId: sale.id,
+      summary: `Sale ${sale.invoice_no} created - ${rs(sale.grand_total)}`,
+      details: {
+        invoice_no: sale.invoice_no,
+        total: sale.grand_total,
+        items: (sale.items || []).map((i) => `${i.product_name} x${i.quantity}`),
+        customer: sale.customer_name || null,
+      },
+    });
     return res.status(201).json({
       success: true,
       message: "Sale created successfully",
@@ -108,7 +123,20 @@ export const getSaleById = async (req, res) => {
 export const updateSale = async (req, res) => {
   try {
     const { id } = req.params;
+    const before = await Sale.findById(id).select("saleStatus invoiceNo").lean();
     const sale = await saleService.updateSale(id, req.body);
+    const statusChanged = before && before.saleStatus !== sale.sale_status;
+    await logActivity({
+      action: statusChanged
+        ? `SALE_${String(sale.sale_status).toUpperCase()}`
+        : "SALE_UPDATED",
+      entityType: "Sale",
+      entityId: id,
+      summary: statusChanged
+        ? `Sale ${sale.invoice_no} marked ${sale.sale_status}`
+        : `Sale ${sale.invoice_no} edited`,
+      details: { invoice_no: sale.invoice_no, total: sale.grand_total },
+    });
     return res.status(200).json({
       success: true,
       message: "Sale updated successfully",
@@ -126,10 +154,69 @@ export const updateSale = async (req, res) => {
 export const deleteSale = async (req, res) => {
   try {
     const { id } = req.params;
+    const before = await Sale.findById(id).select("invoiceNo grandTotal saleStatus").lean();
     await saleService.deleteSale(id);
+    await logActivity({
+      action: "SALE_DELETED",
+      entityType: "Sale",
+      entityId: id,
+      summary: `Sale ${before?.invoiceNo || id} deleted${
+        before ? ` (${rs(before.grandTotal)}, was ${before.saleStatus})` : ""
+      }`,
+      details: before ? { invoice_no: before.invoiceNo, total: before.grandTotal } : null,
+    });
     return res.status(200).json({ success: true, message: "Sale deleted successfully" });
   } catch (error) {
     console.error("Delete sale error:", error.message);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+// Revoke a mistaken sale: puts the stock back, reverses the payments and keeps
+// the sale on record as Cancelled together with the reason.
+export const revokeSale = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const reason = String(req.body?.reason ?? "").trim();
+
+    const existing = await Sale.findById(id).select("saleStatus invoiceNo notes grandTotal").lean();
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Sale not found" });
+    }
+    if (existing.saleStatus !== "Completed") {
+      return res.status(400).json({
+        success: false,
+        message: `Only completed sales can be revoked (this one is ${existing.saleStatus})`,
+      });
+    }
+
+    const note = reason ? `Revoked: ${reason}` : "Revoked";
+    const sale = await saleService.updateSale(id, {
+      sale_status: "Cancelled",
+      notes: existing.notes ? `${existing.notes}
+${note}` : note,
+    });
+
+    await logActivity({
+      action: "SALE_REVOKED",
+      entityType: "Sale",
+      entityId: id,
+      summary: `Sale ${existing.invoiceNo} revoked (${rs(existing.grandTotal)})${
+        reason ? ` - ${reason}` : ""
+      }`,
+      details: { invoice_no: existing.invoiceNo, total: existing.grandTotal, reason: reason || null },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Sale revoked. Stock restored and payments reversed.",
+      data: sale,
+    });
+  } catch (error) {
+    console.error("Revoke sale error:", error.message);
     return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Internal server error",

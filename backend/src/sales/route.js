@@ -6,6 +6,7 @@ import {
   getSaleById,
   updateSale,
   deleteSale,
+  revokeSale,
   getSaleItems,
   getSaleItemById,
   getSalePayments,
@@ -31,6 +32,8 @@ router.get("/:id", getSaleById);
 router.put("/:id", updateSale);
 
 router.delete("/:id", deleteSale);
+
+router.post("/:id/revoke", revokeSale);
 
 router.post("/:id/payment-proof", upload.single("photo"), uploadPaymentProof);
 

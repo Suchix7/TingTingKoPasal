@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Calculator,
   LogOut,
+  History,
 } from "lucide-react";
 import { useDashboardOverview } from "@/hooks/useDashboard";
 import { useAuthStore } from "@/store/auth.store";
@@ -44,7 +45,8 @@ export type MainTab =
   | "payment-methods-transactions"
   | "product-batches"
   | "barcode-labels"
-  | "store-info";
+  | "store-info"
+  | "activity-log";
 
 type SidebarTabsProps = {
   activeTab: MainTab;
@@ -95,6 +97,7 @@ const SIDEBAR_LINKS: {
     links: [
       { name: "Expenses", tab: "expenses", icon: TrendingDown },
       { name: "Daybook", tab: "daybook", icon: BookOpenText },
+      { name: "Activity Log", tab: "activity-log", icon: History },
     ],
   },
   {

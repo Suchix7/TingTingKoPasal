@@ -18,6 +18,7 @@ import SecurityTab from "@/components/tabs/SecurityTab";
 import EoqTab from "@/components/tabs/EoqTab";
 import ProductBatchesPage from "../tabs/ProductBatchTab";
 import BarcodeLabelsTab from "../tabs/BarcodeLabelsTab";
+import ActivityLogTab from "../tabs/ActivityLogTab";
 
 export default function MainShell() {
   const [activeTab, setActiveTabState] = useState<MainTab>("pos");
@@ -61,6 +62,7 @@ export default function MainShell() {
           {activeTab === "sales" && <SalesTab />}
           {activeTab === "expenses" && <ExpensesTab />}
           {activeTab === "daybook" && <DaybookTab />}
+          {activeTab === "activity-log" && <ActivityLogTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "products" && <ProductsTab />}
           {activeTab === "product-batches" && <ProductBatchesPage />}

@@ -28,6 +28,7 @@ import abcRouter from "./abc/route.js";
 import productBatchRouter from "./product-batches/route.js";
 import singleABCRouter from "./single-abc/route.js";
 import storeRouter from "./store-info/route.js";
+import activityLogRouter from "./activity-log/route.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -104,5 +105,6 @@ app.use("/api/v1/abc", abcRouter);
 app.use("/api/v1/product-batches", productBatchRouter);
 app.use("/api/v1/single-abc", singleABCRouter);
 app.use("/api/v1/store-info", storeRouter);
+app.use("/api/v1/activity-logs", activityLogRouter);
 
 export default app;

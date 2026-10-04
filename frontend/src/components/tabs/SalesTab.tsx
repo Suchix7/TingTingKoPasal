@@ -14,12 +14,14 @@ import {
   Trash2,
   TrendingUp,
   Edit,
+  Undo2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import {
   Sale,
   useDeleteSale,
+  useRevokeSale,
   useSales,
   useSaleItems,
   SaleItem,
@@ -161,6 +163,8 @@ export default function SalesPage() {
   const [saleStatus, setSaleStatus] = useState<"All" | SaleStatus>("All");
   const [selectedSaleId, setSelectedSaleId] = useState<string | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<Sale | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<Sale | null>(null);
+  const [revokeReason, setRevokeReason] = useState("");
   const [printSale, setPrintSale] = useState<Sale | null>(null);
   const [printSaleItems, setPrintSaleItems] = useState<any[]>([]);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
@@ -177,6 +181,7 @@ export default function SalesPage() {
   const { data: storeData } = useStore();
   const store = storeData?.data || null;
   const deleteSale = useDeleteSale();
+  const revokeSale = useRevokeSale();
 
   const sales = data?.data || [];
   const salePayments = allPaymentsData?.data || [];
@@ -193,6 +198,22 @@ export default function SalesPage() {
   const handleEditSale = (sale: Sale) => {
     setEditSale(sale);
     setEditSaleId(sale.id);
+  };
+
+  const handleRevoke = async () => {
+    if (!revokeTarget) return;
+
+    try {
+      await revokeSale.mutateAsync({
+        saleId: revokeTarget.id,
+        reason: revokeReason.trim(),
+      });
+      toast.success("Sale revoked. Stock restored and payments reversed.");
+      setRevokeTarget(null);
+      setRevokeReason("");
+    } catch {
+      // error toast is shown by the mutation
+    }
   };
 
   const handleDelete = async () => {
@@ -525,6 +546,19 @@ export default function SalesPage() {
                         >
                           <Printer size={18} />
                         </button>
+                        {sale.sale_status === "Completed" && (
+                          <button
+                            onClick={() => {
+                              setRevokeReason("");
+                              setRevokeTarget(sale);
+                            }}
+                            className="rounded-xl p-2 text-gray-500 transition hover:bg-amber-50 hover:text-amber-600"
+                            aria-label="Revoke sale"
+                            title="Revoke (sold by mistake)"
+                          >
+                            <Undo2 size={18} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleEditSale(sale)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-slate-50 hover:text-slate-600"
@@ -571,6 +605,56 @@ export default function SalesPage() {
           dateTime={dateTime}
           getPaymentLabel={getPaymentLabel}
         />
+      ) : null}
+
+      {revokeTarget ? (
+        <div
+          onClick={() => !revokeSale.isPending && setRevokeTarget(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+          >
+            <h2 className="text-lg font-semibold text-slate-900">
+              Revoke sale {revokeTarget.invoice_no}?
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Use this when a sale was made by mistake. The items go back into
+              stock and the {money(revokeTarget.grand_total)} payment is
+              reversed. The sale stays on record as Cancelled and is written to
+              the Activity Log.
+            </p>
+            <label className="mt-4 block text-sm font-medium text-slate-700">
+              Reason (optional)
+            </label>
+            <input
+              type="text"
+              value={revokeReason}
+              onChange={(e) => setRevokeReason(e.target.value)}
+              placeholder="e.g. Wrong item sold"
+              disabled={revokeSale.isPending}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setRevokeTarget(null)}
+                disabled={revokeSale.isPending}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                Keep sale
+              </button>
+              <button
+                onClick={handleRevoke}
+                disabled={revokeSale.isPending}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {revokeSale.isPending && <Loader2 size={14} className="animate-spin" />}
+                Revoke sale
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {deleteConfirm ? (
