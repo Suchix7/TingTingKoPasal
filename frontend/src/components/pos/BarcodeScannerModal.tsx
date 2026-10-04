@@ -166,14 +166,17 @@ export function BarcodeScannerModal({
           controlsRef.current = controls;
         })
         .catch((error) => {
-          console.error("Scanner error:", error);
+          // Permission/device problems are expected user conditions, not bugs
+          console.warn("Scanner error:", error);
           setStatus("error");
 
           if (error instanceof DOMException) {
             switch (error.name) {
               case "NotAllowedError":
                 setErrorMessage(
-                  "Camera permission denied. Please allow camera access.",
+                  error.message.toLowerCase().includes("dismissed")
+                    ? "Camera permission prompt was dismissed. Click the camera icon in the address bar, allow access, then try again."
+                    : "Camera permission denied. Please allow camera access.",
                 );
                 break;
               case "NotFoundError":
