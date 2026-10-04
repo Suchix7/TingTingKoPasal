@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+release/
+.env
+*.log
+database/*.db-wal
+database/*.db-shm
+*.tsbuildinfo
+.env.local
+.env*.local

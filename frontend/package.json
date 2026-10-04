@@ -1,0 +1,38 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@react-pdf/renderer": "^4.5.1",
+    "@tanstack/react-query": "^5.97.0",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.21.3",
+    "axios": "^1.15.0",
+    "bwip-js": "^4.11.4",
+    "date-fns": "^4.3.0",
+    "lucide-react": "^1.8.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-hot-toast": "^2.6.0",
+    "recharts": "^3.8.1",
+    "zustand": "^5.0.12",
+    "zxing": "^0.1.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

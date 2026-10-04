@@ -1,0 +1,12 @@
+{
+  "name": "byapardesk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ByaparDesk - inventory & POS system",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
