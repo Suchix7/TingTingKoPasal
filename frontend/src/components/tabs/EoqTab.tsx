@@ -196,7 +196,7 @@ export default function EoqPlanningPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100/50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-dvh bg-linear-to-br from-slate-50 via-white to-slate-100/50 p-4 sm:p-6 lg:p-8">
         <div className="rounded-3xl border border-red-200 bg-white p-12 text-center shadow-sm">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-red-50">
             <AlertTriangle className="h-10 w-10 text-red-400" />
@@ -220,7 +220,7 @@ export default function EoqPlanningPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-6">
+      <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-6">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-6 rounded-3xl border border-gray-200 bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -849,7 +849,7 @@ function ProductDetailModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
     >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-3xl bg-white shadow-2xl">
+      <div className="max-h-[90dvh] w-full max-w-2xl overflow-auto rounded-3xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white p-6">
           <h2 className="text-xl font-bold text-slate-900">Product Details</h2>
           <button

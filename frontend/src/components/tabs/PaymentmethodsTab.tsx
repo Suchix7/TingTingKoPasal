@@ -336,7 +336,7 @@ export default function PaymentMethodsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
+    <div className="min-h-dvh bg-gradient-to-b from-neutral-50 to-white">
       <div className="p-6">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

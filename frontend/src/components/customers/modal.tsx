@@ -78,7 +78,7 @@ export default function CustomerModal({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     >
-      <div className="w-full max-h-[90vh] overflow-y-auto max-w-2xl bg-white rounded-2xl shadow-2xl transform transition-all">
+      <div className="w-full max-h-[90dvh] overflow-y-auto max-w-2xl bg-white rounded-2xl shadow-2xl transform transition-all">
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">

@@ -32,7 +32,7 @@ export default function MainShell() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex h-dvh overflow-hidden bg-slate-100">
       <SidebarTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -40,7 +40,7 @@ export default function MainShell() {
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      <div className="flex h-screen min-w-0 flex-1 flex-col">
+      <div className="flex h-full min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 md:hidden">
           <button
             type="button"

@@ -318,7 +318,7 @@ export default function InventoryTransactionsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
           <div className="rounded-3xl border border-rose-200 bg-white p-12 text-center shadow-sm">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-rose-50">
@@ -338,7 +338,7 @@ export default function InventoryTransactionsPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-6">
+      <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-6">
         <div className="space-y-6">
           {/* Header */}
           <div className="rounded-3xl border border-gray-200 bg-white p-6">

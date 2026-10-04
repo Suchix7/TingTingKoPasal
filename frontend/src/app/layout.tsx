@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 import { Toaster } from "react-hot-toast";
@@ -15,6 +15,14 @@ export const metadata: Metadata = {
   description: "By Abishek Shrestha",
 };
 
+// viewportFit "cover" lets the app use the iPhone safe-area insets
+// (home indicator / notch) instead of leaving unpredictable gaps.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -22,7 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased max-h-screen`}>
+      <body className={`${poppins.variable} antialiased`}>
         <QueryProvider>{children}</QueryProvider>
         <Toaster position="top-right" />
       </body>

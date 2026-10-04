@@ -101,7 +101,7 @@ export default function InventoryCostModal({
           className="fixed inset-0 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         />
-        <div className="max-h-[90vh] overflow-y-auto relative z-10 w-full max-w-lg rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="max-h-[90dvh] overflow-y-auto relative z-10 w-full max-w-lg rounded-3xl border border-slate-200 bg-white shadow-2xl">
           {/* Header */}
           <div className="z-100 bg-white sticky top-0 flex items-center justify-between border-b border-slate-200 p-6">
             <div className="flex items-center gap-3">

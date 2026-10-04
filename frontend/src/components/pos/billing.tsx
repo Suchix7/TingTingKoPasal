@@ -610,9 +610,9 @@ export default function BillingSection({
       {/* No fixed/max height below xl: PosTab only switches to the
           side-by-side layout at xl (flex-col -> xl:flex-row), so below
           that this panel is either stacked in-flow or a bottom sheet with
-          its own height cap - forcing max-h-screen here too would clip
+          its own height cap - forcing max-h-dvh here too would clip
           content inside a box sized for the desktop layout. */}
-      <div className="w-full lg:w-[470px] xl:h-full xl:max-h-screen flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="w-full lg:w-[470px] xl:h-full xl:max-h-dvh flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
         {/* Tab Navigation */}
         <div className="flex border-b border-gray-200">
           <button
@@ -836,11 +836,11 @@ export default function BillingSection({
             {cartItems.length > 0 && (
               <div
                 ref={sectionRef}
-                style={{ height }}
-                className="relative border-t border-gray-100 p-4 pt-0 space-y-4 bg-gray-50 overflow-y-auto min-h-[50vh] max-h-[70vh]"
+                style={{ "--pane-h": `${height}px` } as React.CSSProperties}
+                className="relative border-t border-gray-100 p-4 pt-0 space-y-4 bg-gray-50 xl:h-[var(--pane-h)] xl:overflow-y-auto xl:min-h-[50dvh] xl:max-h-[70dvh]"
               >
                 <div
-                  className="sticky top-0 left-0 right-0 h-2 cursor-ns-resize bg-transparent hover:bg-gray-200"
+                  className="hidden xl:block sticky top-0 left-0 right-0 h-2 cursor-ns-resize bg-transparent hover:bg-gray-200"
                   onMouseDown={startResize}
                 />
 

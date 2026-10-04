@@ -43,7 +43,7 @@ export default function Page() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="relative flex min-h-dvh items-center justify-center bg-gray-50 px-4">
       {/* Background Pattern */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full border border-gray-100"></div>

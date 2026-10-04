@@ -149,7 +149,7 @@ export default function PaymentMethodModal({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
     >
-      <div className="w-full max-h-[85vh] overflow-y-auto max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 shadow-2xl">
+      <div className="w-full max-h-[85dvh] overflow-y-auto max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 shadow-2xl">
         <div className="mb-6">
           <h2 className="text-xl font-semibold tracking-tight text-neutral-900">
             {editing ? "Edit payment method" : "New payment method"}

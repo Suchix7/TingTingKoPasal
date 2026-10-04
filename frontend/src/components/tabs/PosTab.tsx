@@ -505,7 +505,7 @@ export default function PointOfSalesPage() {
   };
 
   return (
-    <div className="h-auto xl:h-screen flex flex-col xl:flex-row gap-4 p-4 pb-20 xl:pb-4 bg-gray-50 overflow-y-auto">
+    <div className="h-auto xl:h-dvh flex flex-col xl:flex-row gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] xl:pb-4 bg-gray-50 xl:overflow-y-auto">
       {/* Products Section */}
       <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
@@ -624,7 +624,7 @@ export default function PointOfSalesPage() {
               block: "start",
             })
           }
-          className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-2 border-t border-gray-200 bg-gray-900 px-4 py-3 text-white shadow-2xl xl:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-2 border-t border-gray-200 bg-gray-900 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-white shadow-2xl xl:hidden"
         >
           <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
             <ShoppingCart className="h-4 w-4 shrink-0" />

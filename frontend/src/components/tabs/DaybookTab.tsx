@@ -305,7 +305,7 @@ export default function DaybookPage() {
   }, [daybook]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Header with Date Navigation */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -315,7 +315,7 @@ export default function DaybookPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {daybook && !isLoading && <DaybookPDFDownloadButton data={daybook} />}
           <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1">
             <button

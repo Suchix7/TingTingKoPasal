@@ -248,7 +248,7 @@ export default function SidebarTabs({
       {/* Desktop: always in normal flow, collapsible rail. Simply absent
           below md - no positioning/transform tricks involved. */}
       <aside
-        className={`hidden md:block h-screen shrink-0 overflow-y-auto bg-gray-900 text-white transition-all duration-300 ${
+        className={`hidden md:block h-dvh shrink-0 overflow-y-auto bg-gray-900 text-white transition-all duration-300 ${
           isOpen ? "w-64" : "w-16"
         }`}
       >
@@ -262,7 +262,7 @@ export default function SidebarTabs({
             className="fixed inset-0 z-40 bg-black/50"
             onClick={onMobileClose}
           />
-          <aside className="fixed inset-y-0 left-0 z-50 h-screen w-64 overflow-y-auto bg-gray-900 text-white">
+          <aside className="fixed inset-y-0 left-0 z-50 h-dvh w-64 overflow-y-auto bg-gray-900 text-white">
             {navContent(true, onMobileClose)}
           </aside>
         </div>

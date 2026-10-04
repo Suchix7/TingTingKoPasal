@@ -14,3 +14,49 @@
 ::-webkit-scrollbar {
   width: 0;
 }
+
+/* ---- Mobile / iOS behaviour ---- */
+
+html,
+body {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  /* no rubber-band bounce of the whole page behind the app */
+  overscroll-behavior-y: none;
+}
+
+/* Taps respond immediately and never trigger double-tap zoom */
+button,
+a,
+select,
+label,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS Safari zooms the page when a field under 16px is focused */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* The main content area is the only scroller; keep its scroll to itself */
+main {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* While a popup/drawer is open, the page behind it must not scroll */
+body:has(.fixed.inset-0) main {
+  overflow: hidden;
+}
+
+/* Popups: scroll inside, never pass the scroll on to the page */
+.fixed.inset-0,
+.fixed.inset-0 > * {
+  overscroll-behavior: contain;
+}

@@ -69,7 +69,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
   return (
     <div
       onClick={closeModal}
-      className="fixed h-screen inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed h-dvh inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}

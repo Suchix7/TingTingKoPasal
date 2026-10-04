@@ -117,7 +117,7 @@ export const SupplierModal = ({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
     >
-      <div className="max-h-[85vh] overflow-y-auto w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
+      <div className="max-h-[85dvh] overflow-y-auto w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
         <div className="z-100 sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white p-6">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-slate-900 p-2">

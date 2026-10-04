@@ -44,7 +44,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     >
-      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-4xl max-h-[90dvh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-slate-900 p-2">

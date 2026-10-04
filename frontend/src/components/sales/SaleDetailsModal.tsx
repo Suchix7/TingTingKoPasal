@@ -41,7 +41,7 @@ export default function SaleDetailsModal({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
     >
-      <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="max-h-[90dvh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Sale Details</h2>

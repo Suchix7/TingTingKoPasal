@@ -858,13 +858,13 @@ export default function EditSaleModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex max-h-screen items-start justify-center overflow-y-auto p-4">
+      <div className="fixed inset-0 z-50 flex max-h-dvh items-start justify-center overflow-y-auto p-4">
         <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
           onClick={onClose}
         />
 
-        <div className="relative my-8 max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="relative my-8 max-h-[85dvh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-slate-200 bg-white px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-slate-900 p-2">

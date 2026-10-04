@@ -115,7 +115,7 @@ export default function StorePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white p-6">
+      <div className="min-h-dvh bg-gradient-to-b from-neutral-50 to-white p-6">
         <div className="mx-auto max-w-3xl">
           <div className="mb-8">
             <div className="h-8 w-64 animate-pulse rounded-lg bg-neutral-200" />
@@ -137,7 +137,7 @@ export default function StorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
+    <div className="min-h-dvh bg-gradient-to-b from-neutral-50 to-white">
       <div className="p-6">
         <div>
           {/* Header */}

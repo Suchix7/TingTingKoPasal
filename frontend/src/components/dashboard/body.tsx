@@ -178,7 +178,7 @@ export default function DashboardBody() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-50">
+      <div className="flex h-dvh items-center justify-center bg-neutral-50">
         <div className="text-center">
           <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900" />
 
@@ -192,7 +192,7 @@ export default function DashboardBody() {
 
   if (isError) {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-50 px-4">
+      <div className="flex h-dvh items-center justify-center bg-neutral-50 px-4">
         <div className="max-w-md rounded-md bg-white p-6 text-center shadow-sm ring-1 ring-neutral-100">
           <h2 className="text-lg font-bold text-neutral-900">
             Failed to load dashboard
@@ -208,7 +208,7 @@ export default function DashboardBody() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 p-4 text-neutral-950 md:p-6">
+    <main className="min-h-dvh bg-neutral-50 p-4 text-neutral-950 md:p-6">
       <div>
         <DashboardHeader
           outOfStockCount={outOfStockItems.length}

@@ -313,7 +313,7 @@ export default function BatchModal({
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          className="max-h-[90dvh] w-full max-w-2xl overflow-auto rounded-3xl border border-slate-200 bg-white shadow-2xl"
         >
           <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
