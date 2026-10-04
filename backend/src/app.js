@@ -38,7 +38,10 @@ if (isProd) {
 }
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  // FRONTEND_URL may hold several comma-separated origins
+  ...(process.env.FRONTEND_URL || "")
+    .split(",")
+    .map((url) => url.trim().replace(/\/+$/, "")),
   ...(isProd ? [] : ["http://localhost:3000", "http://localhost:5000"]),
 ].filter(Boolean);
 
