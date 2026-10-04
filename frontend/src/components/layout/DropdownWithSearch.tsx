@@ -261,20 +261,11 @@ export function DropdownWithSearch<T extends DropdownOption>({
                   </>
                 )}
 
-                {/* Empty state when no options but add new is enabled */}
+                {/* Empty state: message only - the add-new button above is the single entry point */}
                 {options.length === 0 && showAddNew && onAddNew && (
-                  <button
-                    type="button"
-                    onClick={handleAddNew}
-                    className="w-full px-4 cursor-pointer py-3 text-left transition hover:bg-slate-50"
-                  >
-                    <div className="flex items-center gap-2 text-slate-700">
-                      {addNewIcon || (
-                        <Plus className="h-4 w-4 text-slate-500" />
-                      )}
-                      <span className="text-sm font-medium">{addNewLabel}</span>
-                    </div>
-                  </button>
+                  <div className="px-4 py-3 text-center text-sm text-slate-500">
+                    {emptyMessage}
+                  </div>
                 )}
               </>
             )}

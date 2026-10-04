@@ -8,8 +8,12 @@ dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 const app = (await import("./app.js")).default;
 const { connectMongo } = await import("./config/mongo.js");
+const { seedDefaultPaymentMethods } = await import(
+  "./config/seedPaymentMethods.js"
+);
 
 await connectMongo();
+await seedDefaultPaymentMethods();
 
 app.get("/health", (req, res) => {
   res.json({
