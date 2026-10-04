@@ -567,9 +567,6 @@ export default function InventoryCostsPage() {
                                   <p className="font-medium text-slate-900">
                                     {item.product_name}
                                   </p>
-                                  <p className="text-xs text-slate-500">
-                                    SKU: {item.sku}
-                                  </p>
                                 </div>
                               </div>
                             </td>
@@ -694,9 +691,6 @@ export default function InventoryCostsPage() {
                               <h3 className="font-semibold text-slate-900">
                                 {item.product_name}
                               </h3>
-                              <p className="text-sm text-slate-500">
-                                {item.sku}
-                              </p>
                             </div>
                           </div>
                           <span

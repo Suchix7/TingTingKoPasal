@@ -92,9 +92,6 @@ const TransactionDetailsModal = ({
                 {transaction.product_name ||
                   `Product #${transaction.product_id}`}
               </p>
-              {transaction.sku && (
-                <p className="text-xs text-slate-500">SKU: {transaction.sku}</p>
-              )}
               {transaction.unit && (
                 <p className="text-xs text-slate-500">
                   Unit: {transaction.unit}
@@ -365,7 +362,7 @@ export default function InventoryTransactionsPage() {
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by product, SKU..."
+                    placeholder="Search by product..."
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
@@ -622,7 +619,6 @@ export default function InventoryTransactionsPage() {
                                   `Product #${transaction.product_id}`}
                               </div>
                               <div className="text-xs text-slate-400">
-                                {transaction.sku && `SKU: ${transaction.sku}`}
                                 {transaction.unit &&
                                   ` • Unit: ${transaction.unit}`}
                               </div>
@@ -722,11 +718,6 @@ export default function InventoryTransactionsPage() {
                                 {transaction.product_name ||
                                   `Product #${transaction.product_id}`}
                               </h3>
-                              {transaction.sku && (
-                                <span className="text-xs text-slate-400">
-                                  {transaction.sku}
-                                </span>
-                              )}
                             </div>
                             <p className="mt-1 text-xs text-slate-400">
                               {format(

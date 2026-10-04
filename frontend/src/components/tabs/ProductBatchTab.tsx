@@ -248,7 +248,7 @@ export default function ProductBatchesPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by batch number, product name, or SKU..."
+                placeholder="Search by batch number or product name..."
                 className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
               />
             </div>
@@ -298,7 +298,7 @@ export default function ProductBatchesPage() {
                   <option value="">All Products</option>
                   {products.map((product) => (
                     <option key={product.id} value={String(product.id)}>
-                      {product.product_name} ({product.sku || "No SKU"})
+                      {product.product_name}
                     </option>
                   ))}
                 </select>
@@ -331,7 +331,6 @@ export default function ProductBatchesPage() {
                 <th className="px-5 py-3">S.N.</th>
                 <th className="px-5 py-3">Batch Number</th>
                 <th className="px-5 py-3">Product</th>
-                <th className="px-5 py-3">SKU</th>
                 <th className="px-5 py-3">Quantity</th>
                 <th className="px-5 py-3">Cost Price</th>
                 <th className="px-5 py-3">Sale Price</th>
@@ -409,12 +408,6 @@ export default function ProductBatchesPage() {
                             </p>
                           )}
                         </div>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <code className="text-xs text-gray-600">
-                          {batch.sku || "-"}
-                        </code>
                       </td>
 
                       <td className="px-5 py-4">

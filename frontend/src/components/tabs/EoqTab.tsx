@@ -552,9 +552,6 @@ export default function EoqPlanningPage() {
                                   <p className="font-medium text-slate-900">
                                     {product.product_name}
                                   </p>
-                                  <p className="text-xs text-slate-500">
-                                    SKU: {product.sku}
-                                  </p>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
@@ -689,9 +686,6 @@ export default function EoqPlanningPage() {
                               <h3 className="font-semibold text-slate-900">
                                 {product.product_name}
                               </h3>
-                              <p className="text-sm text-slate-500">
-                                SKU: {product.sku}
-                              </p>
                             </div>
                             {hasMissingCostData ? (
                               <FileWarning className="h-5 w-5 text-red-500" />
@@ -877,7 +871,6 @@ function ProductDetailModal({
                 <h3 className="text-2xl font-bold text-slate-900">
                   {product.product_name}
                 </h3>
-                <p className="text-sm text-slate-500">SKU: {product.sku}</p>
               </div>
 
               {/* Display alerts in modal */}

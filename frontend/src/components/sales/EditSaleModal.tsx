@@ -1010,7 +1010,7 @@ export default function EditSaleModal({
                             handleProductBatchSelect(index, selection)
                           }
                           placeholder="Select product or batch"
-                          searchPlaceholder="Search products by name or SKU..."
+                          searchPlaceholder="Search products by name..."
                           emptyMessage="No products found"
                           showBatchQuantities={true}
                           showBatchPrices={true}

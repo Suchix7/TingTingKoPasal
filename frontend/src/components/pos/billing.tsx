@@ -682,10 +682,6 @@ export default function BillingSection({
                             {item.product_name}
                           </h3>
 
-                          <p className="text-xs text-gray-500 font-mono mt-0.5">
-                            {item.sku}
-                          </p>
-
                           {(item.tax_amount ?? 0) > 0 && (
                             <div className="mt-1 flex items-center gap-2">
                               <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">

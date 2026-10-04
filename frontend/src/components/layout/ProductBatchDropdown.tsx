@@ -210,10 +210,6 @@ export function ProductBatchDropdown({
     if (selectedProduct) {
       const parts: string[] = [];
 
-      if (selectedProduct.sku) {
-        parts.push(`SKU: ${selectedProduct.sku}`);
-      }
-
       if (showBatchPrices && selectedProduct.sale_price !== undefined) {
         parts.push(`Price: ${formatPrice(selectedProduct.sale_price)}`);
       }
@@ -359,8 +355,6 @@ export function ProductBatchDropdown({
                               </div>
 
                               <div className="mt-0.5 text-xs text-slate-500">
-                                {product.sku && <span>SKU: {product.sku}</span>}
-
                                 {showBatchPrices &&
                                   product.sale_price !== undefined && (
                                     <span className="ml-2">

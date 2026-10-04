@@ -723,14 +723,6 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                           <span className="text-xs text-neutral-400">
                             Batch: {batch.batch_number}
                           </span>
-                          {batch.sku && (
-                            <>
-                              <span className="text-neutral-300">•</span>
-                              <span className="text-xs text-neutral-400">
-                                SKU: {batch.sku}
-                              </span>
-                            </>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -864,9 +856,6 @@ function DashboardHeader({
                                 {item.product_name}
                               </p>
 
-                              <p className="text-xs text-neutral-500 mt-0.5">
-                                SKU: {item.sku || "N/A"}
-                              </p>
 
                               <div className="flex items-center gap-2 mt-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-xs font-bold text-red-700">
@@ -910,7 +899,6 @@ function DashboardHeader({
 
                               <p className="text-xs text-neutral-500 mt-0.5">
                                 Batch: {batch.batch_number}
-                                {batch.sku && ` • SKU: ${batch.sku}`}
                               </p>
 
                               <div className="flex items-center gap-2 mt-2">

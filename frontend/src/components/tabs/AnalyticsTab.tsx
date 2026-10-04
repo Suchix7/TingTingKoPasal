@@ -1120,9 +1120,6 @@ export default function AnalyticsPage() {
                               <p className="max-w-[200px] truncate text-sm font-semibold text-neutral-900">
                                 {product.product_name}
                               </p>
-                              <p className="text-xs text-neutral-400">
-                                SKU: {product.sku || "N/A"}
-                              </p>
                             </div>
                           </div>
                         </td>
@@ -1410,9 +1407,6 @@ export default function AnalyticsPage() {
                             <div>
                               <p className="max-w-[200px] truncate text-sm font-semibold text-neutral-900">
                                 {product.product_name}
-                              </p>
-                              <p className="text-xs text-neutral-400">
-                                SKU: {product.sku || "N/A"}
                               </p>
                             </div>
                           </div>

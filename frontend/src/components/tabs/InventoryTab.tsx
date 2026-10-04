@@ -625,7 +625,7 @@ export default function InventoryPage() {
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, SKU..."
+                  placeholder="Search by name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 sm:w-72"
@@ -765,9 +765,6 @@ export default function InventoryPage() {
                           Product
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          SKU
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                           Stock Level
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -832,11 +829,6 @@ export default function InventoryPage() {
                                     </p>
                                   </div>
                                 </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className="text-sm font-mono text-slate-600">
-                                  {item.sku}
-                                </span>
                               </td>
                               <td className="px-6 py-4">
                                 <div className="space-y-2">
@@ -962,9 +954,6 @@ export default function InventoryPage() {
                               <h3 className="font-semibold text-slate-900">
                                 {item.product_name}
                               </h3>
-                              <p className="text-sm text-slate-500">
-                                {item.sku}
-                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

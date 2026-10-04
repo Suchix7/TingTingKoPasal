@@ -140,7 +140,7 @@ export default function InventoryCostModal({
                     productsData?.data?.map((product) => ({
                       id: product.id,
                       label: product.product_name,
-                      sublabel: `SKU: ${product.sku || "N/A"} | Stock: ${product.stock_quantity || 0} ${product.unit || "units"}`,
+                      sublabel: `Stock: ${product.stock_quantity || 0} ${product.unit || "units"}`,
                       metadata: product,
                     })) || []
                   }
@@ -150,7 +150,7 @@ export default function InventoryCostModal({
                   }}
                   isLoading={isLoading}
                   placeholder="Select a product"
-                  searchPlaceholder="Search products by name or SKU..."
+                  searchPlaceholder="Search products by name..."
                   emptyMessage="No products found"
                   disabled={isEditMode}
                   onSearch={(searchTerm) => {

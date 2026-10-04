@@ -194,9 +194,6 @@ export default function SaleDetailsModal({
                               <p className="font-medium text-gray-900">
                                 {item.product_name}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                {item.sku || "No SKU"}
-                              </p>
                             </td>
                             <td className="px-4 py-3">{item.quantity}</td>
                             <td className="px-4 py-3">

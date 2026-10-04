@@ -563,7 +563,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                             handleProductBatchSelect(index, selection)
                           }
                           placeholder="Select product or batch"
-                          searchPlaceholder="Search products by name or SKU..."
+                          searchPlaceholder="Search products by name..."
                           emptyMessage="No products found"
                           showBatchQuantities={true}
                           showBatchPrices={true}

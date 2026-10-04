@@ -353,9 +353,6 @@ export default function ProductGrid({
                       <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-700 line-clamp-2 pr-2">
                         {product.product_name}
                       </h3>
-                      <p className="mt-1 hidden text-xs text-gray-500 font-mono sm:block">
-                        {product.sku}
-                      </p>
                     </div>
 
                     <div className="mt-2 pt-2 sm:mt-4 sm:pt-4 border-t border-gray-100">

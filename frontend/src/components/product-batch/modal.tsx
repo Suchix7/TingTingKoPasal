@@ -364,7 +364,7 @@ export default function BatchModal({
                       productsData?.data?.map((product) => ({
                         id: product.id,
                         label: product.product_name,
-                        sublabel: `SKU: ${product.sku || "N/A"} | Stock: ${product.stock_quantity || 0} ${product.unit || "units"}`,
+                        sublabel: `Stock: ${product.stock_quantity || 0} ${product.unit || "units"}`,
                         metadata: product,
                       })) || []
                     }
@@ -377,7 +377,7 @@ export default function BatchModal({
                     }}
                     isLoading={isProductsLoading}
                     placeholder="Select product"
-                    searchPlaceholder="Search products by name or SKU..."
+                    searchPlaceholder="Search products by name..."
                     disabled={isSubmitting || isEditMode}
                     emptyMessage="No products found"
                     onSearch={(searchTerm) => {
