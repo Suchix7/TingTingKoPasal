@@ -1,6 +1,9 @@
-// Common iPhone models offered as suggestions when adding phone-model stock.
-// Anything not listed can still be typed in by hand.
+// iPhone models offered when adding stock for mobile covers (iPhone X to 18).
+// Newest first. Anything not listed can be added by hand in the picker.
 export const IPHONE_MODELS: string[] = [
+  "iPhone 18 Pro Max",
+  "iPhone 18 Pro",
+  "iPhone 18",
   "iPhone 17 Pro Max",
   "iPhone 17 Pro",
   "iPhone Air",
@@ -35,12 +38,4 @@ export const IPHONE_MODELS: string[] = [
   "iPhone XS",
   "iPhone XR",
   "iPhone X",
-  "iPhone 8 Plus",
-  "iPhone 8",
-  "iPhone 7 Plus",
-  "iPhone 7",
-  "iPhone 6s Plus",
-  "iPhone 6s",
-  "iPhone 6 Plus",
-  "iPhone 6",
 ];

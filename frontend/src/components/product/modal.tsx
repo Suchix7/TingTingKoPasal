@@ -17,7 +17,7 @@ import {
   type ProductFormData,
 } from "@/components/tabs/ProductTab";
 import { useDebounced } from "@/hooks/useDebounced";
-import { IPHONE_MODELS } from "@/lib/phoneModels";
+import PhoneModelPicker from "./PhoneModelPicker";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
@@ -117,61 +117,19 @@ export default function ProductModal({
     }));
   };
 
-  const hasVariants = !isEditMode && formData.variants.length > 0;
   // Editing a product whose stock lives only on its phone models / batches
   const stockOnModelsOnly =
     isEditMode &&
     (selectedProduct?.batches?.length ?? 0) > 0 &&
     Number(selectedProduct?.stock_quantity ?? 0) === 0;
-  const variantsTotal = formData.variants.reduce(
-    (sum, v) => sum + (Number(v.quantity) || 0),
-    0,
-  );
+  // Mobile covers keep stock per phone model; everything else is a normal product
+  const [isMobileCover, setIsMobileCover] = useState(false);
+  const modelMode = !isEditMode && isMobileCover;
 
-  const addVariant = () =>
-    setFormData((prev) => ({
-      ...prev,
-      variants: [...prev.variants, { model: "", quantity: 1 }],
-    }));
-
-  // Quick-add a known model; if it is already listed, leave it alone
-  const addKnownModel = (model: string) => {
-    if (!model) return;
-    setFormData((prev) =>
-      prev.variants.some((v) => v.model.trim().toLowerCase() === model.toLowerCase())
-        ? prev
-        : {
-            ...prev,
-            // reuse a trailing empty row instead of leaving it blank
-            variants:
-              prev.variants.length > 0 &&
-              !prev.variants[prev.variants.length - 1].model.trim()
-                ? [
-                    ...prev.variants.slice(0, -1),
-                    { model, quantity: prev.variants[prev.variants.length - 1].quantity || 1 },
-                  ]
-                : [...prev.variants, { model, quantity: 1 }],
-          },
-    );
+  const toggleMobileCover = (on: boolean) => {
+    setIsMobileCover(on);
+    if (!on) setFormData((prev) => ({ ...prev, variants: [] }));
   };
-
-  const updateVariant = (
-    index: number,
-    field: "model" | "quantity",
-    value: string | number,
-  ) =>
-    setFormData((prev) => ({
-      ...prev,
-      variants: prev.variants.map((v, i) =>
-        i === index ? { ...v, [field]: value } : v,
-      ),
-    }));
-
-  const removeVariant = (index: number) =>
-    setFormData((prev) => ({
-      ...prev,
-      variants: prev.variants.filter((_, i) => i !== index),
-    }));
 
   const handleBarcodeScanned = (barcode: string) => {
     handleChange("barcode", barcode);
@@ -191,6 +149,11 @@ export default function ProductModal({
 
     if (!formData.unit.trim()) {
       toast.error("Unit is required.");
+      return false;
+    }
+
+    if (modelMode && formData.variants.length === 0) {
+      toast.error("Tick at least one phone model, or untick \"mobile cover\".");
       return false;
     }
 
@@ -446,6 +409,9 @@ export default function ProductModal({
                   selectedId={formData.category_id}
                   onSelect={(option) => {
                     setFormData({ ...formData, category_id: String(option?.id || "") });
+                    if (!isEditMode && /cover|case/i.test(option?.label ?? "")) {
+                      setIsMobileCover(true);
+                    }
                   }}
                   isLoading={isCategoriesLoading}
                   placeholder="Select category"
@@ -517,7 +483,7 @@ export default function ProductModal({
                 </div>
               )}
 
-              {!hasVariants && !stockOnModelsOnly && (
+              {!modelMode && !stockOnModelsOnly && (
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Stock Quantity
@@ -540,98 +506,35 @@ export default function ProductModal({
               )}
 
               {!isEditMode && (
-                <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">
-                        Phone models (optional)
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        For covers and similar items: add each phone model with
-                        its own stock. Leave empty for a normal product.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={addVariant}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isMobileCover}
+                      onChange={(e) => toggleMobileCover(e.target.checked)}
                       disabled={isSubmitting}
-                      className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
-                    >
-                      + Add model
-                    </button>
-                  </div>
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-slate-700">
+                        This is a mobile cover
+                      </span>
+                      <span className="block text-xs text-slate-500">
+                        Tick the phone models it fits and set the quantity for
+                        each. Leave unticked for normal products.
+                      </span>
+                    </span>
+                  </label>
 
-                  <select
-                    value=""
-                    onChange={(e) => addKnownModel(e.target.value)}
-                    disabled={isSubmitting}
-                    className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none focus:border-slate-400"
-                  >
-                    <option value="">Quick add an iPhone model...</option>
-                    {IPHONE_MODELS.map((model) => (
-                      <option
-                        key={model}
-                        value={model}
-                        disabled={formData.variants.some(
-                          (v) => v.model.trim().toLowerCase() === model.toLowerCase(),
-                        )}
-                      >
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                  <datalist id="phone-model-suggestions">
-                    {IPHONE_MODELS.map((model) => (
-                      <option key={model} value={model} />
-                    ))}
-                  </datalist>
-
-                  {formData.variants.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {formData.variants.map((variant, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            list="phone-model-suggestions"
-                            placeholder="e.g. iPhone 13"
-                            value={variant.model}
-                            onChange={(e) =>
-                              updateVariant(index, "model", e.target.value)
-                            }
-                            disabled={isSubmitting}
-                            className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
-                          />
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="Qty"
-                            value={String(variant.quantity)}
-                            onChange={(e) =>
-                              updateVariant(
-                                index,
-                                "quantity",
-                                e.target.value === ""
-                                  ? 0
-                                  : parseInt(e.target.value, 10),
-                              )
-                            }
-                            disabled={isSubmitting}
-                            className="w-24 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeVariant(index)}
-                            disabled={isSubmitting}
-                            aria-label="Remove model"
-                            className="rounded-lg px-2 py-2 text-slate-400 transition hover:bg-slate-200 hover:text-red-600"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                      <p className="pt-1 text-xs text-slate-500">
-                        Total stock: {variantsTotal}
-                      </p>
+                  {isMobileCover && (
+                    <div className="mt-4">
+                      <PhoneModelPicker
+                        value={formData.variants}
+                        onChange={(variants) =>
+                          setFormData((prev) => ({ ...prev, variants }))
+                        }
+                        disabled={isSubmitting}
+                      />
                     </div>
                   )}
                 </div>
