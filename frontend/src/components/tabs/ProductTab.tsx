@@ -33,9 +33,10 @@ import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
 import Link from "next/link";
 
+export type ProductVariantInput = { model: string; quantity: number };
+
 export type ProductFormData = {
   product_name: string;
-  sku: string;
   category_id: string | "";
   cost_price: number;
   sale_price: number;
@@ -44,11 +45,11 @@ export type ProductFormData = {
   status: string;
   barcode: string;
   description: string;
+  variants: ProductVariantInput[];
 };
 
 export const initialFormData: ProductFormData = {
   product_name: "",
-  sku: "",
   category_id: "",
   cost_price: 0,
   sale_price: 0,
@@ -57,6 +58,7 @@ export const initialFormData: ProductFormData = {
   status: "Active",
   barcode: "",
   description: "",
+  variants: [],
 };
 
 const LIMIT = 10;
@@ -178,7 +180,6 @@ export default function ProductsPage() {
     setSelectedProduct(product);
     setFormData({
       product_name: product.product_name || "",
-      sku: product.sku || "",
       category_id: product.category_id || "",
       cost_price: product.cost_price ?? 0,
       sale_price: product.sale_price ?? 0,
@@ -187,6 +188,7 @@ export default function ProductsPage() {
       status: product.status || "Active",
       barcode: product.barcode || "",
       description: product.description || "",
+      variants: [],
     });
     setOpen(true);
   };
@@ -283,7 +285,7 @@ export default function ProductsPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by name, SKU, barcode, or description..."
+                placeholder="Search by name, barcode, or description..."
                 className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
               />
             </div>
@@ -381,10 +383,10 @@ export default function ProductsPage() {
                 <th className="w-10 px-5 py-3"></th>
                 <th className="px-5 py-3">S.N.</th>
                 <th className="px-5 py-3">Product</th>
-                <th className="px-5 py-3">SKU</th>
+                <th className="px-5 py-3">Barcode</th>
                 <th className="px-5 py-3">Category</th>
                 <th className="px-5 py-3">Stock</th>
-                <th className="px-5 py-3">Batches</th>
+                <th className="px-5 py-3">Models / Batches</th>
                 <th className="px-5 py-3">Cost Price</th>
                 <th className="px-5 py-3">Sale Price</th>
                 <th className="px-5 py-3">Status</th>
@@ -428,12 +430,16 @@ export default function ProductsPage() {
                 </tr>
               ) : (
                 products.map((product, index) => {
-                  const isLowStock = Number(product.stock_quantity) <= 5;
+                  const batches = product.batches || [];
+                  // Stock held on phone models / batches counts toward the total
+                  const totalStock =
+                    Number(product.stock_quantity) +
+                    batches.reduce((sum, b) => sum + Number(b.quantity || 0), 0);
+                  const isLowStock = totalStock <= 5;
                   const category = categories.find(
                     (c) => c.id === product.category_id,
                   );
                   const isExpanded = expandedProducts.has(product.id);
-                  const batches = product.batches || [];
 
                   return (
                     <React.Fragment key={product.id}>
@@ -472,13 +478,8 @@ export default function ProductsPage() {
 
                         <td className="px-5 py-4">
                           <code className="text-xs text-gray-600">
-                            {product.sku || "-"}
+                            {product.barcode || "-"}
                           </code>
-                          {product.barcode && (
-                            <p className="mt-0.5 text-xs text-gray-400">
-                              {product.barcode}
-                            </p>
-                          )}
                         </td>
 
                         <td className="px-5 py-4">
@@ -492,17 +493,17 @@ export default function ProductsPage() {
                             className={`text-sm font-medium ${
                               isLowStock
                                 ? "text-amber-600"
-                                : product.stock_quantity === 0
+                                : totalStock === 0
                                   ? "text-red-600"
                                   : "text-gray-900"
                             }`}
                           >
-                            {product.stock_quantity} {product.unit || "units"}
+                            {totalStock} {product.unit || "units"}
                           </span>
-                          {isLowStock && product.stock_quantity > 0 && (
+                          {isLowStock && totalStock > 0 && (
                             <p className="text-xs text-amber-600">Low stock</p>
                           )}
-                          {product.stock_quantity === 0 && (
+                          {totalStock === 0 && (
                             <p className="text-xs text-red-600">Out of stock</p>
                           )}
                         </td>
@@ -512,11 +513,11 @@ export default function ProductsPage() {
                             <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
                               <Layers size={12} />
                               {batches.length}{" "}
-                              {batches.length === 1 ? "batch" : "batches"}
+                              {batches.length === 1 ? "model / batch" : "models / batches"}
                             </span>
                           ) : (
                             <span className="text-xs text-gray-400">
-                              No batches
+                              None
                             </span>
                           )}
                         </td>

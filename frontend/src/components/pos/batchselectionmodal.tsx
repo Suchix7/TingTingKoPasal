@@ -41,10 +41,10 @@ export default function BatchSelectionModal({
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              Select Price Source
+              Select Model / Batch
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Choose which price to use for{" "}
+              Choose which phone model or batch to sell for{" "}
               <span className="font-medium text-slate-700">
                 {product.product_name}
               </span>
@@ -60,7 +60,8 @@ export default function BatchSelectionModal({
 
         {/* Options */}
         <div className="space-y-3 p-6">
-          {/* Base Product Price */}
+          {/* Base Product Price - hidden for products whose stock lives only on models/batches */}
+          {!(product.stock_quantity === 0 && batches.length > 0) && (
           <button
             onClick={() => onSelect(product.sale_price)}
             disabled={product.stock_quantity === 0}
@@ -81,6 +82,7 @@ export default function BatchSelectionModal({
               </div>
             </div>
           </button>
+          )}
 
           {/* Batch Prices */}
           {isLoading ? (
@@ -92,7 +94,7 @@ export default function BatchSelectionModal({
               <div className="flex items-center gap-2 pt-2">
                 <Layers size={16} className="text-slate-400" />
                 <p className="text-sm font-medium text-slate-500">
-                  Available Batches ({batches.length})
+                  Phone models / batches ({batches.length})
                 </p>
               </div>
 
@@ -164,7 +166,7 @@ export default function BatchSelectionModal({
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-slate-400">
               <Package size={32} className="mb-2" />
-              <p className="text-sm">No batches available</p>
+              <p className="text-sm">No models or batches available</p>
             </div>
           )}
         </div>

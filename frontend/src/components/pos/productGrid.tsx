@@ -260,7 +260,14 @@ export default function ProductGrid({
         ) : (
           <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-4">
             {products.map((product) => {
-              const isOutOfStock = product.stock_quantity <= 0;
+              // Stock on phone models / batches counts toward the total shown
+              const totalStock =
+                Number(product.stock_quantity) +
+                (product.batches || []).reduce(
+                  (sum, b) => sum + Number(b.quantity || 0),
+                  0,
+                );
+              const isOutOfStock = totalStock <= 0;
               const cartItem = cartItems.find(
                 (item) => item.product_id === product.id,
               );
@@ -289,7 +296,8 @@ export default function ProductGrid({
                   {hasBatches && !isOutOfStock && (
                     <span className="absolute top-2 left-2 sm:top-3 sm:left-3 flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium text-blue-700">
                       <Layers size={10} />
-                      {product.batches?.length} batches
+                      {product.batches?.length}{" "}
+                      {product.batches?.length === 1 ? "model" : "models"}
                     </span>
                   )}
 
@@ -324,7 +332,6 @@ export default function ProductGrid({
                             setOpen(true);
                             setFormData({
                               product_name: product.product_name,
-                              sku: product.sku,
                               category_id: product.category_id,
                               cost_price: product.cost_price,
                               sale_price: product.sale_price,
@@ -333,6 +340,7 @@ export default function ProductGrid({
                               status: product.status,
                               barcode: product.barcode || "",
                               description: product.description || "",
+                              variants: [],
                             });
                           }}
                           className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gray-300"
@@ -366,10 +374,10 @@ export default function ProductGrid({
                           <span
                             className={`text-xs sm:text-sm font-medium ${isOutOfStock ? "text-red-500" : "text-gray-700"}`}
                           >
-                            {product.stock_quantity} {product.unit}
+                            {totalStock} {product.unit}
                           </span>
-                          {product.stock_quantity <= 5 &&
-                            product.stock_quantity > 0 && (
+                          {totalStock <= 5 &&
+                            totalStock > 0 && (
                               <p className="text-[10px] sm:text-xs text-orange-500">
                                 Low stock
                               </p>

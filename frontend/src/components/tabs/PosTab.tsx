@@ -294,7 +294,13 @@ export default function PointOfSalesPage() {
         const newQuantity = item.quantity + delta;
 
         if (newQuantity <= 0) return item;
-        if (product && newQuantity > product.stock_quantity) {
+        // Stock limit comes from the phone model / batch when one was chosen
+        const stockLimit = item.batch_id
+          ? (product?.batches?.find((b) => b.id === item.batch_id)?.quantity ??
+            product?.stock_quantity ??
+            0)
+          : (product?.stock_quantity ?? 0);
+        if (product && newQuantity > stockLimit) {
           return item;
         }
 

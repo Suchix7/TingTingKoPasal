@@ -119,7 +119,9 @@ export const useCreateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (
-      newProduct: Omit<Product, "id" | "created_at" | "updated_at">,
+      newProduct: Omit<Product, "id" | "sku" | "created_at" | "updated_at"> & {
+        variants?: { model: string; quantity: number }[];
+      },
     ) => {
       const res = await axiosInstance.post<Product>("/products", newProduct);
       return res.data;
@@ -147,7 +149,7 @@ export const useCreateProduct = () => {
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (updatedProduct: Product) => {
+    mutationFn: async (updatedProduct: Omit<Product, "sku">) => {
       try {
         const res = await axiosInstance.put<Product>(
           `/products/${updatedProduct.id}`,

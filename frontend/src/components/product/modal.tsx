@@ -62,7 +62,6 @@ export default function ProductModal({
     if (selectedProduct) {
       setFormData({
         product_name: selectedProduct.product_name || "",
-        sku: selectedProduct.sku || "",
         barcode: selectedProduct.barcode || "",
         description: selectedProduct.description || "",
         status: selectedProduct.status || "Active",
@@ -71,6 +70,7 @@ export default function ProductModal({
         cost_price: selectedProduct.cost_price || 0,
         sale_price: selectedProduct.sale_price || 0,
         stock_quantity: selectedProduct.stock_quantity || 0,
+        variants: [],
       });
       setOriginalCostPrice(selectedProduct.cost_price || 0);
       setPhotoPreview(selectedProduct.photo_url || null);
@@ -116,6 +116,36 @@ export default function ProductModal({
     }));
   };
 
+  const hasVariants = !isEditMode && formData.variants.length > 0;
+  const variantsTotal = formData.variants.reduce(
+    (sum, v) => sum + (Number(v.quantity) || 0),
+    0,
+  );
+
+  const addVariant = () =>
+    setFormData((prev) => ({
+      ...prev,
+      variants: [...prev.variants, { model: "", quantity: 1 }],
+    }));
+
+  const updateVariant = (
+    index: number,
+    field: "model" | "quantity",
+    value: string | number,
+  ) =>
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v, i) =>
+        i === index ? { ...v, [field]: value } : v,
+      ),
+    }));
+
+  const removeVariant = (index: number) =>
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index),
+    }));
+
   const handleBarcodeScanned = (barcode: string) => {
     handleChange("barcode", barcode);
     toast.success("Barcode added to form");
@@ -135,6 +165,26 @@ export default function ProductModal({
     if (!formData.unit.trim()) {
       toast.error("Unit is required.");
       return false;
+    }
+
+    if (!isEditMode && formData.variants.length > 0) {
+      const names = formData.variants.map((v) => v.model.trim().toLowerCase());
+      if (names.some((n) => !n)) {
+        toast.error("Enter a phone model name for every row, or remove the row.");
+        return false;
+      }
+      if (new Set(names).size !== names.length) {
+        toast.error("Each phone model can only be listed once.");
+        return false;
+      }
+      if (
+        formData.variants.some(
+          (v) => !Number.isInteger(Number(v.quantity)) || Number(v.quantity) < 0,
+        )
+      ) {
+        toast.error("Phone model quantities must be whole numbers, 0 or more.");
+        return false;
+      }
     }
 
     if (Number(formData.cost_price) < 0) {
@@ -168,7 +218,6 @@ export default function ProductModal({
       const payload = {
         ...formData,
         product_name: formData.product_name.trim(),
-        sku: formData.sku.trim(),
         category_id: formData.category_id,
         unit: formData.unit.trim(),
         barcode:
@@ -232,7 +281,6 @@ export default function ProductModal({
       const payload = {
         ...formData,
         product_name: formData.product_name.trim(),
-        sku: formData.sku.trim(),
         category_id: formData.category_id,
         unit: formData.unit.trim(),
         barcode:
@@ -357,20 +405,6 @@ export default function ProductModal({
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  SKU
-                </label>
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => handleChange("sku", e.target.value)}
-                  placeholder="Enter SKU"
-                  disabled={isSubmitting}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
                   Category
                 </label>
                 <DropdownWithSearch
@@ -449,6 +483,7 @@ export default function ProductModal({
                 />
               </div>
 
+              {!hasVariants && (
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Stock Quantity
@@ -468,6 +503,79 @@ export default function ProductModal({
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
               </div>
+              )}
+
+              {!isEditMode && (
+                <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">
+                        Phone models (optional)
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        For covers and similar items: add each phone model with
+                        its own stock. Leave empty for a normal product.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addVariant}
+                      disabled={isSubmitting}
+                      className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      + Add model
+                    </button>
+                  </div>
+
+                  {formData.variants.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {formData.variants.map((variant, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="e.g. iPhone 13"
+                            value={variant.model}
+                            onChange={(e) =>
+                              updateVariant(index, "model", e.target.value)
+                            }
+                            disabled={isSubmitting}
+                            className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Qty"
+                            value={String(variant.quantity)}
+                            onChange={(e) =>
+                              updateVariant(
+                                index,
+                                "quantity",
+                                e.target.value === ""
+                                  ? 0
+                                  : parseInt(e.target.value, 10),
+                              )
+                            }
+                            disabled={isSubmitting}
+                            className="w-24 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeVariant(index)}
+                            disabled={isSubmitting}
+                            aria-label="Remove model"
+                            className="rounded-lg px-2 py-2 text-slate-400 transition hover:bg-slate-200 hover:text-red-600"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <p className="pt-1 text-xs text-slate-500">
+                        Total stock: {variantsTotal}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">

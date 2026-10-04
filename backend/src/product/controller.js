@@ -19,14 +19,27 @@ export const createProduct = async (req, res) => {
       status,
       barcode,
       description,
+      variants,
     } = req.body;
+
+    // Optional phone-model variants: [{ model, quantity }], each tracked as
+    // its own stock line (a product batch named after the model).
+    const variantList = Array.isArray(variants)
+      ? variants
+          .map((v) => ({
+            model: String(v?.model ?? "").trim(),
+            quantity: Number(v?.quantity ?? 0),
+          }))
+          .filter((v) => v.model)
+      : [];
+    const hasVariants = variantList.length > 0;
 
     if (
       !product_name ||
       !category_id ||
       cost_price === undefined ||
       sale_price === undefined ||
-      stock_quantity === undefined ||
+      (!hasVariants && stock_quantity === undefined) ||
       !unit ||
       !status
     ) {
@@ -38,7 +51,27 @@ export const createProduct = async (req, res) => {
 
     const parsedCostPrice = Number(cost_price);
     const parsedSalePrice = Number(sale_price);
-    const parsedStockQuantity = Number(stock_quantity);
+    // With variants, stock lives on the variants, not on the product itself
+    const parsedStockQuantity = hasVariants ? 0 : Number(stock_quantity);
+
+    const variantNames = new Set(variantList.map((v) => v.model.toLowerCase()));
+    if (variantNames.size !== variantList.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Each phone model can only be listed once",
+      });
+    }
+    if (
+      variantList.some(
+        (v) =>
+          Number.isNaN(v.quantity) || v.quantity < 0 || !Number.isInteger(v.quantity),
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Variant quantities must be whole numbers, 0 or more",
+      });
+    }
 
     if (
       Number.isNaN(parsedCostPrice) ||
@@ -112,12 +145,34 @@ export const createProduct = async (req, res) => {
       },
     });
 
-    await InventoryTransaction.create({
-      productId: newProduct._id,
-      type: "IN",
-      quantity: parsedStockQuantity,
-      referenceType: "INITIAL_STOCK",
-    });
+    if (hasVariants) {
+      for (const variant of variantList) {
+        const batch = await ProductBatch.create({
+          productId: newProduct._id,
+          batchNumber: variant.model,
+          quantity: variant.quantity,
+          costPrice: parsedCostPrice,
+          salePrice: parsedSalePrice,
+        });
+
+        if (variant.quantity > 0) {
+          await InventoryTransaction.create({
+            productId: newProduct._id,
+            batchId: batch._id,
+            type: "IN",
+            quantity: variant.quantity,
+            referenceType: "CREATE_BATCH",
+          });
+        }
+      }
+    } else {
+      await InventoryTransaction.create({
+        productId: newProduct._id,
+        type: "IN",
+        quantity: parsedStockQuantity,
+        referenceType: "INITIAL_STOCK",
+      });
+    }
 
     return res.status(201).json({
       success: true,

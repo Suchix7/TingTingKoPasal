@@ -66,18 +66,6 @@ export const createProductBatch = async (req, res) => {
       });
     }
 
-    const costExistingBatch = await ProductBatch.findOne({
-      productId: product_id,
-      costPrice: parsedCostPrice,
-    });
-
-    if (costExistingBatch) {
-      return res.status(409).json({
-        success: false,
-        message: "A batch with the same cost price already exists for this product",
-      });
-    }
-
     const newBatch = await ProductBatch.create({
       productId: product_id,
       batchNumber: trimmedBatchNumber,
@@ -178,19 +166,6 @@ export const updateProductBatch = async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "A batch with the same batch number already exists for this product",
-      });
-    }
-
-    const batchWithSameCost = await ProductBatch.findOne({
-      productId: updatedProductId,
-      costPrice: updatedCostPrice,
-      _id: { $ne: id },
-    });
-
-    if (batchWithSameCost) {
-      return res.status(409).json({
-        success: false,
-        message: "A batch with the same cost price already exists for this product",
       });
     }
 
