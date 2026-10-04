@@ -44,6 +44,26 @@ export type CartItem = {
   batch_id?: string;
   batch_number?: string;
   cost_price?: number;
+  // Optional: price actually charged when lower than the marked unit_price
+  sold_price?: number;
+  discount_reason?: string;
+};
+
+// Single place that works out an item's discount and line total, so quantity,
+// tax and "sold at" changes can never disagree with each other.
+const repriceItem = (item: CartItem): CartItem => {
+  const discount =
+    item.sold_price !== undefined && item.sold_price < item.unit_price
+      ? Math.round((item.unit_price - item.sold_price) * item.quantity * 100) / 100
+      : 0;
+  const gross = item.unit_price * item.quantity - discount;
+  const tax = (item.tax_amount || 0) * item.quantity;
+
+  return {
+    ...item,
+    discount_amount: discount,
+    total_price: item.tax_inclusive ? gross : gross + tax,
+  };
 };
 
 const emptyCustomerForm: Omit<Customer, "id" | "created_at" | "updated_at"> = {
@@ -152,17 +172,7 @@ export default function PointOfSalesPage() {
   const [discountValue, setDiscountValue] = useState(0);
 
   const grandTotal = useMemo(() => {
-    let total = cartItems.reduce((sum, item) => {
-      if (item.tax_inclusive) {
-        return sum + item.total_price;
-      } else {
-        return (
-          sum +
-          item.unit_price * item.quantity +
-          (item.tax_amount || 0) * item.quantity
-        );
-      }
-    }, 0);
+    let total = cartItems.reduce((sum, item) => sum + item.total_price, 0);
 
     // Apply global discount
     total -= discountAmount;
@@ -226,17 +236,7 @@ export default function PointOfSalesPage() {
           )
             return item;
 
-          const newQuantity = item.quantity + 1;
-          const basePrice = newQuantity * item.unit_price;
-          const taxAmount = (item.tax_amount || 0) * newQuantity;
-
-          return {
-            ...item,
-            quantity: newQuantity,
-            total_price: item.tax_inclusive
-              ? basePrice
-              : basePrice + taxAmount - item.discount_amount,
-          };
+          return repriceItem({ ...item, quantity: item.quantity + 1 });
         });
       }
 
@@ -304,16 +304,7 @@ export default function PointOfSalesPage() {
           return item;
         }
 
-        const basePrice = newQuantity * item.unit_price;
-        const taxAmount = (item.tax_amount || 0) * newQuantity;
-
-        return {
-          ...item,
-          quantity: newQuantity,
-          total_price: item.tax_inclusive
-            ? basePrice
-            : basePrice + taxAmount - item.discount_amount,
-        };
+        return repriceItem({ ...item, quantity: newQuantity });
       }),
     );
   };
@@ -332,16 +323,7 @@ export default function PointOfSalesPage() {
 
         if (!isCorrectItem) return item;
 
-        const basePrice = item.unit_price * item.quantity;
-        const newTaxAmount = taxAmount * item.quantity;
-
-        return {
-          ...item,
-          tax_amount: taxAmount,
-          total_price: item.tax_inclusive
-            ? basePrice
-            : basePrice + newTaxAmount - item.discount_amount,
-        };
+        return repriceItem({ ...item, tax_amount: taxAmount });
       }),
     );
   };
@@ -360,16 +342,28 @@ export default function PointOfSalesPage() {
 
         if (!isCorrectItem) return item;
 
-        const basePrice = item.unit_price * item.quantity;
-        const taxAmount = (item.tax_amount || 0) * item.quantity;
+        return repriceItem({ ...item, tax_inclusive: isInclusive });
+      }),
+    );
+  };
 
-        return {
-          ...item,
-          tax_inclusive: isInclusive,
-          total_price: isInclusive
-            ? basePrice
-            : basePrice + taxAmount - item.discount_amount,
-        };
+  // Optional per-item "sold at" price (lower than marked) and the reason why.
+  // Works the same for cash and online payments: the discount is stored on
+  // the sale item, and the payment is whatever was actually paid.
+  const updateItemDiscount = (
+    productId: string,
+    batchId: string | undefined,
+    patch: { sold_price?: number | undefined; discount_reason?: string },
+  ) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        const isCorrectItem = batchId
+          ? item.product_id === productId && item.batch_id === batchId
+          : item.product_id === productId && !item.batch_id;
+
+        if (!isCorrectItem) return item;
+
+        return repriceItem({ ...item, ...patch });
       }),
     );
   };
@@ -592,6 +586,7 @@ export default function PointOfSalesPage() {
           updateQuantity={updateQuantity}
           updateProductTax={updateProductTax}
           updateProductTaxInclusive={updateProductTaxInclusive}
+          updateItemDiscount={updateItemDiscount}
           customerId={customerId}
           setCustomerId={setCustomerId}
           openCustomerModal={(customer) => {

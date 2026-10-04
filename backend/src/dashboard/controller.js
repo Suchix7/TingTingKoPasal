@@ -5,6 +5,7 @@ import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 import PaymentMethod from "../models/PaymentMethod.js";
 import Expense from "../models/Expense.js";
+import { totalStockStages } from "../utils/stock.js";
 
 const startOfDay = (date) => {
   const d = new Date(date);
@@ -128,20 +129,17 @@ export const getDashboardOverview = async (req, res) => {
 
     const [inventorySummaryAgg] = await Product.aggregate([
       { $match: { isDeleted: false } },
+      ...totalStockStages,
       {
         $group: {
           _id: null,
           lowStockCount: {
             $sum: {
-              $cond: [
-                { $lte: ["$stock.currentStock", "$stock.reorderLevel"] },
-                1,
-                0,
-              ],
+              $cond: [{ $lte: ["$totalStock", "$stock.reorderLevel"] }, 1, 0],
             },
           },
           outOfStockCount: {
-            $sum: { $cond: [{ $eq: ["$stock.currentStock", 0] }, 1, 0] },
+            $sum: { $cond: [{ $lte: ["$totalStock", 0] }, 1, 0] },
           },
         },
       },
@@ -270,20 +268,20 @@ export const getDashboardOverview = async (req, res) => {
       created_at: sale.createdAt,
     }));
 
-    const lowStockItemsDocs = await Product.find({
-      isDeleted: false,
-      $expr: { $lte: ["$stock.currentStock", "$stock.reorderLevel"] },
-    })
-      .sort({ "stock.currentStock": 1 })
-      .limit(8)
-      .lean();
+    const lowStockItemsDocs = await Product.aggregate([
+      { $match: { isDeleted: false } },
+      ...totalStockStages,
+      { $match: { $expr: { $lte: ["$totalStock", "$stock.reorderLevel"] } } },
+      { $sort: { totalStock: 1 } },
+      { $limit: 8 },
+    ]);
 
     const lowStockItems = lowStockItemsDocs.map((p) => ({
       id: p._id,
       product_id: p._id,
       product_name: p.productName,
       sku: p.sku,
-      current_stock: p.stock.currentStock,
+      current_stock: p.totalStock,
       reorder_level: p.stock.reorderLevel,
       reorder_quantity: p.stock.reorderQuantity,
     }));

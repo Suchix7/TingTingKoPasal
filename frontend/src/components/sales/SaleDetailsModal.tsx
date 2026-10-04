@@ -194,10 +194,29 @@ export default function SaleDetailsModal({
                               <p className="font-medium text-gray-900">
                                 {item.product_name}
                               </p>
+                              {Number(item.discount_amount) > 0 && (
+                                <p className="mt-0.5 text-xs text-amber-700">
+                                  Sold below marked price:{" "}
+                                  {money(item.discount_amount)} less
+                                  {item.discount_reason
+                                    ? ` (${item.discount_reason})`
+                                    : ""}
+                                </p>
+                              )}
                             </td>
                             <td className="px-4 py-3">{item.quantity}</td>
                             <td className="px-4 py-3">
                               {money(item.unit_price)}
+                              {Number(item.discount_amount) > 0 && (
+                                <p className="text-xs text-amber-700">
+                                  sold at{" "}
+                                  {money(
+                                    Number(item.unit_price) -
+                                      Number(item.discount_amount) /
+                                        Number(item.quantity),
+                                  )}
+                                </p>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               {money(item.cost_price)}

@@ -22,6 +22,20 @@ export const createSale = async (req, res) => {
         total: sale.grand_total,
         items: (sale.items || []).map((i) => `${i.product_name} x${i.quantity}`),
         customer: sale.customer_name || null,
+        payment: (sale.payments || [])
+          .map((p) => `${p.payment_method || p.payment_method_type}: ${rs(p.amount)}`)
+          .join(", "),
+        // Items sold for less than the marked price (and why, if noted)
+        sold_below_marked_price: (sale.items || [])
+          .filter((i) => Number(i.discount_amount) > 0)
+          .map((i) => {
+            const marked = Number(i.unit_price);
+            const sold = marked - Number(i.discount_amount) / Number(i.quantity);
+            return `${i.product_name}: marked ${rs(marked)}, sold ${rs(sold)}${
+              i.discount_reason ? ` (${i.discount_reason})` : ""
+            }`;
+          }),
+        bill_discount: Number(sale.discount_amount) > 0 ? sale.discount_amount : null,
       },
     });
     return res.status(201).json({
@@ -245,6 +259,7 @@ export const getSaleItems = async (req, res) => {
           quantity: item.quantity,
           unit_price: item.unitPrice,
           discount_amount: item.discountAmount,
+          discount_reason: item.discountReason || null,
           tax_amount: item.taxAmount,
           tax_inclusive: item.taxInclusive,
           total_price: item.totalPrice,

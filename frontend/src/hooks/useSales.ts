@@ -19,6 +19,7 @@ export type SaleItem = {
   batch_id?: string;
   product_name: string;
   sku?: string | null;
+  discount_reason?: string | null;
   quantity: number;
   unit_price: number;
   discount_amount: number;

@@ -32,7 +32,8 @@ const label = (action: string) =>
 function Details({ log }: { log: ActivityLog }) {
   if (!log.details) return null;
   const entries = Object.entries(log.details).filter(
-    ([, v]) => v !== null && v !== undefined && v !== "",
+    ([, v]) =>
+      v !== null && v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0),
   );
   if (entries.length === 0) return null;
 

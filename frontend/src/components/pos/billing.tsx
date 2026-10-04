@@ -49,6 +49,11 @@ interface BillingSectionProps {
     isInclusive: boolean,
     batchId?: string,
   ) => void;
+  updateItemDiscount?: (
+    productId: string,
+    batchId: string | undefined,
+    patch: { sold_price?: number | undefined; discount_reason?: string },
+  ) => void;
   customerId: string | null;
   setCustomerId: (id: string | null) => void;
   openCustomerModal: (customer?: Customer | null) => void;
@@ -368,6 +373,7 @@ export default function BillingSection({
   updateQuantity,
   updateProductTax,
   updateProductTaxInclusive,
+  updateItemDiscount,
   customerId,
   setCustomerId,
   openCustomerModal,
@@ -767,6 +773,60 @@ export default function BillingSection({
                           </p>
                         </div>
                       </div>
+
+                      {updateItemDiscount && (
+                        <div className="mt-3 border-t border-gray-200 pt-3">
+                          <div className="flex items-center gap-2">
+                            <label className="shrink-0 text-xs font-medium text-gray-600">
+                              Sold at (optional)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              inputMode="decimal"
+                              placeholder={String(item.unit_price)}
+                              value={item.sold_price ?? ""}
+                              onChange={(e) =>
+                                updateItemDiscount(item.product_id, item.batch_id, {
+                                  sold_price:
+                                    e.target.value === ""
+                                      ? undefined
+                                      : Math.max(Number(e.target.value), 0),
+                                })
+                              }
+                              className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-gray-400"
+                            />
+                          </div>
+
+                          {item.sold_price !== undefined &&
+                            item.sold_price >= item.unit_price && (
+                              <p className="mt-1 text-xs text-gray-400">
+                                Enter a price lower than Rs. {item.unit_price}{" "}
+                                to record a discount.
+                              </p>
+                            )}
+
+                          {item.discount_amount > 0 && (
+                            <div className="mt-2 space-y-1.5">
+                              <p className="text-xs font-medium text-amber-700">
+                                Below marked price: Rs. {item.discount_amount}{" "}
+                                less (marked Rs. {item.unit_price} each)
+                              </p>
+                              <input
+                                type="text"
+                                placeholder="Reason (optional)"
+                                value={item.discount_reason ?? ""}
+                                onChange={(e) =>
+                                  updateItemDiscount(item.product_id, item.batch_id, {
+                                    discount_reason: e.target.value,
+                                  })
+                                }
+                                className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-gray-400"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -17,6 +17,7 @@ import {
   type ProductFormData,
 } from "@/components/tabs/ProductTab";
 import { useDebounced } from "@/hooks/useDebounced";
+import { IPHONE_MODELS } from "@/lib/phoneModels";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
@@ -117,6 +118,11 @@ export default function ProductModal({
   };
 
   const hasVariants = !isEditMode && formData.variants.length > 0;
+  // Editing a product whose stock lives only on its phone models / batches
+  const stockOnModelsOnly =
+    isEditMode &&
+    (selectedProduct?.batches?.length ?? 0) > 0 &&
+    Number(selectedProduct?.stock_quantity ?? 0) === 0;
   const variantsTotal = formData.variants.reduce(
     (sum, v) => sum + (Number(v.quantity) || 0),
     0,
@@ -127,6 +133,27 @@ export default function ProductModal({
       ...prev,
       variants: [...prev.variants, { model: "", quantity: 1 }],
     }));
+
+  // Quick-add a known model; if it is already listed, leave it alone
+  const addKnownModel = (model: string) => {
+    if (!model) return;
+    setFormData((prev) =>
+      prev.variants.some((v) => v.model.trim().toLowerCase() === model.toLowerCase())
+        ? prev
+        : {
+            ...prev,
+            // reuse a trailing empty row instead of leaving it blank
+            variants:
+              prev.variants.length > 0 &&
+              !prev.variants[prev.variants.length - 1].model.trim()
+                ? [
+                    ...prev.variants.slice(0, -1),
+                    { model, quantity: prev.variants[prev.variants.length - 1].quantity || 1 },
+                  ]
+                : [...prev.variants, { model, quantity: 1 }],
+          },
+    );
+  };
 
   const updateVariant = (
     index: number,
@@ -483,7 +510,14 @@ export default function ProductModal({
                 />
               </div>
 
-              {!hasVariants && (
+              {stockOnModelsOnly && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                  Stock for this product is kept per phone model. Change
+                  quantities or add models on the Product Batches page.
+                </div>
+              )}
+
+              {!hasVariants && !stockOnModelsOnly && (
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Stock Quantity
@@ -527,12 +561,38 @@ export default function ProductModal({
                     </button>
                   </div>
 
+                  <select
+                    value=""
+                    onChange={(e) => addKnownModel(e.target.value)}
+                    disabled={isSubmitting}
+                    className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none focus:border-slate-400"
+                  >
+                    <option value="">Quick add an iPhone model...</option>
+                    {IPHONE_MODELS.map((model) => (
+                      <option
+                        key={model}
+                        value={model}
+                        disabled={formData.variants.some(
+                          (v) => v.model.trim().toLowerCase() === model.toLowerCase(),
+                        )}
+                      >
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                  <datalist id="phone-model-suggestions">
+                    {IPHONE_MODELS.map((model) => (
+                      <option key={model} value={model} />
+                    ))}
+                  </datalist>
+
                   {formData.variants.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {formData.variants.map((variant, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <input
                             type="text"
+                            list="phone-model-suggestions"
                             placeholder="e.g. iPhone 13"
                             value={variant.model}
                             onChange={(e) =>

@@ -193,7 +193,7 @@ export default function ProductBatchesPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Product Batches</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Track batch numbers, quantities, and pricing for better inventory
+            Track phone models and batches, with their own quantities and pricing, for better inventory
             management.
           </p>
         </div>
@@ -329,7 +329,7 @@ export default function ProductBatchesPage() {
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-5 py-3">S.N.</th>
-                <th className="px-5 py-3">Batch Number</th>
+                <th className="px-5 py-3">Model / Batch</th>
                 <th className="px-5 py-3">Product</th>
                 <th className="px-5 py-3">Quantity</th>
                 <th className="px-5 py-3">Cost Price</th>

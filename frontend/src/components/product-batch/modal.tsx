@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { IPHONE_MODELS } from "@/lib/phoneModels";
 import toast from "react-hot-toast";
 import {
   useCreateProductBatch,
@@ -192,7 +193,7 @@ export default function BatchModal({
     }
 
     if (!formData.batch_number.trim()) {
-      toast.error("Batch number is required.");
+      toast.error("Phone model / batch number is required.");
       return false;
     }
 
@@ -395,12 +396,13 @@ export default function BatchModal({
               {/* Batch Number */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Batch Number
+                  Phone Model / Batch Number
                 </label>
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="e.g., PRODUCT-20240101-1234"
+                    list="batch-phone-model-suggestions"
+                    placeholder="Pick a phone model, or keep the auto batch number"
                     value={formData.batch_number}
                     onChange={(e) =>
                       handleChange("batch_number", e.target.value)
@@ -421,6 +423,12 @@ export default function BatchModal({
                   )}
                 </div>
               </div>
+
+              <datalist id="batch-phone-model-suggestions">
+                {IPHONE_MODELS.map((model) => (
+                  <option key={model} value={model} />
+                ))}
+              </datalist>
 
               {/* Quantity */}
               <div>

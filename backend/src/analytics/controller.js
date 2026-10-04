@@ -5,6 +5,7 @@ import PaymentMethod from "../models/PaymentMethod.js";
 import PaymentMethodTransaction from "../models/PaymentMethodTransaction.js";
 import Expense from "../models/Expense.js";
 import Category from "../models/Category.js";
+import { totalStockStages } from "../utils/stock.js";
 
 const startOfDay = (date) => {
   const d = new Date(date);
@@ -205,14 +206,23 @@ export const getAnalyticsOverview = async (req, res) => {
     ]);
 
     const [inventorySummaryAgg] = await Product.aggregate([
+      ...totalStockStages,
       {
         $group: {
           _id: null,
-          stockValue: { $sum: { $multiply: ["$costPrice", "$stock.currentStock"] } },
-          lowStockCount: {
-            $sum: { $cond: [{ $lte: ["$stock.currentStock", "$stock.reorderLevel"] }, 1, 0] },
+          // own stock at the product cost + batch / phone-model stock at batch cost
+          stockValue: {
+            $sum: {
+              $add: [
+                { $multiply: ["$costPrice", { $ifNull: ["$stock.currentStock", 0] }] },
+                "$batchValue",
+              ],
+            },
           },
-          outOfStockCount: { $sum: { $cond: [{ $eq: ["$stock.currentStock", 0] }, 1, 0] } },
+          lowStockCount: {
+            $sum: { $cond: [{ $lte: ["$totalStock", "$stock.reorderLevel"] }, 1, 0] },
+          },
+          outOfStockCount: { $sum: { $cond: [{ $lte: ["$totalStock", 0] }, 1, 0] } },
         },
       },
     ]);
@@ -402,12 +412,12 @@ export const getAnalyticsOverview = async (req, res) => {
       },
     ]);
 
-    const lowStockItemsDocs = await Product.find({
-      $expr: { $lte: ["$stock.currentStock", "$stock.reorderLevel"] },
-    })
-      .sort({ "stock.currentStock": 1 })
-      .limit(10)
-      .lean();
+    const lowStockItemsDocs = await Product.aggregate([
+      ...totalStockStages,
+      { $match: { $expr: { $lte: ["$totalStock", "$stock.reorderLevel"] } } },
+      { $sort: { totalStock: 1 } },
+      { $limit: 10 },
+    ]);
 
     const lowStockItems = lowStockItemsDocs.map((p) => ({
       id: p._id,
@@ -416,10 +426,10 @@ export const getAnalyticsOverview = async (req, res) => {
       sku: p.sku,
       cost_price: p.costPrice,
       sale_price: p.salePrice,
-      current_stock: p.stock.currentStock,
+      current_stock: p.totalStock,
       reorder_level: p.stock.reorderLevel,
       reorder_quantity: p.stock.reorderQuantity,
-      shortage: p.stock.reorderLevel - p.stock.currentStock,
+      shortage: p.stock.reorderLevel - p.totalStock,
     }));
 
     const recentSalesDocs = await Sale.find(matchStage(range))

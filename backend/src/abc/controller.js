@@ -1,6 +1,7 @@
 import Product from "../models/Product.js";
 import Sale from "../models/Sale.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
+import { getBatchStockMap } from "../utils/stock.js";
 
 const DEFAULT_WEIGHTS = { revenue: 0.3, profit: 0.3, frequency: 0.2, turnover: 0.2 };
 
@@ -50,12 +51,16 @@ const calculateABCData = async ({ periodDays = 365, weights = DEFAULT_WEIGHTS })
 
   if (!products.length) return [];
 
+  const batchStockMap = await getBatchStockMap(products.map((p) => p._id));
+
   const calculatedProducts = products.map((product) => {
     const key = String(product._id);
     const sd = salesMap.get(key);
     const im = movementMap.get(key);
 
-    const currentStock = Number(product.stock?.currentStock || 0);
+    // own stock + stock held on batches / phone models
+    const currentStock =
+      Number(product.stock?.currentStock || 0) + (batchStockMap.get(key) || 0);
     const stockIn = Number(im?.stock_in || 0);
     const stockOut = Number(im?.stock_out || 0);
     const stockAdjustment = Number(im?.stock_adjustment || 0);

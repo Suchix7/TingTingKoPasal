@@ -1,6 +1,7 @@
 import Product from "../models/Product.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
 import PurchaseOrder from "../models/PurchaseOrder.js";
+import { getBatchStockMap } from "../utils/stock.js";
 
 const DEFAULT_LEAD_TIME_DAYS = 7;
 const DEFAULT_SAFETY_STOCK_DAYS = 3;
@@ -183,12 +184,16 @@ export const calculateEOQForAllProducts = async (req, res) => {
     ]);
     const orderingCostMap = new Map(orderingCostAgg.map((o) => [String(o._id), o.ordering_cost]));
 
+    const batchStockMap = await getBatchStockMap(products.map((p) => p._id));
+
     let rows = products.map((product) => {
       const yearlyDemand = Number(demandMap.get(String(product._id)) || 0);
       const orderingCost = Number(orderingCostMap.get(String(product._id)) || 0);
       const holdingCost = Number(product.costs?.holdingCostPerUnit || 0);
       const unitCost = Number(product.costPrice || 0);
-      const currentStock = Number(product.stock?.currentStock || 0);
+      const currentStock =
+        Number(product.stock?.currentStock || 0) +
+        (batchStockMap.get(String(product._id)) || 0);
       const savedReorderLevel = Number(product.stock?.reorderLevel || 0);
 
       const averageDailyDemand = yearlyDemand / 365;

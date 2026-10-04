@@ -9,6 +9,8 @@ const saleItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true },
     discountAmount: { type: Number, default: 0 },
+    // Optional note for why an item was sold below its marked price
+    discountReason: { type: String, default: "" },
     taxAmount: { type: Number, default: 0 },
     taxInclusive: { type: Boolean, default: false },
     totalPrice: { type: Number, required: true },
