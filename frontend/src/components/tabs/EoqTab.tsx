@@ -26,6 +26,14 @@ import {
 } from "@/hooks/useEoq";
 import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
+import {
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+  ListSkeleton,
+  Skeleton,
+} from "@/components/layout/Skeleton";
 
 type SortField =
   | "product_name"
@@ -50,6 +58,7 @@ interface ExtendedEoqCalculation extends EoqCalculation {
 }
 
 export default function EoqPlanningPage() {
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("total_inventory_cost");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
@@ -65,7 +74,7 @@ export default function EoqPlanningPage() {
 
   const debouncedSearch = useDebounced(search, 300);
 
-  const { data, isLoading, error, refetch } = useEoq(
+  const { data, isLoading, isFetching, error, refetch } = useEoq(
     null,
     page,
     limit,
@@ -202,16 +211,16 @@ export default function EoqPlanningPage() {
             <AlertTriangle className="h-10 w-10 text-red-400" />
           </div>
           <h3 className="mt-6 text-xl font-semibold text-slate-900">
-            Failed to Load EOQ Data
+            {t("Failed to Load EOQ Data")}
           </h3>
           <p className="mt-3 text-sm text-slate-500">
-            Please check your connection and try again.
+            {t("Please check your connection and try again.")}
           </p>
           <button
             onClick={() => refetch()}
             className="mt-6 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
           >
-            Retry
+            {t("Retry")}
           </button>
         </div>
       </div>
@@ -230,10 +239,10 @@ export default function EoqPlanningPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  EOQ & Inventory Planning
+                  {t("EOQ & Inventory Planning")}
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                  Economic Order Quantity recommendations and stock optimization
+                  {t("Economic Order Quantity recommendations and stock optimization")}
                 </p>
               </div>
             </div>
@@ -243,7 +252,7 @@ export default function EoqPlanningPage() {
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t("Search products...")}
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -256,6 +265,12 @@ export default function EoqPlanningPage() {
           </div>
 
           {/* Stats Cards */}
+          {isLoading && !stats && (
+            <StatCardsSkeleton
+              count={5}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+            />
+          )}
           {stats && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -265,7 +280,7 @@ export default function EoqPlanningPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                      Total Products
+                      {t("Total Products")}
                     </p>
                     <p className="mt-1 text-2xl font-bold text-slate-900">
                       {stats.totalProducts}
@@ -284,7 +299,7 @@ export default function EoqPlanningPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-red-600">
-                      Missing Cost Data
+                      {t("Missing Cost Data")}
                     </p>
                     <p className="mt-1 text-2xl font-bold text-red-700">
                       {stats.missingCostData}
@@ -303,7 +318,7 @@ export default function EoqPlanningPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-yellow-600">
-                      High Demand
+                      {t("High Demand")}
                     </p>
                     <p className="mt-1 text-2xl font-bold text-yellow-700">
                       {stats.highDemandProducts}
@@ -322,7 +337,7 @@ export default function EoqPlanningPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
-                      Urgent Reorder
+                      {t("Urgent Reorder")}
                     </p>
                     <p className="mt-1 text-2xl font-bold text-amber-700">
                       {stats.urgentReorder}
@@ -338,7 +353,7 @@ export default function EoqPlanningPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
-                      Avg. EOQ
+                      {t("Avg. EOQ")}
                     </p>
                     <p className="mt-1 text-2xl font-bold text-emerald-700">
                       {Math.ceil(stats.averageEoq || 0)}
@@ -356,7 +371,7 @@ export default function EoqPlanningPage() {
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-amber-500" />
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Action Required ({backendAlerts.length})
+                    {t("Action Required")} ({backendAlerts.length})
                   </h2>
                 </div>
                 <button
@@ -365,12 +380,12 @@ export default function EoqPlanningPage() {
                 >
                   {showAllAlerts ? (
                     <>
-                      Show Less
+                      {t("Show Less")}
                       <ChevronUp className="h-4 w-4" />
                     </>
                   ) : (
                     <>
-                      Show All ({backendAlerts.length})
+                      {t("Show All")} ({backendAlerts.length})
                       <ChevronDown className="h-4 w-4" />
                     </>
                   )}
@@ -391,7 +406,7 @@ export default function EoqPlanningPage() {
                       >
                         <AlertIcon className="h-5 w-5 shrink-0" />
                         <div className="flex-1">
-                          <p className="font-medium">{alert.productName}</p>
+                          <p className="font-medium"><Tn v={alert.productName} /></p>
                           <p className="text-sm opacity-90">{alert.message}</p>
                         </div>
                         <button
@@ -401,7 +416,7 @@ export default function EoqPlanningPage() {
                           }}
                           className="rounded-lg bg-white/50 cursor-pointer border border-current px-3 py-1.5 text-sm font-medium transition hover:bg-white"
                         >
-                          View Details
+                          {t("View Details")}
                         </button>
                       </div>
                     );
@@ -414,7 +429,7 @@ export default function EoqPlanningPage() {
           <div className="flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
               <Filter className="h-4 w-4 text-slate-400" />
-              <span className="text-sm text-slate-600">Sort by:</span>
+              <span className="text-sm text-slate-600">{t("Sort by:")}</span>
               <select
                 value={sortField}
                 onChange={(e) => {
@@ -423,11 +438,11 @@ export default function EoqPlanningPage() {
                 }}
                 className="text-sm font-medium outline-none"
               >
-                <option value="total_inventory_cost">Total Cost</option>
-                <option value="yearly_demand">Annual Demand</option>
-                <option value="eoq">EOQ</option>
-                <option value="product_name">Product Name</option>
-                <option value="missing_data">Missing Data</option>
+                <option value="total_inventory_cost">{t("Total Cost")}</option>
+                <option value="yearly_demand">{t("Annual Demand")}</option>
+                <option value="eoq">{t("EOQ")}</option>
+                <option value="product_name">{t("Product Name")}</option>
+                <option value="missing_data">{t("Missing Data")}</option>
               </select>
               <button
                 onClick={() => {
@@ -449,7 +464,7 @@ export default function EoqPlanningPage() {
                     : "border border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                Missing Cost
+                {t("Missing Cost")}
               </button>
               <button
                 onClick={() => handleFilterClick("highDemand")}
@@ -459,7 +474,7 @@ export default function EoqPlanningPage() {
                     : "border border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                High Demand
+                {t("High Demand")}
               </button>
               <button
                 onClick={() => handleFilterClick("urgentReorder")}
@@ -469,7 +484,7 @@ export default function EoqPlanningPage() {
                     : "border border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                Urgent Reorder
+                {t("Urgent Reorder")}
               </button>
             </div>
           </div>
@@ -477,52 +492,80 @@ export default function EoqPlanningPage() {
           {/* Main Table */}
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-24 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
+              <div aria-busy>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        {[
+                          "Product",
+                          "Annual Demand",
+                          "Costs",
+                          "EOQ",
+                          "Order Frequency",
+                          "Recommendation",
+                          "Status",
+                        ].map((label) => (
+                          <th
+                            key={label}
+                            className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
+                            {t(label)}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={6} cols={7} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="space-y-4 p-4 lg:hidden">
+                  <ListSkeleton rows={4} />
+                </div>
               </div>
             ) : !data?.data ||
               (isEoqArray(data.data) && data.data.length === 0) ? (
               <div className="p-12 text-center">
                 <Package className="mx-auto h-12 w-12 text-slate-300" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                  No products found
+                  {t("No products found")}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
-                  Try adjusting your search or filters.
+                  {t("Try adjusting your search or filters.")}
                 </p>
               </div>
             ) : (
-              <>
+              <div
+                className={`transition-opacity ${
+                  isFetching ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
                 {/* Desktop Table */}
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="min-w-full">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Product
+                          {t("Product")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Annual Demand
+                          {t("Annual Demand")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Costs
+                          {t("Costs")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          EOQ
+                          {t("EOQ")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Order Frequency
+                          {t("Order Frequency")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Recommendation
+                          {t("Recommendation")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Status
+                          {t("Status")}
                         </th>
                       </tr>
                     </thead>
@@ -550,7 +593,7 @@ export default function EoqPlanningPage() {
                               <td className="px-6 py-4">
                                 <div>
                                   <p className="font-medium text-slate-900">
-                                    {product.product_name}
+                                    <Tn v={product.product_name} />
                                   </p>
                                 </div>
                               </td>
@@ -569,12 +612,12 @@ export default function EoqPlanningPage() {
                               <td className="px-6 py-4">
                                 <div className="space-y-1 text-sm">
                                   <p>
-                                    Order: {formatted.formatted_ordering_cost}
+                                    {t("Order")}: {formatted.formatted_ordering_cost}
                                   </p>
                                   <p>
-                                    Hold: {formatted.formatted_holding_cost}
+                                    {t("Hold")}: {formatted.formatted_holding_cost}
                                   </p>
-                                  <p>Unit: {formatted.formatted_unit_cost}</p>
+                                  <p>{t("Unit")}: {formatted.formatted_unit_cost}</p>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
@@ -583,17 +626,17 @@ export default function EoqPlanningPage() {
                                     {formatted.formatted_eoq}
                                   </p>
                                   <p className="text-xs text-slate-500">
-                                    units
+                                    {t("units")}
                                   </p>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium">
-                                    {formatted.orders_per_year}/year
+                                    {formatted.orders_per_year}/{t("year")}
                                   </p>
                                   <p className="text-xs text-slate-500">
-                                    Every {formatted.order_interval_days} days
+                                    {t("Every")} {formatted.order_interval_days} {t("days")}
                                   </p>
                                 </div>
                               </td>
@@ -602,7 +645,7 @@ export default function EoqPlanningPage() {
                                   <div className="flex items-center gap-2 text-red-600">
                                     <XCircle className="h-4 w-4" />
                                     <span className="text-sm">
-                                      Missing cost data
+                                      {t("Missing cost data")}
                                     </span>
                                   </div>
                                 ) : (
@@ -610,21 +653,21 @@ export default function EoqPlanningPage() {
                                     {hasUrgentReorder ? (
                                       <>
                                         <p className="font-semibold text-amber-600">
-                                          Reorder now
+                                          {t("Reorder now")}
                                         </p>
                                         <p className="text-xs text-slate-500">
-                                          Stock {product.current_stock} /
-                                          Reorder at {product.reorder_point}
+                                          {t("Stock")} {product.current_stock} /{" "}
+                                          {t("Reorder at")} {product.reorder_point}
                                         </p>
                                       </>
                                     ) : (
                                       <>
                                         <p className="font-semibold text-emerald-600">
-                                          Stock level is safe
+                                          {t("Stock level is safe")}
                                         </p>
                                         <p className="text-xs text-slate-500">
-                                          Reorder at{" "}
-                                          {product.reorder_point ?? 0} units
+                                          {t("Reorder at")}{" "}
+                                          {product.reorder_point ?? 0} {t("units")}
                                         </p>
                                       </>
                                     )}
@@ -635,22 +678,22 @@ export default function EoqPlanningPage() {
                                 {hasMissingCostData ? (
                                   <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
                                     <FileWarning className="h-3 w-3" />
-                                    Missing Data
+                                    {t("Missing Data")}
                                   </span>
                                 ) : hasUrgentReorder ? (
                                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
                                     <AlertTriangle className="h-3 w-3" />
-                                    Reorder Soon
+                                    {t("Reorder Soon")}
                                   </span>
                                 ) : hasAlerts ? (
                                   <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
                                     <AlertCircle className="h-3 w-3" />
-                                    Has Alerts
+                                    {t("Has Alerts")}
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
                                     <CheckCircle2 className="h-3 w-3" />
-                                    Optimized
+                                    {t("Optimized")}
                                   </span>
                                 )}
                               </td>
@@ -684,7 +727,7 @@ export default function EoqPlanningPage() {
                           <div className="mb-3 flex items-start justify-between">
                             <div>
                               <h3 className="font-semibold text-slate-900">
-                                {product.product_name}
+                                <Tn v={product.product_name} />
                               </h3>
                             </div>
                             {hasMissingCostData ? (
@@ -722,37 +765,37 @@ export default function EoqPlanningPage() {
 
                           <div className="mb-3 grid grid-cols-2 gap-3 text-sm">
                             <div>
-                              <p className="text-slate-500">Annual Demand</p>
+                              <p className="text-slate-500">{t("Annual Demand")}</p>
                               <p className="font-semibold">
                                 {formatted.formatted_yearly_demand}
                               </p>
                             </div>
                             <div>
-                              <p className="text-slate-500">EOQ</p>
+                              <p className="text-slate-500">{t("EOQ")}</p>
                               <p className="text-xl font-bold text-slate-900">
                                 {formatted.formatted_eoq}
                               </p>
                             </div>
                             <div>
-                              <p className="text-slate-500">Orders/Year</p>
+                              <p className="text-slate-500">{t("Orders/Year")}</p>
                               <p>{formatted.orders_per_year}</p>
                             </div>
                             <div>
-                              <p className="text-slate-500">Order Interval</p>
-                              <p>{formatted.order_interval_days} days</p>
+                              <p className="text-slate-500">{t("Order Interval")}</p>
+                              <p>{formatted.order_interval_days} {t("days")}</p>
                             </div>
                           </div>
 
                           <div className="border-t border-slate-100 pt-3">
-                            <p className="mb-1 text-xs text-slate-500">Costs</p>
+                            <p className="mb-1 text-xs text-slate-500">{t("Costs")}</p>
                             <div className="flex gap-3 text-xs">
                               <span>
-                                Order: {formatted.formatted_ordering_cost}
+                                {t("Order")}: {formatted.formatted_ordering_cost}
                               </span>
                               <span>
-                                Hold: {formatted.formatted_holding_cost}
+                                {t("Hold")}: {formatted.formatted_holding_cost}
                               </span>
-                              <span>Unit: {formatted.formatted_unit_cost}</span>
+                              <span>{t("Unit")}: {formatted.formatted_unit_cost}</span>
                             </div>
                           </div>
                         </div>
@@ -766,11 +809,21 @@ export default function EoqPlanningPage() {
                   goToPage={goToPage}
                   pageNumbers={pageNumbers}
                 />
-              </>
+              </div>
             )}
           </div>
 
           {/* Recommendation Summary */}
+          {isLoading && !stats && (
+            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+              <Skeleton className="h-5 w-48" />
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+              </div>
+            </div>
+          )}
           {stats && (
             <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-6">
               <div className="flex items-start gap-4">
@@ -779,33 +832,32 @@ export default function EoqPlanningPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-slate-900">
-                    Quick Recommendations
+                    {t("Quick Recommendations")}
                   </h3>
                   <div className="mt-3 grid gap-3 sm:grid-cols-3">
                     <div>
                       <p className="text-sm font-medium text-emerald-700">
-                        Priority Reorder
+                        {t("Priority Reorder")}
                       </p>
                       <p className="text-sm text-slate-600">
-                        {stats.urgentReorder || 0} products need immediate
-                        attention
+                        {stats.urgentReorder || 0} {t("products need immediate attention")}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-emerald-700">
-                        Data Completeness
+                        {t("Data Completeness")}
                       </p>
                       <p className="text-sm text-slate-600">
-                        {stats.missingCostData || 0} products missing cost data
+                        {stats.missingCostData || 0} {t("products missing cost data")}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-emerald-700">
-                        Optimal Order Quantity
+                        {t("Optimal Order Quantity")}
                       </p>
                       <p className="text-sm text-slate-600">
                         {stats.totalProducts - (stats.missingCostData || 0)}{" "}
-                        products have EOQ calculated
+                        {t("products have EOQ calculated")}
                       </p>
                     </div>
                   </div>
@@ -835,12 +887,14 @@ function ProductDetailModal({
   productId: number;
   onClose: () => void;
 }) {
-  const { data, isLoading } = useEoq(productId);
+  const { t } = useLang();
+  const { data, isLoading, isPlaceholderData } = useEoq(productId);
+  const loading = isLoading || isPlaceholderData;
 
   if (!productId) return null;
 
   const product =
-    !isLoading && data?.data && !Array.isArray(data.data)
+    !loading && data?.data && !Array.isArray(data.data)
       ? formatEoqResult(data.data as EoqCalculation)
       : null;
 
@@ -851,7 +905,7 @@ function ProductDetailModal({
     >
       <div className="max-h-[90dvh] w-full max-w-2xl overflow-auto rounded-3xl bg-white shadow-2xl">
         <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white p-6">
-          <h2 className="text-xl font-bold text-slate-900">Product Details</h2>
+          <h2 className="text-xl font-bold text-slate-900">{t("Product Details")}</h2>
           <button
             onClick={onClose}
             className="rounded-lg p-2 transition hover:bg-slate-100"
@@ -861,15 +915,21 @@ function ProductDetailModal({
         </div>
 
         <div className="p-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              <div className="h-32 animate-pulse rounded-xl bg-slate-100" />
+          {loading ? (
+            <div className="space-y-6" aria-busy>
+              <Skeleton className="h-8 w-2/3" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
+              </div>
+              <Skeleton className="h-16 rounded-xl" />
             </div>
           ) : product ? (
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-bold text-slate-900">
-                  {product.product_name}
+                  <Tn v={product.product_name} />
                 </h3>
               </div>
 
@@ -877,7 +937,7 @@ function ProductDetailModal({
               {product.alerts && product.alerts.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold text-slate-700">
-                    Alerts
+                    {t("Alerts")}
                   </h4>
                   {product.alerts.map((alert, idx) => (
                     <div
@@ -900,7 +960,7 @@ function ProductDetailModal({
                         <TrendingUp className="h-5 w-5" />
                       )}
                       <div>
-                        <p className="text-sm font-medium">{alert.type}</p>
+                        <p className="text-sm font-medium">{t(alert.type)}</p>
                         <p className="text-sm opacity-90">{alert.message}</p>
                       </div>
                     </div>
@@ -910,39 +970,39 @@ function ProductDetailModal({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Annual Demand</p>
+                  <p className="text-sm text-slate-500">{t("Annual Demand")}</p>
                   <p className="text-2xl font-bold text-slate-900">
                     {product.formatted_yearly_demand}
                   </p>
                 </div>
                 <div className="rounded-xl bg-emerald-50 p-4">
-                  <p className="text-sm text-emerald-600">Recommended EOQ</p>
+                  <p className="text-sm text-emerald-600">{t("Recommended EOQ")}</p>
                   <p className="text-2xl font-bold text-emerald-700">
-                    {product.formatted_eoq} units
+                    {product.formatted_eoq} {t("units")}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Ordering Cost</p>
+                  <p className="text-sm text-slate-500">{t("Ordering Cost")}</p>
                   <p className="text-xl font-semibold">
                     {product.formatted_ordering_cost}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Holding Cost/Unit</p>
+                  <p className="text-sm text-slate-500">{t("Holding Cost/Unit")}</p>
                   <p className="text-xl font-semibold">
                     {product.formatted_holding_cost}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Unit Cost</p>
+                  <p className="text-sm text-slate-500">{t("Unit Cost")}</p>
                   <p className="text-xl font-semibold">
                     {product.formatted_unit_cost}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Orders Per Year</p>
+                  <p className="text-sm text-slate-500">{t("Orders Per Year")}</p>
                   <p className="text-xl font-semibold">
-                    {product.orders_per_year} times
+                    {product.orders_per_year} {t("times")}
                   </p>
                 </div>
               </div>
@@ -950,10 +1010,10 @@ function ProductDetailModal({
               {product.reorder_point && (
                 <div className="rounded-xl bg-amber-50 p-4">
                   <p className="text-sm font-medium text-amber-700">
-                    Reorder Point
+                    {t("Reorder Point")}
                   </p>
                   <p className="text-lg font-semibold text-amber-800">
-                    {product.reorder_point} units
+                    {product.reorder_point} {t("units")}
                   </p>
                 </div>
               )}
@@ -961,7 +1021,7 @@ function ProductDetailModal({
               {product.total_inventory_cost ? (
                 <div className="rounded-xl bg-slate-900 p-4 text-white">
                   <p className="text-sm opacity-80">
-                    Total Annual Inventory Cost
+                    {t("Total Annual Inventory Cost")}
                   </p>
                   <p className="text-2xl font-bold">
                     {product.formatted_total_cost}
@@ -972,7 +1032,7 @@ function ProductDetailModal({
           ) : (
             <div className="py-12 text-center">
               <AlertTriangle className="mx-auto h-12 w-12 text-slate-300" />
-              <p className="mt-4 text-slate-500">Product data not found</p>
+              <p className="mt-4 text-slate-500">{t("Product data not found")}</p>
             </div>
           )}
         </div>

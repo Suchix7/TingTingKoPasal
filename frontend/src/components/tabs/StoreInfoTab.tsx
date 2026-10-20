@@ -12,6 +12,8 @@ import {
   Save,
   Building2,
 } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import { Skeleton } from "@/components/layout/Skeleton";
 
 type FormState = {
   store_name: string;
@@ -28,6 +30,7 @@ const initialForm: FormState = {
 };
 
 export default function StorePage() {
+  const { t } = useLang();
   const { data: storeData, isLoading } = useStore();
   const createMutation = useCreateStore();
   const updateMutation = useUpdateStore();
@@ -57,22 +60,17 @@ export default function StorePage() {
 
   const validateForm = () => {
     if (!form.store_name.trim()) {
-      toast.error("Store name is required.");
+      toast.error(t("Store name is required."));
       return false;
     }
 
     if (!form.address.trim()) {
-      toast.error("Address is required.");
+      toast.error(t("Address is required."));
       return false;
     }
 
     if (!form.phone.trim()) {
-      toast.error("Phone number is required.");
-      return false;
-    }
-
-    if (!form.pan_vat_number.trim()) {
-      toast.error("PAN/VAT number is required.");
+      toast.error(t("Phone number is required."));
       return false;
     }
 
@@ -80,6 +78,7 @@ export default function StorePage() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!validateForm()) return;
 
     const payload = {
@@ -94,11 +93,11 @@ export default function StorePage() {
       : createMutation.mutateAsync(payload);
 
     toast.promise(promise, {
-      loading: store ? "Updating store information..." : "Creating store...",
-      success: store ? "Store information updated." : "Store created.",
+      loading: store ? t("Updating store information...") : t("Creating store..."),
+      success: store ? t("Store information updated.") : t("Store created."),
       error: store
-        ? "Failed to update store information."
-        : "Failed to create store.",
+        ? t("Failed to update store information.")
+        : t("Failed to create store."),
     });
 
     try {
@@ -107,28 +106,42 @@ export default function StorePage() {
     } catch {
       toast.error(
         store
-          ? "Failed to update store information."
-          : "Failed to create store.",
+          ? t("Failed to update store information.")
+          : t("Failed to create store."),
       );
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-dvh bg-gradient-to-b from-neutral-50 to-white p-6">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-8">
-            <div className="h-8 w-64 animate-pulse rounded-lg bg-neutral-200" />
-            <div className="mt-2 h-4 w-96 animate-pulse rounded-lg bg-neutral-200" />
+      <div
+        aria-busy
+        className="min-h-dvh bg-gradient-to-b from-neutral-50 to-white"
+      >
+        <div className="p-6">
+          <div className="mb-8 flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-80 max-w-full" />
+            </div>
           </div>
-          <div className="animate-pulse rounded-2xl bg-neutral-100 p-8">
-            <div className="space-y-6">
-              {[...Array(4)].map((_, i) => (
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div className="space-y-2 border-b border-gray-100 px-8 py-6">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-72 max-w-full" />
+            </div>
+            <div className="space-y-6 px-8 py-6">
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="space-y-2">
-                  <div className="h-4 w-32 rounded bg-neutral-200" />
-                  <div className="h-12 rounded-xl bg-neutral-200" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-[46px] w-full rounded-xl" />
                 </div>
               ))}
+            </div>
+            <div className="flex items-center justify-between rounded-b-2xl border-t border-gray-100 bg-neutral-50 px-8 py-4">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-11 w-36 rounded-xl" />
             </div>
           </div>
         </div>
@@ -148,10 +161,10 @@ export default function StorePage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Store Information
+                  {t("Store Information")}
                 </h1>
                 <p className="mt-1 text-sm text-gray-500">
-                  Manage your store details and business information.
+                  {t("Manage your store details and business information.")}
                 </p>
               </div>
             </div>
@@ -161,10 +174,10 @@ export default function StorePage() {
           <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-100 px-8 py-6">
               <h2 className="text-lg font-semibold text-neutral-900">
-                Business Details
+                {t("Business Details")}
               </h2>
               <p className="mt-1 text-sm text-neutral-500">
-                This information will appear on invoices and reports.
+                {t("This information will appear on invoices and reports.")}
               </p>
             </div>
 
@@ -175,7 +188,7 @@ export default function StorePage() {
                   htmlFor="store_name"
                   className="block text-sm font-medium text-neutral-700"
                 >
-                  Store Name
+                  {t("Store Name")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -188,7 +201,7 @@ export default function StorePage() {
                     onChange={(e) =>
                       handleInputChange("store_name", e.target.value)
                     }
-                    placeholder="Enter store name"
+                    placeholder={t("Enter store name")}
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
                 </div>
@@ -200,7 +213,7 @@ export default function StorePage() {
                   htmlFor="address"
                   className="block text-sm font-medium text-neutral-700"
                 >
-                  Address
+                  {t("Address")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -213,7 +226,7 @@ export default function StorePage() {
                     onChange={(e) =>
                       handleInputChange("address", e.target.value)
                     }
-                    placeholder="Enter store address"
+                    placeholder={t("Enter store address")}
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
                 </div>
@@ -225,7 +238,7 @@ export default function StorePage() {
                   htmlFor="phone"
                   className="block text-sm font-medium text-neutral-700"
                 >
-                  Phone Number
+                  {t("Phone Number")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -236,7 +249,7 @@ export default function StorePage() {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    placeholder="Enter phone number"
+                    placeholder={t("Enter phone number")}
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
                 </div>
@@ -248,7 +261,7 @@ export default function StorePage() {
                   htmlFor="pan_vat_number"
                   className="block text-sm font-medium text-neutral-700"
                 >
-                  PAN/VAT Number
+                  {t("PAN/VAT Number")}
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -261,7 +274,7 @@ export default function StorePage() {
                     onChange={(e) =>
                       handleInputChange("pan_vat_number", e.target.value)
                     }
-                    placeholder="Enter PAN/VAT number"
+                    placeholder={t("Enter PAN/VAT number")}
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
                 </div>
@@ -273,13 +286,13 @@ export default function StorePage() {
               <div className="text-sm text-neutral-500">
                 {store ? (
                   <>
-                    Last updated:{" "}
+                    {t("Last updated")}:{" "}
                     {store.updated_at
                       ? new Date(store.updated_at).toLocaleDateString()
-                      : "Never"}
+                      : t("Never")}
                   </>
                 ) : (
-                  "No store information yet"
+                  t("No store information yet")
                 )}
               </div>
 
@@ -291,12 +304,12 @@ export default function StorePage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {store ? "Saving..." : "Creating..."}
+                    {store ? t("Saving...") : t("Creating...")}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    {store ? "Save Changes" : "Create Store"}
+                    {store ? t("Save Changes") : t("Create Store")}
                   </>
                 )}
               </button>

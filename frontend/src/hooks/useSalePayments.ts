@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useMutation,
   useQuery,
@@ -108,7 +109,7 @@ export const useDeleteSalePayment = () => {
       }
     },
     onError: () => {
-      toast.error("Failed to delete sale payment. Please try again.");
+      toast.error(tr("Failed to delete sale payment. Please try again."));
     },
   });
 };

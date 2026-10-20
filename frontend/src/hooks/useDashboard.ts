@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 
@@ -141,7 +142,7 @@ const fetchDashboardOverview = async (
     const message =
       error?.response?.data?.message ||
       error?.message ||
-      "Failed to fetch dashboard overview";
+      tr("Failed to fetch dashboard overview");
 
     throw new Error(message);
   }

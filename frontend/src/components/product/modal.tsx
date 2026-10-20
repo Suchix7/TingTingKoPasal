@@ -20,6 +20,7 @@ import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
 import { ImagePlus } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 
 export default function ProductModal({
   closeModal,
@@ -29,6 +30,12 @@ export default function ProductModal({
   selectedProduct?: Product | null;
 }) {
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
+  const { t, lang, refreshNames } = useLang();
+  // Chinese name, shown instead of the English one when the panel is in Chinese
+  const [nameZh, setNameZh] = useState("");
+
+  // names changed here should show up right away once the form closes
+  useEffect(() => () => refreshNames(), [refreshNames]);
   const [searchCategoryTerm, setSearchCategoryTerm] = useState("");
   const debouncedSearchCategoryTerm = useDebounced(searchCategoryTerm, 300);
   const { data: categoriesData, isLoading: isCategoriesLoading } =
@@ -54,6 +61,7 @@ export default function ProductModal({
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    setNameZh(selectedProduct?.product_name_zh || "");
     if (selectedProduct) {
       setFormData({
         product_name: selectedProduct.product_name || "",
@@ -83,7 +91,7 @@ export default function ProductModal({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file.");
+      toast.error(t("Please select an image file."));
       return;
     }
 
@@ -94,10 +102,14 @@ export default function ProductModal({
   const uploadPhotoIfNeeded = async (productId: number | string) => {
     if (!photoFile) return;
 
+    // Visible even after the form closes: the toast outlives this modal
+    const toastId = toast.loading(t("Uploading photo..."));
     try {
       await uploadPhotoMutation.mutateAsync({ id: productId, file: photoFile });
+      toast.success(t("Photo uploaded"), { id: toastId });
     } catch (error) {
       console.error("Error uploading product photo:", error);
+      toast.error(t("Photo upload failed"), { id: toastId });
     }
   };
 
@@ -127,62 +139,69 @@ export default function ProductModal({
 
   const validateForm = () => {
     if (!formData.product_name.trim()) {
-      toast.error("Product name is required.");
+      toast.error(t("Product name is required."));
       return false;
     }
 
     if (!formData.category_id) {
-      toast.error("Category is required.");
+      toast.error(t("Category is required."));
       return false;
     }
 
     if (!formData.unit.trim()) {
-      toast.error("Unit is required.");
+      toast.error(t("Unit is required."));
       return false;
     }
 
     if (modelMode && formData.variants.length === 0) {
-      toast.error("Tick at least one phone model, or untick \"mobile cover\".");
+      toast.error(
+        t('Tick at least one phone model, or untick "mobile cover".'),
+      );
       return false;
     }
 
     if (!isEditMode && formData.variants.length > 0) {
       const names = formData.variants.map((v) => v.model.trim().toLowerCase());
       if (names.some((n) => !n)) {
-        toast.error("Enter a phone model name for every row, or remove the row.");
+        toast.error(
+          t("Enter a phone model name for every row, or remove the row."),
+        );
         return false;
       }
       if (new Set(names).size !== names.length) {
-        toast.error("Each phone model can only be listed once.");
+        toast.error(t("Each phone model can only be listed once."));
         return false;
       }
       if (
         formData.variants.some(
-          (v) => !Number.isInteger(Number(v.quantity)) || Number(v.quantity) < 0,
+          (v) =>
+            !Number.isInteger(Number(v.quantity)) || Number(v.quantity) < 0,
         )
       ) {
-        toast.error("Phone model quantities must be whole numbers, 0 or more.");
+        toast.error(
+          t("Phone model quantities must be whole numbers, 0 or more."),
+        );
         return false;
       }
     }
 
     if (Number(formData.cost_price) < 0) {
-      toast.error("Cost price cannot be negative.");
+      toast.error(t("Cost price cannot be negative."));
       return false;
     }
 
     if (Number(formData.sale_price) < 0) {
-      toast.error("Sale price cannot be negative.");
+      toast.error(t("Sale price cannot be negative."));
       return false;
     }
 
     if (Number(formData.stock_quantity) < 0) {
-      toast.error("Stock quantity cannot be negative.");
+      toast.error(t("Stock quantity cannot be negative."));
       return false;
     }
 
     if (Number(formData.cost_price || 0) > Number(formData.sale_price || 0)) {
-      toast.error("Cost price cannot be greater than sale price.");
+      toast.error(t("Cost price cannot be greater than sale price."));
       return false;
     }
 
@@ -197,6 +216,7 @@ export default function ProductModal({
       const payload = {
         ...formData,
         product_name: formData.product_name.trim(),
+        product_name_zh: nameZh.trim(),
         category_id: formData.category_id,
         unit: formData.unit.trim(),
         barcode:
@@ -260,6 +280,7 @@ export default function ProductModal({
       const payload = {
         ...formData,
         product_name: formData.product_name.trim(),
+        product_name_zh: nameZh.trim(),
         category_id: formData.category_id,
         unit: formData.unit.trim(),
         barcode:
@@ -278,8 +299,7 @@ export default function ProductModal({
         // Photo uploads can be slow on mobile; don't keep the form open for it
         void uploadPhotoIfNeeded(selectedProduct.id);
       } else {
-        const result: any =
-          await createProductMutation.mutateAsync(payload);
+        const result: any = await createProductMutation.mutateAsync(payload);
         const newProductId = result?.data?.id ?? result?.id;
         if (newProductId) {
           void uploadPhotoIfNeeded(newProductId);
@@ -306,12 +326,12 @@ export default function ProductModal({
           <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
-                {isEditMode ? "Update Product" : "Add Product"}
+                {isEditMode ? t("Update Product") : t("Add Product")}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {isEditMode
-                  ? "Update the product details in your inventory."
-                  : "Fill in the product details to add a new item."}
+                  ? t("Update the product details in your inventory.")
+                  : t("Fill in the product details to add a new item.")}
               </p>
             </div>
             <button
@@ -327,16 +347,16 @@ export default function ProductModal({
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Product Photo
+                  {t("Product Photo")}
                 </label>
                 <div className="flex items-center gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-32 sm:w-32">
                     {photoPreview ? (
                       <Image
                         src={photoPreview}
-                        alt="Product photo"
-                        width={80}
-                        height={80}
+                        alt={t("Product photo")}
+                        width={256}
+                        height={256}
                         unoptimized={photoPreview.startsWith("blob:")}
                         className="h-full w-full object-cover"
                       />
@@ -360,10 +380,10 @@ export default function ProductModal({
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <ImagePlus size={16} />
-                      {photoPreview ? "Change Photo" : "Upload Photo"}
+                      {photoPreview ? t("Change Photo") : t("Upload Photo")}
                     </button>
                     <p className="mt-1 text-xs text-slate-500">
-                      Used for visual confirmation when scanning at checkout.
+                      {t("Used for visual confirmation when scanning at checkout.")}
                     </p>
                   </div>
                 </div>
@@ -371,11 +391,11 @@ export default function ProductModal({
 
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Product Name
+                  {t("Product Name")}
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter product name"
+                  placeholder={t("Enter product name")}
                   value={formData.product_name}
                   onChange={(e) => handleChange("product_name", e.target.value)}
                   disabled={isSubmitting}
@@ -383,50 +403,75 @@ export default function ProductModal({
                 />
               </div>
 
+              <div className="sm:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  {lang === "zh" ? "中文名称" : t("Chinese name (中文名称)")}
+                </label>
+                <input
+                  type="text"
+                  placeholder="例如：蝴蝶凯蒂猫"
+                  value={nameZh}
+                  onChange={(e) => setNameZh(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {t("Shown instead of the English name when the panel is in Chinese.")}
+                </p>
+              </div>
+
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Category
+                  {t("Category")}
                 </label>
                 <DropdownWithSearch
                   options={
                     categoriesData?.data?.map((category) => ({
                       id: category.id,
                       label: category.category_name,
-                      sublabel: `Description: ${category.description || "N/A"}`,
+                      sublabel: `${t("Description")}: ${category.description || t("N/A")}`,
                       metadata: category,
                     })) || []
                   }
                   selectedId={formData.category_id}
                   onSelect={(option) => {
-                    setFormData({ ...formData, category_id: String(option?.id || "") });
-                    if (!isEditMode && /cover|case/i.test(option?.label ?? "")) {
+                    setFormData({
+                      ...formData,
+                      category_id: String(option?.id || ""),
+                    });
+                    if (
+                      !isEditMode &&
+                      /cover|case/i.test(option?.label ?? "")
+                    ) {
                       setIsMobileCover(true);
                     }
                   }}
                   isLoading={isCategoriesLoading}
-                  placeholder="Select category"
-                  searchPlaceholder="Search categories..."
+                  placeholder={t("Select category")}
+                  searchPlaceholder={t("Search categories...")}
                   disabled={isSubmitting}
-                  emptyMessage="No categories found"
+                  emptyMessage={t("No categories found")}
                   onSearch={(searchTerm) => {
                     setSearchCategoryTerm(searchTerm);
                   }}
                   showAddNew={true}
-                  addNewLabel="Add New Category"
+                  addNewLabel={t("Add New Category")}
                   onAddNew={() => setShowCategoryModal(true)}
                 />
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Cost Price{" "}
-                  <span className="font-normal text-slate-400">(optional)</span>
+                  {t("Cost Price")}{" "}
+                  <span className="font-normal text-slate-400">
+                    ({t("optional")})
+                  </span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Optional"
+                  placeholder={t("Optional")}
                   value={formData.cost_price ? String(formData.cost_price) : ""}
                   onChange={(e) =>
                     handleChange(
@@ -441,21 +486,24 @@ export default function ProductModal({
                 {isEditMode &&
                   Number(formData.cost_price) !== originalCostPrice && (
                     <p className="mt-1 text-xs text-amber-600">
-                      Cost price changed from NPR {originalCostPrice.toFixed(2)}
+                      {t("Cost price changed from")} NPR{" "}
+                      {originalCostPrice.toFixed(2)}
                     </p>
                   )}
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Sale Price{" "}
-                  <span className="font-normal text-slate-400">(optional)</span>
+                  {t("Sale Price")}{" "}
+                  <span className="font-normal text-slate-400">
+                    ({t("optional")})
+                  </span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Optional"
+                  placeholder={t("Optional")}
                   value={formData.sale_price ? String(formData.sale_price) : ""}
                   onChange={(e) =>
                     handleChange(
@@ -470,31 +518,32 @@ export default function ProductModal({
 
               {stockOnModelsOnly && (
                 <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  Stock for this product is kept per phone model. Change
-                  quantities or add models on the Product Batches page.
+                  {t("Stock for this product is kept per phone model. Change quantities or add models on the Product Batches page.")}
                 </div>
               )}
 
               {!modelMode && !stockOnModelsOnly && (
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Stock Quantity
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Enter stock quantity"
-                  value={String(formData.stock_quantity)}
-                  onChange={(e) =>
-                    handleChange(
-                      "stock_quantity",
-                      e.target.value === "" ? 0 : parseInt(e.target.value, 10),
-                    )
-                  }
-                  disabled={isSubmitting}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
-                />
-              </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    {t("Stock Quantity")}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder={t("Enter stock quantity")}
+                    value={String(formData.stock_quantity)}
+                    onChange={(e) =>
+                      handleChange(
+                        "stock_quantity",
+                        e.target.value === ""
+                          ? 0
+                          : parseInt(e.target.value, 10),
+                      )
+                    }
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+                </div>
               )}
 
               {!isEditMode && (
@@ -509,11 +558,10 @@ export default function ProductModal({
                     />
                     <span>
                       <span className="block text-sm font-medium text-slate-700">
-                        This is a mobile cover
+                        {t("This is a mobile cover")}
                       </span>
                       <span className="block text-xs text-slate-500">
-                        Tick the phone models it fits and set the quantity for
-                        each. Leave unticked for normal products.
+                        {t("Tick the phone models it fits and set the quantity for each. Leave unticked for normal products.")}
                       </span>
                     </span>
                   </label>
@@ -534,7 +582,7 @@ export default function ProductModal({
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Unit
+                  {t("Unit")}
                 </label>
                 <select
                   value={formData.unit}
@@ -542,17 +590,17 @@ export default function ProductModal({
                   disabled={isSubmitting}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
                 >
-                  <option value="">Select unit</option>
-                  <option>Piece</option>
-                  <option>Kg</option>
-                  <option>Liter</option>
-                  <option>Box</option>
+                  <option value="">{t("Select unit")}</option>
+                  <option value="Piece">{t("Piece")}</option>
+                  <option value="Kg">{t("Kg")}</option>
+                  <option value="Liter">{t("Liter")}</option>
+                  <option value="Box">{t("Box")}</option>
                 </select>
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Status
+                  {t("Status")}
                 </label>
                 <select
                   value={formData.status}
@@ -560,18 +608,18 @@ export default function ProductModal({
                   disabled={isSubmitting}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
                 >
-                  <option>Active</option>
-                  <option>Inactive</option>
+                  <option value="Active">{t("Active")}</option>
+                  <option value="Inactive">{t("Inactive")}</option>
                 </select>
               </div>
 
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Description
+                  {t("Description")}
                 </label>
                 <textarea
                   rows={4}
-                  placeholder="Write a short description"
+                  placeholder={t("Write a short description")}
                   value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
                   disabled={isSubmitting}
@@ -587,7 +635,7 @@ export default function ProductModal({
                 disabled={isSubmitting}
                 className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Cancel
+                {t("Cancel")}
               </button>
 
               <button
@@ -598,12 +646,12 @@ export default function ProductModal({
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    {isEditMode ? "Updating..." : "Saving..."}
+                    {isEditMode ? t("Updating...") : t("Saving...")}
                   </span>
                 ) : isEditMode ? (
-                  "Update Product"
+                  t("Update Product")
                 ) : (
-                  "Save Product"
+                  t("Save Product")
                 )}
               </button>
             </div>
@@ -632,42 +680,45 @@ export default function ProductModal({
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-slate-900">
-                Cost Price Changed
+                {t("Cost Price Changed")}
               </h3>
             </div>
 
             <p className="mb-4 text-sm text-slate-600">
-              The cost price has been changed from{" "}
+              {t("The cost price has been changed from")}{" "}
               <span className="font-semibold text-slate-900">
                 NPR {originalCostPrice.toFixed(2)}
               </span>{" "}
-              to{" "}
+              {t("to")}{" "}
               <span className="font-semibold text-slate-900">
                 NPR {Number(formData.cost_price).toFixed(2)}
               </span>
-              . How would you like to proceed?
+              . {t("How would you like to proceed?")}
             </p>
 
             <div className="space-y-3">
               <button
                 onClick={handleCreateNewBatch}
-                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                disabled={isSubmitting}
+                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
               >
-                Create New Batch with Updated Price
+                {t("Create New Batch with Updated Price")}
               </button>
 
               <button
                 onClick={handleUpdateWithCostPriceChange}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                disabled={isSubmitting}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               >
-                Update Product with New Cost Price
+                {t("Update Product with New Cost Price")}
               </button>
 
               <button
                 onClick={handleCostPriceDialogCancel}
+                disabled={isSubmitting}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                Cancel and Revert Cost Price
+                {t("Cancel and Revert Cost Price")}
               </button>
             </div>
           </div>

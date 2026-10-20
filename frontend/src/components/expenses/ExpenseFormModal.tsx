@@ -9,7 +9,10 @@ import type {
 } from "@/hooks/useExpenses";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import toast from "react-hot-toast";
+import { useLang } from "@/lib/i18n";
+import { Skeleton } from "@/components/layout/Skeleton";
 
+import Tn from "@/components/layout/Tn";
 export const CATEGORIES = [
   "Food",
   "Rent",
@@ -39,6 +42,7 @@ export default function ExpenseFormModal({
   isPending,
   money,
 }: ExpenseFormModalProps) {
+  const { t } = useLang();
   const [formData, setFormData] = useState<CreateExpenseInput>({
     expense_date: new Date().toISOString().split("T")[0],
     category: "Other",
@@ -69,16 +73,17 @@ export default function ExpenseFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
 
     if (!formData.payment_method_id) {
-      toast.error("Please select a payment method");
+      toast.error(t("Please select a payment method"));
       return;
     }
 
     if (
       (availableBalances[formData.payment_method_id] || 0) < formData.amount
     ) {
-      toast.error("Insufficient balance");
+      toast.error(t("Insufficient balance"));
       return;
     }
     await onSubmit(formData);
@@ -96,7 +101,7 @@ export default function ExpenseFormModal({
       <div className="max-h-[85dvh] overflow-y-auto w-full max-w-lg rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <h2 className="text-lg font-bold text-gray-900">
-            {mode === "create" ? "Add Expense" : "Edit Expense"}
+            {mode === "create" ? t("Add Expense") : t("Edit Expense")}
           </h2>
           <button
             onClick={onClose}
@@ -109,7 +114,7 @@ export default function ExpenseFormModal({
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date *
+              {t("Date")} *
             </label>
             <input
               type="date"
@@ -124,7 +129,7 @@ export default function ExpenseFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title *
+              {t("Title")} *
             </label>
             <input
               type="text"
@@ -132,7 +137,7 @@ export default function ExpenseFormModal({
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              placeholder="e.g., Office supplies purchase"
+              placeholder={t("e.g., Office supplies purchase")}
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
               required
             />
@@ -141,7 +146,7 @@ export default function ExpenseFormModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category *
+                {t("Category")} *
               </label>
               <select
                 value={formData.category}
@@ -153,7 +158,7 @@ export default function ExpenseFormModal({
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat}
+                    {t(cat)}
                   </option>
                 ))}
               </select>
@@ -161,7 +166,7 @@ export default function ExpenseFormModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount *
+                {t("Amount")} *
               </label>
               <input
                 type="number"
@@ -188,32 +193,36 @@ export default function ExpenseFormModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Method
+              {t("Payment Method")}
             </label>
-            <select
-              value={formData.payment_method_id || ""}
-              onChange={(e) => {
-                setFormData({
-                  ...formData,
-                  payment_method_id: e.target.value
-                    ? parseInt(e.target.value)
-                    : null,
-                });
-              }}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
-            >
-              <option value="">Select payment method</option>
-              {paymentMethods?.data?.map((method) => (
-                <option key={method.id} value={method.id}>
-                  {method.payment_method}
-                </option>
-              ))}
-            </select>
+            {paymentMethodsLoading ? (
+              <Skeleton className="h-[42px] w-full rounded-xl" />
+            ) : (
+              <select
+                value={formData.payment_method_id || ""}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    payment_method_id: e.target.value
+                      ? parseInt(e.target.value)
+                      : null,
+                  });
+                }}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
+              >
+                <option value="">{t("Select payment method")}</option>
+                {paymentMethods?.data?.map((method) => (
+                  <option key={method.id} value={method.id}>
+                    <Tn v={method.payment_method} />
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
+              {t("Notes")}
             </label>
             <textarea
               value={formData.notes || ""}
@@ -223,7 +232,7 @@ export default function ExpenseFormModal({
                   notes: e.target.value || null,
                 })
               }
-              placeholder="Add any additional notes..."
+              placeholder={t("Add any additional notes...")}
               rows={3}
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400 resize-none"
             />
@@ -233,18 +242,23 @@ export default function ExpenseFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl cursor-pointer border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+              disabled={isPending}
+              className="flex-1 rounded-xl cursor-pointer disabled:opacity-60 border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
-              disabled={isPending}
-              className="flex-1 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
+              disabled={isPending || paymentMethodsLoading}
+              className="flex-1 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending && <Loader2 size={16} className="animate-spin" />}
               <span>
-                {mode === "create" ? "Create Expense" : "Update Expense"}
+                {isPending
+                  ? t("Saving...")
+                  : mode === "create"
+                    ? t("Create Expense")
+                    : t("Update Expense")}
               </span>
             </button>
           </div>

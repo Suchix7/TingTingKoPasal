@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 
@@ -184,7 +185,7 @@ const fetchAnalyticsOverview = async (
     const message =
       error?.response?.data?.message ||
       error?.message ||
-      "Failed to fetch analytics overview";
+      tr("Failed to fetch analytics overview");
 
     throw new Error(message);
   }

@@ -23,7 +23,18 @@ import {
 import { useDebounced } from "@/hooks/useDebounced";
 import { format } from "date-fns";
 import Pagination from "@/components/layout/Pagination";
+import { useLang } from "@/lib/i18n";
+import {
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+  ListSkeleton,
+} from "@/components/layout/Skeleton";
 import { dateTime } from "@/utils/nepaliTime";
+
+import Tn from "@/components/layout/Tn";
+const typeKey = (v: string) => v.replace(/_/g, " ");
+const refKey = (v: string) =>
+  v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 const TransactionDetailsModal = ({
   transaction,
@@ -32,6 +43,7 @@ const TransactionDetailsModal = ({
   transaction: PaymentTransaction | null;
   onClose: () => void;
 }) => {
+  const { t } = useLang();
   if (!transaction) return null;
 
   const formatCurrency = (amount: number) => {
@@ -55,7 +67,7 @@ const TransactionDetailsModal = ({
               <DollarSign className="h-5 w-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-slate-900">
-              Transaction Details
+              {t("Transaction Details")}
             </h2>
           </div>
           <button
@@ -70,7 +82,7 @@ const TransactionDetailsModal = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Transaction ID
+                {t("Transaction ID")}
               </label>
               <p className="mt-1 font-mono text-sm text-slate-900">
                 #{transaction.id}
@@ -78,7 +90,7 @@ const TransactionDetailsModal = ({
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Date
+                {t("Date")}
               </label>
               <p className="mt-1 text-sm text-slate-900">
                 {format(new Date(transaction.transaction_date), "PPP")}
@@ -89,24 +101,24 @@ const TransactionDetailsModal = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Payment Method
+                {t("Payment Method")}
               </label>
               <p className="mt-1 font-medium text-slate-900">
-                {transaction.payment_method}
+                <Tn v={transaction.payment_method} />
               </p>
               {transaction.payment_method_type && (
                 <p className="text-xs capitalize text-slate-500">
-                  {transaction.payment_method_type}
+                  {t(transaction.payment_method_type)}
                 </p>
               )}
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Transaction Type
+                {t("Transaction Type")}
               </label>
               <div className="mt-1">
                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                  {transaction.transaction_type.replace(/_/g, " ")}
+                  {t(typeKey(transaction.transaction_type))}
                 </span>
               </div>
             </div>
@@ -115,10 +127,10 @@ const TransactionDetailsModal = ({
           {transaction.reference_type && (
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Reference
+                {t("Reference")}
               </label>
               <p className="mt-1 text-sm capitalize text-slate-600">
-                {transaction.reference_type.replace(/_/g, " ")}
+                {t(refKey(transaction.reference_type))}
                 {transaction.reference_id && (
                   <span className="ml-2 text-xs text-slate-400">
                     (#{transaction.reference_id})
@@ -130,7 +142,7 @@ const TransactionDetailsModal = ({
 
           <div className="rounded-xl bg-slate-50 p-4">
             <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              Amount
+              {t("Amount")}
             </label>
             <p
               className={`mt-1 text-3xl font-bold ${transaction.direction === "IN" ? "text-emerald-600" : "text-rose-600"}`}
@@ -140,7 +152,7 @@ const TransactionDetailsModal = ({
             </p>
             {transaction.signed_amount !== transaction.amount && (
               <p className="mt-1 text-xs text-slate-400">
-                Signed: {formatCurrency(transaction.signed_amount)}
+                {t("Signed")}: {formatCurrency(transaction.signed_amount)}
               </p>
             )}
           </div>
@@ -148,7 +160,7 @@ const TransactionDetailsModal = ({
           {transaction.title && (
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Title
+                {t("Title")}
               </label>
               <p className="mt-1 text-sm font-medium text-slate-900">
                 {transaction.title}
@@ -159,19 +171,19 @@ const TransactionDetailsModal = ({
           {transaction.notes && (
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Notes
+                {t("Notes")}
               </label>
               <p className="mt-1 text-sm text-slate-600">{transaction.notes}</p>
             </div>
           )}
 
           <div className="text-xs text-slate-400">
-            Created:{" "}
+            {t("Created")}:{" "}
             {format(new Date(transaction.created_at), "PPP 'at' h:mm a")}
             {transaction.updated_at && (
               <>
                 <br />
-                Updated:{" "}
+                {t("Updated")}:{" "}
                 {format(new Date(transaction.updated_at), "PPP 'at' h:mm a")}
               </>
             )}
@@ -196,6 +208,7 @@ const StatsCard = ({
   color: string;
   isCurrency?: boolean;
 }) => {
+  const { t } = useLang();
   const formatValue = (val: string | number) => {
     if (isCurrency && typeof val === "number") {
       return new Intl.NumberFormat("np-NP", {
@@ -218,7 +231,7 @@ const StatsCard = ({
         </div>
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-            {title}
+            {t(title)}
           </p>
           <p className="mt-1 text-xl font-bold text-slate-900">
             {formatValue(value)}
@@ -230,6 +243,7 @@ const StatsCard = ({
 };
 
 export default function PaymentTransactionsPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [search, setSearch] = useState("");
@@ -247,7 +261,7 @@ export default function PaymentTransactionsPage() {
 
   const debouncedSearch = useDebounced(search, 300);
 
-  const { data, isLoading, error } = usePaymentTransactions({
+  const { data, isLoading, isFetching, error } = usePaymentTransactions({
     page,
     limit,
     search: debouncedSearch,
@@ -312,10 +326,10 @@ export default function PaymentTransactionsPage() {
               <AlertCircle className="h-10 w-10 text-rose-400" />
             </div>
             <h3 className="mt-6 text-xl font-semibold text-slate-900">
-              Failed to Load Transactions
+              {t("Failed to Load Transactions")}
             </h3>
             <p className="mt-3 text-sm text-slate-500">
-              Please check your connection and try again.
+              {t("Please check your connection and try again.")}
             </p>
           </div>
         </div>
@@ -336,10 +350,10 @@ export default function PaymentTransactionsPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                    Payment Transactions
+                    {t("Payment Transactions")}
                   </h1>
                   <p className="mt-1 text-sm text-slate-500">
-                    Track all payment method inflows and outflows
+                    {t("Track all payment method inflows and outflows")}
                   </p>
                 </div>
               </div>
@@ -349,7 +363,7 @@ export default function PaymentTransactionsPage() {
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by title, notes..."
+                    placeholder={t("Search by title, notes...")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 sm:w-72"
@@ -364,11 +378,11 @@ export default function PaymentTransactionsPage() {
                   }`}
                 >
                   <Filter className="h-4 w-4" />
-                  Filters
+                  {t("Filters")}
                 </button>
                 <button className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                   <Download className="h-4 w-4" />
-                  Export
+                  {t("Export")}
                 </button>
               </div>
             </div>
@@ -379,7 +393,7 @@ export default function PaymentTransactionsPage() {
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Transaction Type
+                      {t("Transaction Type")}
                     </label>
                     <select
                       value={filters.transaction_type || ""}
@@ -388,22 +402,22 @@ export default function PaymentTransactionsPage() {
                       }
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
-                      <option value="">All Types</option>
-                      <option value="OPENING_BALANCE">Opening Balance</option>
-                      <option value="CAPITAL_ADDITION">Capital Addition</option>
-                      <option value="SALE_PAYMENT">Sale Payment</option>
-                      <option value="EXPENSE_PAYMENT">Expense Payment</option>
-                      <option value="PURCHASE_PAYMENT">Purchase Payment</option>
-                      <option value="WITHDRAWAL">Withdrawal</option>
-                      <option value="TRANSFER_IN">Transfer In</option>
-                      <option value="TRANSFER_OUT">Transfer Out</option>
-                      <option value="ADJUSTMENT_IN">Adjustment In</option>
-                      <option value="ADJUSTMENT_OUT">Adjustment Out</option>
+                      <option value="">{t("All Types")}</option>
+                      <option value="OPENING_BALANCE">{t("Opening Balance")}</option>
+                      <option value="CAPITAL_ADDITION">{t("Capital Addition")}</option>
+                      <option value="SALE_PAYMENT">{t("Sale Payment")}</option>
+                      <option value="EXPENSE_PAYMENT">{t("Expense Payment")}</option>
+                      <option value="PURCHASE_PAYMENT">{t("Purchase Payment")}</option>
+                      <option value="WITHDRAWAL">{t("Withdrawal")}</option>
+                      <option value="TRANSFER_IN">{t("Transfer In")}</option>
+                      <option value="TRANSFER_OUT">{t("Transfer Out")}</option>
+                      <option value="ADJUSTMENT_IN">{t("Adjustment In")}</option>
+                      <option value="ADJUSTMENT_OUT">{t("Adjustment Out")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Direction
+                      {t("Direction")}
                     </label>
                     <select
                       value={filters.direction || ""}
@@ -412,14 +426,14 @@ export default function PaymentTransactionsPage() {
                       }
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
-                      <option value="">All</option>
-                      <option value="IN">Inflow</option>
-                      <option value="OUT">Outflow</option>
+                      <option value="">{t("All")}</option>
+                      <option value="IN">{t("Inflow")}</option>
+                      <option value="OUT">{t("Outflow")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Reference Type
+                      {t("Reference Type")}
                     </label>
                     <select
                       value={filters.reference_type || ""}
@@ -428,22 +442,22 @@ export default function PaymentTransactionsPage() {
                       }
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
-                      <option value="">All References</option>
-                      <option value="sale">Sale</option>
-                      <option value="sale_payment">Sale Payment</option>
-                      <option value="expense">Expense</option>
-                      <option value="purchase_order">Purchase Order</option>
+                      <option value="">{t("All References")}</option>
+                      <option value="sale">{t("Sale")}</option>
+                      <option value="sale_payment">{t("Sale Payment")}</option>
+                      <option value="expense">{t("Expense")}</option>
+                      <option value="purchase_order">{t("Purchase Order")}</option>
                       <option value="purchase_order_payment">
-                        Purchase Order Payment
+                        {t("Purchase Order Payment")}
                       </option>
-                      <option value="manual">Manual</option>
-                      <option value="transfer">Transfer</option>
-                      <option value="adjustment">Adjustment</option>
+                      <option value="manual">{t("Manual")}</option>
+                      <option value="transfer">{t("Transfer")}</option>
+                      <option value="adjustment">{t("Adjustment")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Sort By
+                      {t("Sort By")}
                     </label>
                     <select
                       value={filters.sortBy || "date_desc"}
@@ -452,19 +466,19 @@ export default function PaymentTransactionsPage() {
                       }
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
-                      <option value="date_desc">Newest First</option>
-                      <option value="date_asc">Oldest First</option>
-                      <option value="amount_desc">Highest Amount</option>
-                      <option value="amount_asc">Lowest Amount</option>
-                      <option value="method_asc">Method (A-Z)</option>
-                      <option value="method_desc">Method (Z-A)</option>
-                      <option value="type_asc">Type (A-Z)</option>
-                      <option value="type_desc">Type (Z-A)</option>
+                      <option value="date_desc">{t("Newest First")}</option>
+                      <option value="date_asc">{t("Oldest First")}</option>
+                      <option value="amount_desc">{t("Highest Amount")}</option>
+                      <option value="amount_asc">{t("Lowest Amount")}</option>
+                      <option value="method_asc">{t("Method (A-Z)")}</option>
+                      <option value="method_desc">{t("Method (Z-A)")}</option>
+                      <option value="type_asc">{t("Type (A-Z)")}</option>
+                      <option value="type_desc">{t("Type (Z-A)")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      From Date
+                      {t("From Date")}
                     </label>
                     <input
                       type="date"
@@ -477,7 +491,7 @@ export default function PaymentTransactionsPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      To Date
+                      {t("To Date")}
                     </label>
                     <input
                       type="date"
@@ -493,7 +507,7 @@ export default function PaymentTransactionsPage() {
                       onClick={clearFilters}
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                     >
-                      Clear Filters
+                      {t("Clear Filters")}
                     </button>
                   </div>
                 </div>
@@ -502,85 +516,122 @@ export default function PaymentTransactionsPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatsCard
-              title="Total Inflows"
-              value={data?.stats?.total_in || 0}
-              icon={TrendingUp}
-              color="border-emerald-200"
-              isCurrency
+          {isLoading ? (
+            <StatCardsSkeleton
+              count={4}
+              className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
             />
-            <StatsCard
-              title="Total Outflows"
-              value={data?.stats?.total_out || 0}
-              icon={TrendingDown}
-              color="border-rose-200"
-              isCurrency
-            />
-            <StatsCard
-              title="Net Amount"
-              value={data?.stats?.net_amount || 0}
-              icon={ArrowUpDown}
-              color="border-blue-200"
-              isCurrency
-            />
-            <StatsCard
-              title="Transactions"
-              value={data?.stats?.total_transactions || 0}
-              icon={Calendar}
-              color="border-purple-200"
-            />
-          </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <StatsCard
+                title="Total Inflows"
+                value={data?.stats?.total_in || 0}
+                icon={TrendingUp}
+                color="border-emerald-200"
+                isCurrency
+              />
+              <StatsCard
+                title="Total Outflows"
+                value={data?.stats?.total_out || 0}
+                icon={TrendingDown}
+                color="border-rose-200"
+                isCurrency
+              />
+              <StatsCard
+                title="Net Amount"
+                value={data?.stats?.net_amount || 0}
+                icon={ArrowUpDown}
+                color="border-blue-200"
+                isCurrency
+              />
+              <StatsCard
+                title="Transactions"
+                value={data?.stats?.total_transactions || 0}
+                icon={Calendar}
+                color="border-purple-200"
+              />
+            </div>
+          )}
 
           {/* Transactions Table */}
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-16 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
-              </div>
+              <>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Date")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Payment Method")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Type")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Reference")}
+                        </th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Amount")}
+                        </th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={8} cols={6} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 lg:hidden">
+                  <ListSkeleton rows={5} />
+                </div>
+              </>
             ) : transactions.length === 0 ? (
               <div className="p-12 text-center">
                 <DollarSign className="mx-auto h-12 w-12 text-slate-300" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">
                   {hasActiveFilters
-                    ? "No matching transactions found"
-                    : "No transactions yet"}
+                    ? t("No matching transactions found")
+                    : t("No transactions yet")}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   {hasActiveFilters
-                    ? "Try adjusting your search or filters."
-                    : "Payment transactions will appear here once payment activities occur."}
+                    ? t("Try adjusting your search or filters.")
+                    : t("Payment transactions will appear here once payment activities occur.")}
                 </p>
               </div>
             ) : (
-              <>
+              <div
+                className={`transition-opacity ${
+                  isFetching ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
                 {/* Desktop Table View */}
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="min-w-full">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Date
+                          {t("Date")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Payment Method
+                          {t("Payment Method")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Type
+                          {t("Type")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Reference
+                          {t("Reference")}
                         </th>
                         <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Amount
+                          {t("Amount")}
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Actions
+                          {t("Actions")}
                         </th>
                       </tr>
                     </thead>
@@ -606,11 +657,11 @@ export default function PaymentTransactionsPage() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="font-medium text-slate-900">
-                              {transaction.payment_method}
+                              <Tn v={transaction.payment_method} />
                             </div>
                             {transaction.payment_method_type && (
                               <div className="text-xs capitalize text-slate-400">
-                                {transaction.payment_method_type}
+                                {t(transaction.payment_method_type)}
                               </div>
                             )}
                           </td>
@@ -622,20 +673,18 @@ export default function PaymentTransactionsPage() {
                                   : "bg-rose-50 text-rose-700"
                               }`}
                             >
-                              {transaction.transaction_type.replace(/_/g, " ")}
+                              {t(typeKey(transaction.transaction_type))}
                             </span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-slate-600">
                               {transaction.reference_type
-                                ? transaction.reference_type
-                                    .replace(/_/g, " ")
-                                    .replace(/\b\w/g, (c) => c.toUpperCase())
+                                ? t(refKey(transaction.reference_type))
                                 : "—"}
                             </div>
                             {transaction.reference_id && (
                               <div className="text-xs text-slate-400">
-                                ID: {transaction.reference_id}
+                                {t("ID")}: {transaction.reference_id}
                               </div>
                             )}
                           </td>
@@ -667,7 +716,7 @@ export default function PaymentTransactionsPage() {
                               className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
                             >
                               <Eye className="h-3.5 w-3.5" />
-                              View
+                              {t("View")}
                             </button>
                           </td>
                         </tr>
@@ -693,11 +742,11 @@ export default function PaymentTransactionsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-slate-900">
-                              {transaction.payment_method}
+                              <Tn v={transaction.payment_method} />
                             </h3>
                             {transaction.payment_method_type && (
                               <span className="text-xs capitalize text-slate-400">
-                                {transaction.payment_method_type}
+                                {t(transaction.payment_method_type)}
                               </span>
                             )}
                           </div>
@@ -720,13 +769,13 @@ export default function PaymentTransactionsPage() {
                               : "bg-rose-50 text-rose-700"
                           }`}
                         >
-                          {transaction.transaction_type.replace(/_/g, " ")}
+                          {t(typeKey(transaction.transaction_type))}
                         </span>
                       </div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
                         <div>
-                          <p className="text-xs text-slate-400">Amount</p>
+                          <p className="text-xs text-slate-400">{t("Amount")}</p>
                           <p
                             className={`text-lg font-bold ${
                               transaction.direction === "IN"
@@ -745,16 +794,16 @@ export default function PaymentTransactionsPage() {
                           onClick={() => setSelectedTransaction(transaction)}
                           className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                         >
-                          Details
+                          {t("Details")}
                         </button>
                       </div>
 
                       {transaction.reference_type && (
                         <div className="mt-3 border-t border-slate-100 pt-3">
                           <p className="text-xs text-slate-400">
-                            Reference:{" "}
+                            {t("Reference")}:{" "}
                             <span className="capitalize text-slate-600">
-                              {transaction.reference_type.replace(/_/g, " ")}
+                              {t(refKey(transaction.reference_type))}
                             </span>
                             {transaction.reference_id && (
                               <span className="text-slate-400">
@@ -774,7 +823,7 @@ export default function PaymentTransactionsPage() {
                     pageNumbers={pageNumbers}
                   />
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

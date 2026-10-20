@@ -38,8 +38,10 @@ import ReceiptPrinter, { ReceiptData } from "@/components/pos/ReceiptPrinter";
 import { prepareReceiptData } from "@/utils/receiptHelper";
 import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
+import { StatCardsSkeleton, TableRowsSkeleton, Skeleton } from "@/components/layout/Skeleton";
 import { dateTime } from "@/utils/nepaliTime";
 import axiosInstance from "@/lib/axiosInstance";
+import { useLang, tr } from "@/lib/i18n";
 
 const LIMIT = 20;
 
@@ -79,7 +81,7 @@ const getPaymentLabel = (payment: AnySalePayment) => {
     return payment.type;
   }
 
-  return `Method #${payment.payment_method_id}`;
+  return `${tr("Method")} #${payment.payment_method_id}`;
 };
 
 function StatusBadge({
@@ -128,8 +130,9 @@ function StatCard({
 }
 
 function PaymentsPreview({ payments }: { payments?: AnySalePayment[] }) {
+  const { t } = useLang();
   if (!payments?.length) {
-    return <span className="text-sm text-gray-400">No payments</span>;
+    return <span className="text-sm text-gray-400">{t("No payments")}</span>;
   }
 
   return (
@@ -146,7 +149,7 @@ function PaymentsPreview({ payments }: { payments?: AnySalePayment[] }) {
 
       {payments.length > 2 ? (
         <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
-          +{payments.length - 2} more
+          +{payments.length - 2} {t("more")}
         </span>
       ) : null}
     </div>
@@ -154,6 +157,7 @@ function PaymentsPreview({ payments }: { payments?: AnySalePayment[] }) {
 }
 
 export default function SalesPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -169,6 +173,7 @@ export default function SalesPage() {
   const [printSaleItems, setPrintSaleItems] = useState<any[]>([]);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   const { data, isLoading, isFetching } = useSales(
     page,
@@ -208,7 +213,7 @@ export default function SalesPage() {
         saleId: revokeTarget.id,
         reason: revokeReason.trim(),
       });
-      toast.success("Sale revoked. Stock restored and payments reversed.");
+      toast.success(t("Sale revoked. Stock restored and payments reversed."));
       setRevokeTarget(null);
       setRevokeReason("");
     } catch {
@@ -221,16 +226,18 @@ export default function SalesPage() {
 
     try {
       await deleteSale.mutateAsync(deleteConfirm.id);
-      toast.success("Sale deleted successfully.");
+      toast.success(t("Sale deleted successfully."));
       setDeleteConfirm(null);
     } catch {
-      toast.error("Failed to delete sale.");
+      toast.error(t("Failed to delete sale."));
     }
   };
 
   const handlePrintReceipt = async (sale: Sale) => {
+    if (printingId) return;
+    setPrintingId(sale.id);
     try {
-      toast.loading("Preparing receipt...");
+      toast.loading(t("Preparing receipt..."));
 
       const res = await axiosInstance.get<{
         success: boolean;
@@ -242,7 +249,7 @@ export default function SalesPage() {
       const saleItemsData = res.data;
 
       if (!saleItemsData?.data) {
-        toast.error("Failed to load sale items.");
+        toast.error(t("Failed to load sale items."));
         return;
       }
 
@@ -291,7 +298,9 @@ export default function SalesPage() {
       toast.dismiss();
     } catch (error) {
       console.error("Error preparing receipt:", error);
-      toast.error("Failed to prepare receipt.");
+      toast.error(t("Failed to prepare receipt."));
+    } finally {
+      setPrintingId(null);
     }
   };
 
@@ -315,39 +324,43 @@ export default function SalesPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sales</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Sales")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            View all sales, invoices, and sale payments.
+            {t("View all sales, invoices, and sale payments.")}
           </p>
         </div>
       </div>
 
+      {isLoading ? (
+        <StatCardsSkeleton className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4" />
+      ) : (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Profit"
+          title={t("Total Profit")}
           value={money(data?.stats?.totalProfit)}
           icon={TrendingUp}
-          subtitle="Completed filtered sales"
+          subtitle={t("Completed filtered sales")}
         />
         <StatCard
-          title="Paid"
+          title={t("Paid")}
           value={money(data?.stats?.totalPaid)}
           icon={CreditCard}
-          subtitle="Collected amount"
+          subtitle={t("Collected amount")}
         />
         <StatCard
-          title="Remaining"
+          title={t("Remaining")}
           value={money(data?.stats?.totalRemaining)}
           icon={FileText}
-          subtitle="Receivable amount"
+          subtitle={t("Receivable amount")}
         />
         <StatCard
-          title="Due Sales"
+          title={t("Due Sales")}
           value={data?.stats?.partialOrUnpaid || 0}
           icon={Package}
-          subtitle="Partial or unpaid"
+          subtitle={t("Partial or unpaid")}
         />
       </div>
+      )}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
@@ -359,7 +372,7 @@ export default function SalesPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search invoice, customer, or phone..."
+              placeholder={t("Search invoice, customer, or phone...")}
               className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
             />
           </div>
@@ -372,10 +385,10 @@ export default function SalesPage() {
               }
               className="w-full outline-none"
             >
-              <option value="All">All Payments</option>
-              <option value="Paid">Paid</option>
-              <option value="Partial">Partial</option>
-              <option value="Unpaid">Unpaid</option>
+              <option value="All">{t("All Payments")}</option>
+              <option value="Paid">{t("Paid")}</option>
+              <option value="Partial">{t("Partial")}</option>
+              <option value="Unpaid">{t("Unpaid")}</option>
             </select>
           </div>
 
@@ -387,10 +400,10 @@ export default function SalesPage() {
               }
               className="w-full outline-none"
             >
-              <option value="All">All Sales</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Returned">Returned</option>
+              <option value="All">{t("All Sales")}</option>
+              <option value="Completed">{t("Completed")}</option>
+              <option value="Cancelled">{t("Cancelled")}</option>
+              <option value="Returned">{t("Returned")}</option>
             </select>
           </div>
         </div>
@@ -399,50 +412,52 @@ export default function SalesPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h2 className="font-bold text-gray-900">All Sales</h2>
-            <p className="text-sm text-gray-500">
-              {data?.totalCount} total records
-            </p>
+            <h2 className="font-bold text-gray-900">{t("All Sales")}</h2>
+            <div className="text-sm text-gray-500">
+              {isLoading ? (
+                <Skeleton className="mt-1 h-4 w-24" />
+              ) : (
+                <>
+                  {data?.totalCount} {t("total records")}
+                </>
+              )}
+            </div>
           </div>
           {isFetching ? (
             <Loader2 className="animate-spin text-gray-400" size={20} />
           ) : null}
         </div>
 
-        <div className="overflow-x-auto">
+        <div
+          className={`overflow-x-auto transition-opacity ${
+            isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
           <table className="w-full min-w-[1200px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-5 py-3">Invoice</th>
-                <th className="px-5 py-3">Customer</th>
-                <th className="px-5 py-3">Total</th>
-                <th className="px-5 py-3">Paid / Remaining</th>
-                <th className="px-5 py-3">Profit</th>
-                <th className="px-5 py-3">Payments</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Created</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3">{t("Invoice")}</th>
+                <th className="px-5 py-3">{t("Customer")}</th>
+                <th className="px-5 py-3">{t("Total")}</th>
+                <th className="px-5 py-3">{t("Paid / Remaining")}</th>
+                <th className="px-5 py-3">{t("Profit")}</th>
+                <th className="px-5 py-3">{t("Payments")}</th>
+                <th className="px-5 py-3">{t("Status")}</th>
+                <th className="px-5 py-3">{t("Created")}</th>
+                <th className="px-5 py-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-5 py-16 text-center text-gray-500"
-                  >
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
-                    Loading sales...
-                  </td>
-                </tr>
+                <TableRowsSkeleton rows={8} cols={9} />
               ) : !sales.length ? (
                 <tr>
                   <td
                     colSpan={9}
                     className="px-5 py-16 text-center text-gray-500"
                   >
-                    No sales found.
+                    {t("No sales found.")}
                   </td>
                 </tr>
               ) : (
@@ -457,17 +472,17 @@ export default function SalesPage() {
                           <p className="font-bold text-gray-900">
                             {sale.invoice_no}
                           </p>
-                          <p className="text-xs text-gray-500">ID #{sale.id}</p>
+                          <p className="text-xs text-gray-500">{t("ID")} #{sale.id}</p>
                         </div>
                       </div>
                     </td>
 
                     <td className="px-5 py-4">
                       <p className="font-medium text-gray-900">
-                        {sale.customer_name || "Walk-in customer"}
+                        {sale.customer_name || t("Walk-in customer")}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {sale.customer_phone || "No phone"}
+                        {sale.customer_phone || t("No phone")}
                       </p>
                     </td>
 
@@ -476,17 +491,17 @@ export default function SalesPage() {
                         {money(sale.grand_total)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Discount {money(sale.discount_amount)} · Tax{" "}
+                        {t("Discount")} {money(sale.discount_amount)} · {t("Tax")}{" "}
                         {money(sale.tax_amount)}
                       </p>
                     </td>
 
                     <td className="px-5 py-4">
                       <p className="font-medium text-gray-900">
-                        Paid {money(sale.paid_amount)}
+                        {t("Paid")} {money(sale.paid_amount)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Remaining {money(sale.remaining_amount)}
+                        {t("Remaining")} {money(sale.remaining_amount)}
                       </p>
                     </td>
 
@@ -509,10 +524,10 @@ export default function SalesPage() {
                           href={sale.payment_proof_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="View online payment proof photo"
+                          title={t("View online payment proof photo")}
                           className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
                         >
-                          <Camera size={12} /> Proof photo
+                          <Camera size={12} /> {t("Proof photo")}
                         </a>
                       ) : null}
                     </td>
@@ -522,12 +537,12 @@ export default function SalesPage() {
                         <StatusBadge
                           className={paymentStatusClass[sale.payment_status]}
                         >
-                          {sale.payment_status}
+                          {t(sale.payment_status)}
                         </StatusBadge>
                         <StatusBadge
                           className={saleStatusClass[sale.sale_status]}
                         >
-                          {sale.sale_status}
+                          {t(sale.sale_status)}
                         </StatusBadge>
                       </div>
                     </td>
@@ -540,11 +555,16 @@ export default function SalesPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handlePrintReceipt(sale)}
-                          className="rounded-xl p-2 text-gray-500 transition hover:bg-green-50 hover:text-green-600"
-                          aria-label="Print receipt"
-                          title="Print Receipt"
+                          disabled={!!printingId}
+                          className="rounded-xl p-2 text-gray-500 transition hover:bg-green-50 hover:text-green-600 disabled:opacity-50"
+                          aria-label={t("Print receipt")}
+                          title={t("Print Receipt")}
                         >
-                          <Printer size={18} />
+                          {printingId === sale.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Printer size={18} />
+                          )}
                         </button>
                         {sale.sale_status === "Completed" && (
                           <button
@@ -553,30 +573,35 @@ export default function SalesPage() {
                               setRevokeTarget(sale);
                             }}
                             className="rounded-xl p-2 text-gray-500 transition hover:bg-amber-50 hover:text-amber-600"
-                            aria-label="Revoke sale"
-                            title="Revoke (sold by mistake)"
+                            aria-label={t("Revoke sale")}
+                            title={t("Revoke (sold by mistake)")}
                           >
                             <Undo2 size={18} />
                           </button>
                         )}
                         <button
                           onClick={() => handleEditSale(sale)}
-                          className="rounded-xl p-2 text-gray-500 transition hover:bg-slate-50 hover:text-slate-600"
-                          aria-label="Edit sale"
+                          disabled={!!editSaleId}
+                          className="rounded-xl p-2 text-gray-500 transition hover:bg-slate-50 hover:text-slate-600 disabled:opacity-50"
+                          aria-label={t("Edit sale")}
                         >
-                          <Edit size={18} />
+                          {editSaleId === sale.id && !editSaleItemsData ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Edit size={18} />
+                          )}
                         </button>
                         <button
                           onClick={() => setSelectedSaleId(sale.id)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
-                          aria-label="View sale"
+                          aria-label={t("View sale")}
                         >
                           <Eye size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(sale)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Delete sale"
+                          aria-label={t("Delete sale")}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -617,22 +642,20 @@ export default function SalesPage() {
             className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
           >
             <h2 className="text-lg font-semibold text-slate-900">
-              Revoke sale {revokeTarget.invoice_no}?
+              {t("Revoke sale")} {revokeTarget.invoice_no}?
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              Use this when a sale was made by mistake. The items go back into
-              stock and the {money(revokeTarget.grand_total)} payment is
-              reversed. The sale stays on record as Cancelled and is written to
-              the Activity Log.
+              {t("Use this when a sale was made by mistake. The items go back into stock and the payment is reversed. The sale stays on record as Cancelled and is written to the Activity Log.")}{" "}
+              ({money(revokeTarget.grand_total)})
             </p>
             <label className="mt-4 block text-sm font-medium text-slate-700">
-              Reason (optional)
+              {t("Reason (optional)")}
             </label>
             <input
               type="text"
               value={revokeReason}
               onChange={(e) => setRevokeReason(e.target.value)}
-              placeholder="e.g. Wrong item sold"
+              placeholder={t("e.g. Wrong item sold")}
               disabled={revokeSale.isPending}
               className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
             />
@@ -642,7 +665,7 @@ export default function SalesPage() {
                 disabled={revokeSale.isPending}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
               >
-                Keep sale
+                {t("Keep sale")}
               </button>
               <button
                 onClick={handleRevoke}
@@ -650,7 +673,7 @@ export default function SalesPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {revokeSale.isPending && <Loader2 size={14} className="animate-spin" />}
-                Revoke sale
+                {revokeSale.isPending ? t("Revoking...") : t("Revoke sale")}
               </button>
             </div>
           </div>
@@ -660,7 +683,7 @@ export default function SalesPage() {
       {deleteConfirm ? (
         <DeleteConfirmModal
           invoiceNo={deleteConfirm.invoice_no}
-          label="sale"
+          label={t("sale")}
           isPending={deleteSale.isPending}
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm(null)}

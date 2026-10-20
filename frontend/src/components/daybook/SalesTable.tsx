@@ -2,6 +2,7 @@
 "use client";
 
 import { Eye } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 import type { DaybookSale, DaybookSalePayment } from "@/hooks/useDaybook";
 
 const paymentStatusClass = {
@@ -25,10 +26,11 @@ export default function DaybookSalesTable({
   onViewSale,
   money,
 }: DaybookSalesTableProps) {
+  const { t } = useLang();
   if (sales.length === 0) {
     return (
       <div className="p-8 text-center text-sm text-gray-500">
-        No sales recorded for this day
+        {t("No sales recorded for this day")}
       </div>
     );
   }
@@ -38,13 +40,13 @@ export default function DaybookSalesTable({
       <table className="w-full min-w-[1000px] text-sm">
         <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-5 py-3">Invoice</th>
-            <th className="px-5 py-3">Customer</th>
-            <th className="px-5 py-3">Total</th>
-            <th className="px-5 py-3">Paid</th>
-            <th className="px-5 py-3">Remaining</th>
-            <th className="px-5 py-3">Status</th>
-            <th className="px-5 py-3 text-right">Actions</th>
+            <th className="px-5 py-3">{t("Invoice")}</th>
+            <th className="px-5 py-3">{t("Customer")}</th>
+            <th className="px-5 py-3">{t("Total")}</th>
+            <th className="px-5 py-3">{t("Paid")}</th>
+            <th className="px-5 py-3">{t("Remaining")}</th>
+            <th className="px-5 py-3">{t("Status")}</th>
+            <th className="px-5 py-3 text-right">{t("Actions")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -56,7 +58,7 @@ export default function DaybookSalesTable({
               </td>
               <td className="px-5 py-4">
                 <p className="font-medium text-gray-900">
-                  {sale.customer_name || "Walk-in"}
+                  {sale.customer_name || t("Walk-in")}
                 </p>
                 {sale.customer_phone && (
                   <p className="text-xs text-gray-500">{sale.customer_phone}</p>
@@ -77,7 +79,7 @@ export default function DaybookSalesTable({
                     paymentStatusClass[sale.payment_status]
                   }`}
                 >
-                  {sale.payment_status}
+                  {t(sale.payment_status)}
                 </span>
               </td>
               <td className="px-5 py-4">
@@ -85,7 +87,7 @@ export default function DaybookSalesTable({
                   <button
                     onClick={() => onViewSale(sale.id)}
                     className="rounded-xl p-2 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition"
-                    title="View sale details"
+                    title={t("View sale details")}
                   >
                     <Eye size={18} />
                   </button>

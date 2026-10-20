@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { History, Loader2, Search } from "lucide-react";
+import { History, Search } from "lucide-react";
 
 import { useActivityLogs, type ActivityLog } from "@/hooks/useActivityLogs";
 import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
 import { dateTime } from "@/utils/nepaliTime";
+import { useLang } from "@/lib/i18n";
+import { Skeleton } from "@/components/layout/Skeleton";
 
 const LIMIT = 20;
 
@@ -54,6 +56,7 @@ function Details({ log }: { log: ActivityLog }) {
 }
 
 export default function ActivityLogTab() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [entityType, setEntityType] = useState("");
   const [search, setSearch] = useState("");
@@ -79,9 +82,9 @@ export default function ActivityLogTab() {
           <History size={20} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Activity Log</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t("Activity Log")}</h1>
           <p className="text-sm text-gray-500">
-            What happened and when: sales, revokes and product changes.
+            {t("What happened and when: sales, revokes and product changes.")}
           </p>
         </div>
       </div>
@@ -98,7 +101,7 @@ export default function ActivityLogTab() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search the log (invoice number, product...)"
+            placeholder={t("Search the log (invoice number, product...)")}
             className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
           />
         </div>
@@ -110,24 +113,38 @@ export default function ActivityLogTab() {
           }}
           className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-gray-400"
         >
-          <option value="">All activity</option>
-          <option value="Sale">Sales</option>
-          <option value="Product">Products</option>
+          <option value="">{t("All activity")}</option>
+          <option value="Sale">{t("Sales")}</option>
+          <option value="Product">{t("Products")}</option>
         </select>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-gray-400">
-            <Loader2 className="animate-spin" />
-          </div>
+          <ul className="divide-y divide-gray-100" aria-busy>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <li
+                key={i}
+                className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:gap-4"
+              >
+                <Skeleton className="h-3 w-32 shrink-0 sm:w-44" />
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : logs.length === 0 ? (
           <div className="py-16 text-center text-sm text-gray-500">
-            Nothing logged yet.
+            {t("Nothing logged yet.")}
           </div>
         ) : (
           <ul
-            className={`divide-y divide-gray-100 ${isFetching ? "opacity-70" : ""}`}
+            className={`divide-y divide-gray-100 ${isFetching ? "pointer-events-none opacity-60" : ""}`}
           >
             {logs.map((log) => (
               <li
@@ -144,7 +161,7 @@ export default function ActivityLogTab() {
                         actionStyles[log.action] || "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      {label(log.action)}
+                      {t(label(log.action))}
                     </span>
                     <span className="text-sm text-gray-900">{log.summary}</span>
                   </div>

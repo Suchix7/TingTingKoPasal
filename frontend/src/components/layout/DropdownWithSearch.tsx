@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { Search, Check, Loader2, Plus } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
+import { useLang } from "@/lib/i18n";
+import { Skeleton } from "@/components/layout/Skeleton";
 
 export type DropdownOption = {
   id: string | number;
@@ -54,6 +56,7 @@ export function DropdownWithSearch<T extends DropdownOption>({
   onAddNew,
   addNewIcon,
 }: DropdownWithSearchProps<T>) {
+  const { t } = useLang();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounced(searchTerm, debounceDelay);
@@ -170,8 +173,10 @@ export function DropdownWithSearch<T extends DropdownOption>({
                 </div>
               )}
             </div>
+          ) : isLoading && selectedId ? (
+            <Skeleton className="h-4 w-32" />
           ) : (
-            <span className="text-sm text-slate-400">{placeholder}</span>
+            <span className="text-sm text-slate-400">{t(placeholder)}</span>
           )}
           <svg
             className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
@@ -206,7 +211,7 @@ export function DropdownWithSearch<T extends DropdownOption>({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={searchPlaceholder}
+                placeholder={t(searchPlaceholder)}
                 className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                 onClick={(e) => e.stopPropagation()}
               />
@@ -214,14 +219,29 @@ export function DropdownWithSearch<T extends DropdownOption>({
           </div>
 
           {/* Options List */}
-          <div className="max-h-64 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+          <div
+            className={`max-h-64 overflow-y-auto transition-opacity ${
+              isLoading && options.length > 0
+                ? "pointer-events-none opacity-60"
+                : ""
+            }`}
+          >
+            {isLoading && options.length === 0 ? (
+              <div role="status" aria-label={t("Loading...")} className="space-y-1 px-4 py-3">
+                <div className="flex items-center gap-2 pb-1 text-xs text-slate-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t("Loading...")}
+                </div>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-1.5 py-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                ))}
               </div>
             ) : options.length === 0 && !showAddNew ? (
               <div className="py-8 text-center text-sm text-slate-500">
-                {emptyMessage}
+                {t(emptyMessage)}
               </div>
             ) : (
               <>
@@ -254,7 +274,7 @@ export function DropdownWithSearch<T extends DropdownOption>({
                           <Plus className="h-4 w-4 text-slate-500" />
                         )}
                         <span className="text-sm font-medium">
-                          {addNewLabel}
+                          {t(addNewLabel)}
                         </span>
                       </div>
                     </button>
@@ -264,7 +284,7 @@ export function DropdownWithSearch<T extends DropdownOption>({
                 {/* Empty state: message only - the add-new button above is the single entry point */}
                 {options.length === 0 && showAddNew && onAddNew && (
                   <div className="px-4 py-3 text-center text-sm text-slate-500">
-                    {emptyMessage}
+                    {t(emptyMessage)}
                   </div>
                 )}
               </>

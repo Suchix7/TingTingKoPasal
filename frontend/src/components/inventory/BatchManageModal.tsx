@@ -1,7 +1,8 @@
 // components/inventory/BatchManageModal.tsx
 "use client";
 
-import { X, Settings, Package, DollarSign, Hash } from "lucide-react";
+import { Loader2, X, Settings, Package, DollarSign, Hash } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 
 type BatchManageFormData = {
   batch_id: number | "";
@@ -28,6 +29,7 @@ const BatchManageModal = ({
   isSubmitting,
   batchNumber,
 }: BatchManageModalProps) => {
+  const { t } = useLang();
   const handleInputChange = (
     field: keyof BatchManageFormData,
     value: string,
@@ -57,16 +59,17 @@ const BatchManageModal = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Manage Batch
+                {t("Manage Batch")}
               </h2>
               {batchNumber && (
-                <p className="text-sm text-slate-500">Batch: {batchNumber}</p>
+                <p className="text-sm text-slate-500">{t("Batch")}: {batchNumber}</p>
               )}
             </div>
           </div>
           <button
             onClick={closeModal}
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            disabled={isSubmitting}
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -81,7 +84,7 @@ const BatchManageModal = ({
                 htmlFor="batch-number"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                Batch Number
+                {t("Batch Number")}
               </label>
               <div className="relative">
                 <Hash className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -92,7 +95,7 @@ const BatchManageModal = ({
                   onChange={(e) =>
                     handleInputChange("batch_number", e.target.value)
                   }
-                  placeholder="Enter batch number"
+                  placeholder={t("Enter batch number")}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                 />
               </div>
@@ -104,7 +107,7 @@ const BatchManageModal = ({
                 htmlFor="batch-quantity"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                Quantity
+                {t("Quantity")}
               </label>
               <div className="relative">
                 <Package className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -116,7 +119,7 @@ const BatchManageModal = ({
                   onChange={(e) =>
                     handleInputChange("quantity", e.target.value)
                   }
-                  placeholder="Enter quantity"
+                  placeholder={t("Enter quantity")}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                 />
               </div>
@@ -131,7 +134,7 @@ const BatchManageModal = ({
             disabled={isSubmitting}
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             onClick={onSubmit}
@@ -146,13 +149,13 @@ const BatchManageModal = ({
           >
             {isSubmitting ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Saving...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("Saving...")}
               </>
             ) : (
               <>
                 <Settings className="h-4 w-4" />
-                Update Batch
+                {t("Update Batch")}
               </>
             )}
           </button>

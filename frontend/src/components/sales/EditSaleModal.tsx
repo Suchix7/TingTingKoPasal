@@ -36,6 +36,9 @@ import {
 import CustomerModal from "../customers/modal";
 import ProductModal from "../product/modal";
 import { useConvertQuickSale } from "@/hooks/useQuickSales";
+import { useLang } from "@/lib/i18n";
+import Tn from "@/components/layout/Tn";
+import { Skeleton } from "@/components/layout/Skeleton";
 
 type EditSaleModalProps = {
   sale: Sale;
@@ -79,6 +82,7 @@ function ProductTaxModal({
   onClose: () => void;
   onSave: (taxAmount: number, isInclusive: boolean) => void;
 }) {
+  const { t } = useLang();
   const [taxType, setTaxType] = useState<"percentage" | "fixed">("fixed");
   const [taxValue, setTaxValue] = useState<number>(item.tax_amount || 0);
   const [isInclusive, setIsInclusive] = useState<boolean>(
@@ -105,7 +109,7 @@ function ProductTaxModal({
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">
-            Tax Settings - {item.product_name}
+            {t("Tax Settings")} - <Tn v={item.product_name} />
           </h3>
           <button
             onClick={onClose}
@@ -119,25 +123,25 @@ function ProductTaxModal({
           {/* Product Info */}
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Unit Price</span>
+              <span className="text-gray-600">{t("Unit Price")}</span>
               <span className="font-semibold">Rs. {item.unit_price}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Quantity</span>
+              <span className="text-gray-600">{t("Quantity")}</span>
               <span className="font-semibold">{item.quantity}</span>
             </div>
             {item.tax_amount > 0 && (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Current Tax</span>
+                  <span className="text-gray-600">{t("Current Tax")}</span>
                   <span className="font-semibold text-blue-600">
-                    Rs. {item.tax_amount} per unit
+                    Rs. {item.tax_amount} {t("per unit")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax Type</span>
+                  <span className="text-gray-600">{t("Tax Type")}</span>
                   <span className="font-semibold">
-                    {item.tax_inclusive ? "Inclusive" : "Exclusive"}
+                    {item.tax_inclusive ? t("Inclusive") : t("Exclusive")}
                   </span>
                 </div>
               </>
@@ -147,7 +151,7 @@ function ProductTaxModal({
           {/* Tax Type Toggle */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tax Type
+              {t("Tax Type")}
             </label>
             <div className="flex gap-2">
               <button
@@ -164,7 +168,7 @@ function ProductTaxModal({
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Percentage (%)
+                {t("Percentage (%)")}
               </button>
               <button
                 type="button"
@@ -180,7 +184,7 @@ function ProductTaxModal({
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Fixed (Rs.)
+                {t("Fixed (Rs.)")}
               </button>
             </div>
           </div>
@@ -188,7 +192,7 @@ function ProductTaxModal({
           {/* Tax Value Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tax Value
+              {t("Tax Value")}
             </label>
             <div className="relative">
               <input
@@ -203,7 +207,7 @@ function ProductTaxModal({
                   )
                 }
                 onWheel={(e) => e.currentTarget.blur()}
-                placeholder={taxType === "percentage" ? "Tax %" : "Tax amount"}
+                placeholder={taxType === "percentage" ? t("Tax %") : t("Tax amount")}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-12 text-sm outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
@@ -216,14 +220,14 @@ function ProductTaxModal({
           {taxValue > 0 && (
             <div className="bg-blue-50 rounded-lg p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-blue-700">Tax per unit</span>
+                <span className="text-blue-700">{t("Tax per unit")}</span>
                 <span className="font-semibold text-blue-700">
                   Rs. {calculatedTax.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-blue-700">
-                  Total tax ({item.quantity} units)
+                  {t("Total tax")} ({item.quantity} {t("units")})
                 </span>
                 <span className="font-semibold text-blue-700">
                   Rs. {(calculatedTax * item.quantity).toFixed(2)}
@@ -231,8 +235,8 @@ function ProductTaxModal({
               </div>
               {isInclusive && (
                 <div className="mt-2 text-xs text-blue-600 bg-blue-100 rounded p-2">
-                  ⚠️ Tax inclusive: Unit price of Rs. {item.unit_price} includes
-                  Rs. {calculatedTax.toFixed(2)} tax
+                  ⚠️ {t("Tax inclusive")}: {t("Unit price")} Rs. {item.unit_price} {t("includes tax")}{" "}
+                  Rs. {calculatedTax.toFixed(2)}
                 </div>
               )}
             </div>
@@ -244,7 +248,7 @@ function ProductTaxModal({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-gray-900">
-                    Tax Inclusive
+                    {t("Tax Inclusive")}
                   </p>
                   <button
                     type="button"
@@ -256,17 +260,17 @@ function ProductTaxModal({
                 </div>
                 <p className="text-xs text-gray-500">
                   {isInclusive
-                    ? "Tax is included in the unit price"
-                    : "Tax is added on top of unit price"}
+                    ? t("Tax is included in the unit price")
+                    : t("Tax is added on top of unit price")}
                 </p>
                 {showInfo && (
                   <div className="mt-2 p-2 bg-white rounded border border-gray-200 text-xs text-gray-600">
-                    <p className="font-medium mb-1">Tax Inclusive:</p>
-                    <p>• Unit price includes the tax amount</p>
-                    <p>• Final price = Unit price</p>
-                    <p className="mt-1 font-medium">Tax Exclusive:</p>
-                    <p>• Tax is added to unit price</p>
-                    <p>• Final price = Unit price + Tax</p>
+                    <p className="font-medium mb-1">{t("Tax Inclusive")}:</p>
+                    <p>• {t("Unit price includes the tax amount")}</p>
+                    <p>• {t("Final price = Unit price")}</p>
+                    <p className="mt-1 font-medium">{t("Tax Exclusive")}:</p>
+                    <p>• {t("Tax is added to unit price")}</p>
+                    <p>• {t("Final price = Unit price + Tax")}</p>
                   </div>
                 )}
               </div>
@@ -297,14 +301,14 @@ function ProductTaxModal({
             }}
             className="flex-1 cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Remove Tax
+            {t("Remove Tax")}
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="flex-1 cursor-pointer rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
           >
-            Apply Tax
+            {t("Apply Tax")}
           </button>
         </div>
       </div>
@@ -320,6 +324,7 @@ export default function EditSaleModal({
   isQuickSaleConversion = false,
   quickSaleId,
 }: EditSaleModalProps) {
+  const { t } = useLang();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingTaxItem, setEditingTaxItem] = useState<{
@@ -368,7 +373,8 @@ export default function EditSaleModal({
     debouncedSearchCustomer,
     "Active",
   );
-  const { data: salePaymentsData } = useSalePaymentsBySaleId(sale.id);
+  const { data: salePaymentsData, isLoading: isPaymentsLoading } =
+    useSalePaymentsBySaleId(sale.id);
 
   const paymentMethods = paymentMethodsData?.data || [];
   const customers = customersData?.data || [];
@@ -711,58 +717,58 @@ export default function EditSaleModal({
 
   const validateForm = () => {
     if (items.length === 0) {
-      toast.error("At least one item is required.");
+      toast.error(t("At least one item is required."));
       return false;
     }
 
     if (items.some((item) => !item.product_id)) {
-      toast.error("Please select a product for all items.");
+      toast.error(t("Please select a product for all items."));
       return false;
     }
 
     if (items.some((item) => item.quantity <= 0)) {
-      toast.error("Quantity must be greater than 0.");
+      toast.error(t("Quantity must be greater than 0."));
       return false;
     }
 
     if (items.some((item) => item.unit_price < 0)) {
-      toast.error("Unit price cannot be negative.");
+      toast.error(t("Unit price cannot be negative."));
       return false;
     }
 
     if (items.some((item) => item.discount_amount < 0)) {
-      toast.error("Item discount cannot be negative.");
+      toast.error(t("Item discount cannot be negative."));
       return false;
     }
 
     if (items.some((item) => item.tax_amount < 0)) {
-      toast.error("Item tax cannot be negative.");
+      toast.error(t("Item tax cannot be negative."));
       return false;
     }
 
     if (discountAmount > subtotal) {
-      toast.error("Sale discount cannot be greater than subtotal.");
+      toast.error(t("Sale discount cannot be greater than subtotal."));
       return false;
     }
 
     if (payments.some((payment) => !payment.payment_method_id)) {
-      toast.error("Please select a payment method for all payments.");
+      toast.error(t("Please select a payment method for all payments."));
       return false;
     }
 
     if (payments.some((payment) => payment.amount < 0)) {
-      toast.error("Payment amount cannot be negative.");
+      toast.error(t("Payment amount cannot be negative."));
       return false;
     }
 
     if (!customerId && totalPayment < grandTotal) {
-      toast.error("Please select a customer or adjust the payment amount.");
+      toast.error(t("Please select a customer or adjust the payment amount."));
       return false;
     }
 
     if (changeAmount > 0) {
       toast.error(
-        "Change amount cannot be greater than 0. Please adjust the payment or grand total.",
+        t("Change amount cannot be greater than 0. Please adjust the payment or grand total."),
       );
       return false;
     }
@@ -833,10 +839,10 @@ export default function EditSaleModal({
           converted_sale_id: targetSaleId,
         });
 
-        toast.success("Sale created successfully from quick sale.");
+        toast.success(t("Sale created successfully from quick sale."));
       } else {
         await updateSaleMutation.mutateAsync(updatedSale);
-        toast.success("Sale updated successfully.");
+        toast.success(t("Sale updated successfully."));
       }
 
       if (paymentProofFile && targetSaleId) {
@@ -872,10 +878,10 @@ export default function EditSaleModal({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  {isQuickSaleConversion ? "Create Sale" : "Edit Sale"}
+                  {isQuickSaleConversion ? t("Create Sale") : t("Edit Sale")}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Invoice: {sale.invoice_no}
+                  {t("Invoice")}: {sale.invoice_no}
                 </p>
               </div>
             </div>
@@ -894,7 +900,7 @@ export default function EditSaleModal({
             <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Customer
+                  {t("Customer")}
                 </label>
                 <DropdownWithSearch
                   options={
@@ -910,45 +916,45 @@ export default function EditSaleModal({
                     handleCustomerChange(String(option?.id || "walk-in"))
                   }
                   isLoading={isCustomersLoading}
-                  placeholder="Walk-in customer"
+                  placeholder={t("Walk-in customer")}
                   disabled={isCustomersLoading}
-                  searchPlaceholder="Search for a customer..."
+                  searchPlaceholder={t("Search for a customer...")}
                   onSearch={(searchTerm) => setSearchCustomer(searchTerm)}
                   showAddNew={true}
                   onAddNew={() => setIsModalOpen(true)}
-                  addNewLabel="Create new customer"
+                  addNewLabel={t("Create new customer")}
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Customer Name
+                  {t("Customer Name")}
                 </label>
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-                  placeholder="Walk-in customer"
+                  placeholder={t("Walk-in customer")}
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Customer Phone
+                  {t("Customer Phone")}
                 </label>
                 <input
                   type="text"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-                  placeholder="Phone number"
+                  placeholder={t("Phone number")}
                 />
               </div>
 
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Sale Status
+                  {t("Sale Status")}
                 </label>
                 <select
                   value={saleStatus}
@@ -957,23 +963,23 @@ export default function EditSaleModal({
                   }
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
                 >
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                  <option value="Returned">Returned</option>
+                  <option value="Completed">{t("Completed")}</option>
+                  <option value="Cancelled">{t("Cancelled")}</option>
+                  <option value="Returned">{t("Returned")}</option>
                 </select>
               </div>
             </div>
 
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">Items</h3>
+                <h3 className="text-sm font-semibold text-slate-900">{t("Items")}</h3>
                 <button
                   type="button"
                   onClick={addItem}
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Item
+                  {t("Add Item")}
                 </button>
               </div>
 
@@ -1001,7 +1007,7 @@ export default function EditSaleModal({
 
                       <div className="flex-1 space-y-2">
                         <label className="text-xs font-medium text-slate-500">
-                          Product
+                          {t("Product")}
                         </label>
                         <ProductBatchDropdown
                           selectedProductId={item.product_id || null}
@@ -1009,9 +1015,9 @@ export default function EditSaleModal({
                           onSelect={(selection) =>
                             handleProductBatchSelect(index, selection)
                           }
-                          placeholder="Select product or batch"
-                          searchPlaceholder="Search products by name..."
-                          emptyMessage="No products found"
+                          placeholder={t("Select product or batch")}
+                          searchPlaceholder={t("Search products by name...")}
+                          emptyMessage={t("No products found")}
                           showBatchQuantities={true}
                           showBatchPrices={true}
                           maxHeight="max-h-64"
@@ -1020,7 +1026,7 @@ export default function EditSaleModal({
 
                       <div className="space-y-2 lg:w-24">
                         <label className="text-xs font-medium text-slate-500">
-                          Quantity
+                          {t("Quantity")}
                         </label>
                         <input
                           type="number"
@@ -1041,7 +1047,7 @@ export default function EditSaleModal({
 
                       <div className="space-y-2 lg:w-28">
                         <label className="text-xs font-medium text-slate-500">
-                          Unit Price
+                          {t("Unit Price")}
                         </label>
                         <input
                           type="number"
@@ -1063,7 +1069,7 @@ export default function EditSaleModal({
 
                       <div className="space-y-2 lg:w-28">
                         <label className="text-xs font-medium text-slate-500">
-                          Discount
+                          {t("Discount")}
                         </label>
                         <input
                           type="number"
@@ -1084,7 +1090,7 @@ export default function EditSaleModal({
 
                       <div className="space-y-2 lg:w-28">
                         <label className="text-xs font-medium text-slate-500">
-                          Total
+                          {t("Total")}
                         </label>
                         <input
                           type="text"
@@ -1104,7 +1110,7 @@ export default function EditSaleModal({
                               ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
                               : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                           }`}
-                          title="Set product tax"
+                          title={t("Set product tax")}
                         >
                           <Percent className="h-4 w-4" />
                         </button>
@@ -1123,15 +1129,15 @@ export default function EditSaleModal({
                     {item.tax_amount > 0 && (
                       <div className="flex items-center gap-2 text-xs">
                         <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                          Tax: Rs. {item.tax_amount}/unit
+                          {t("Tax")}: Rs. {item.tax_amount}/{t("unit")}
                         </span>
                         {item.tax_inclusive && (
                           <span className="text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
-                            Inclusive
+                            {t("Inclusive")}
                           </span>
                         )}
                         <span className="text-slate-500">
-                          Total tax: Rs.{" "}
+                          {t("Total tax")}: Rs.{" "}
                           {(item.tax_amount * item.quantity).toFixed(2)}
                         </span>
                       </div>
@@ -1141,7 +1147,7 @@ export default function EditSaleModal({
 
                 {items.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
-                    <p className="text-sm text-slate-500">No items added yet</p>
+                    <p className="text-sm text-slate-500">{t("No items added yet")}</p>
                   </div>
                 )}
               </div>
@@ -1150,7 +1156,7 @@ export default function EditSaleModal({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Sale Discount
+                  {t("Sale Discount")}
                 </label>
                 <input
                   type="number"
@@ -1165,14 +1171,14 @@ export default function EditSaleModal({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Notes
+                  {t("Notes")}
                 </label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-                  placeholder="Optional notes"
+                  placeholder={t("Optional notes")}
                 />
               </div>
             </div>
@@ -1180,7 +1186,7 @@ export default function EditSaleModal({
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-900">
-                  Payments
+                  {t("Payments")}
                 </h3>
                 <button
                   type="button"
@@ -1189,11 +1195,23 @@ export default function EditSaleModal({
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Payment
+                  {t("Add Payment")}
                 </button>
               </div>
 
               <div className="space-y-3">
+                {isPaymentsLoading && payments.length === 0 && (
+                  <div className="space-y-3" aria-busy>
+                    {[0, 1].map((i) => (
+                      <div
+                        key={i}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4"
+                      >
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {payments.map((payment, index) => (
                   <div
                     key={`${payment.id || "new"}-${index}`}
@@ -1201,7 +1219,7 @@ export default function EditSaleModal({
                   >
                     <div className="flex-1 space-y-2">
                       <label className="text-xs font-medium text-slate-500">
-                        Payment Method
+                        {t("Payment Method")}
                       </label>
                       <select
                         value={payment.payment_method_id}
@@ -1215,10 +1233,10 @@ export default function EditSaleModal({
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
                         required
                       >
-                        <option value="">Select method</option>
+                        <option value="">{t("Select method")}</option>
                         {paymentMethods.map((method) => (
                           <option key={method.id} value={method.id}>
-                            {method.payment_method}
+                            <Tn v={method.payment_method} />
                           </option>
                         ))}
                       </select>
@@ -1226,7 +1244,7 @@ export default function EditSaleModal({
 
                     <div className="space-y-2 md:w-40">
                       <label className="text-xs font-medium text-slate-500">
-                        Amount
+                        {t("Amount")}
                       </label>
                       <input
                         type="number"
@@ -1255,7 +1273,7 @@ export default function EditSaleModal({
                 {payments.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
                     <p className="text-sm text-slate-500">
-                      No payments added yet
+                      {t("No payments added yet")}
                     </p>
                   </div>
                 )}
@@ -1270,7 +1288,7 @@ export default function EditSaleModal({
               )) && (
               <div className="rounded-2xl border border-slate-200 p-4">
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                  Online Payment Proof
+                  {t("Online Payment Proof")}
                 </h3>
 
                 {paymentProofUrl && !paymentProofFile ? (
@@ -1282,13 +1300,13 @@ export default function EditSaleModal({
                     >
                       <img
                         src={paymentProofUrl}
-                        alt="Payment proof"
+                        alt={t("Payment proof")}
                         className="max-h-48 rounded-xl border border-slate-200 object-contain"
                       />
                     </a>
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
                       <ImagePlus size={14} />
-                      Replace photo
+                      {t("Replace photo")}
                       <input
                         type="file"
                         accept="image/*"
@@ -1308,13 +1326,13 @@ export default function EditSaleModal({
                       onClick={() => setPaymentProofFile(null)}
                       className="ml-2 shrink-0 text-red-500 hover:text-red-600"
                     >
-                      Remove
+                      {t("Remove")}
                     </button>
                   </div>
                 ) : (
                   <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
                     <ImagePlus size={16} />
-                    Attach screenshot/photo of payment (optional)
+                    {t("Attach screenshot/photo of payment (optional)")}
                     <input
                       type="file"
                       accept="image/*"
@@ -1331,12 +1349,12 @@ export default function EditSaleModal({
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <h3 className="mb-4 text-sm font-semibold text-slate-900">
-                Summary
+                {t("Summary")}
               </h3>
 
               <div className="grid gap-3 text-sm md:grid-cols-2">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Subtotal</span>
+                  <span className="text-slate-500">{t("Subtotal")}</span>
                   <span className="font-medium text-slate-900">
                     {money(subtotal)}
                   </span>
@@ -1345,9 +1363,9 @@ export default function EditSaleModal({
                 {totalTax > 0 && (
                   <div className="flex justify-between">
                     <span className="text-slate-500">
-                      Tax
+                      {t("Tax")}
                       {items.some((item) => item.tax_inclusive) &&
-                        " (Some items inclusive)"}
+                        ` (${t("Some items inclusive")})`}
                     </span>
                     <span className="font-medium text-blue-600">
                       + {money(totalTax)}
@@ -1356,7 +1374,7 @@ export default function EditSaleModal({
                 )}
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Sale Discount</span>
+                  <span className="text-slate-500">{t("Sale Discount")}</span>
                   <span className="font-medium text-green-600">
                     - {money(discountAmount)}
                   </span>
@@ -1364,7 +1382,7 @@ export default function EditSaleModal({
 
                 <div className="flex justify-between border-t border-slate-200 pt-3">
                   <span className="font-semibold text-slate-900">
-                    Grand Total
+                    {t("Grand Total")}
                   </span>
                   <span className="font-semibold text-slate-900">
                     {money(grandTotal)}
@@ -1372,7 +1390,7 @@ export default function EditSaleModal({
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Paid</span>
+                  <span className="text-slate-500">{t("Total Paid")}</span>
                   <span className="font-medium text-emerald-700">
                     {money(totalPayment)}
                   </span>
@@ -1380,7 +1398,7 @@ export default function EditSaleModal({
 
                 {remainingAmount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Remaining</span>
+                    <span className="text-slate-500">{t("Remaining")}</span>
                     <span className="font-medium text-rose-700">
                       {money(remainingAmount)}
                     </span>
@@ -1389,7 +1407,7 @@ export default function EditSaleModal({
 
                 {changeAmount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Change</span>
+                    <span className="text-slate-500">{t("Change")}</span>
                     <span className="font-medium text-blue-700">
                       {money(changeAmount)}
                     </span>
@@ -1397,7 +1415,7 @@ export default function EditSaleModal({
                 )}
 
                 <div className="flex justify-between border-t border-slate-200 pt-3">
-                  <span className="text-slate-500">Payment Status</span>
+                  <span className="text-slate-500">{t("Payment Status")}</span>
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       paymentStatus === "Paid"
@@ -1407,7 +1425,7 @@ export default function EditSaleModal({
                           : "bg-red-100 text-red-700"
                     }`}
                   >
-                    {paymentStatus}
+                    {t(paymentStatus)}
                   </span>
                 </div>
               </div>
@@ -1420,12 +1438,12 @@ export default function EditSaleModal({
                 disabled={isSubmitting}
                 className="flex-1 rounded-xl cursor-pointer border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
-                Cancel
+                {t("Cancel")}
               </button>
 
               <button
                 type="submit"
-                disabled={isSubmitting || items.length === 0}
+                disabled={isSubmitting || isPaymentsLoading || items.length === 0}
                 className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (
@@ -1434,10 +1452,10 @@ export default function EditSaleModal({
                   <Save className="h-4 w-4" />
                 )}
                 {isSubmitting
-                  ? "Saving..."
+                  ? t("Saving...")
                   : isQuickSaleConversion
-                    ? "Create Sale"
-                    : "Update Sale"}
+                    ? t("Create Sale")
+                    : t("Update Sale")}
               </button>
             </div>
           </form>

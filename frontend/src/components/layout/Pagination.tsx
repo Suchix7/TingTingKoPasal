@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 
 interface PaginationProps {
   page: number;
@@ -15,10 +16,11 @@ export default function Pagination({
   goToPage,
   pageNumbers,
 }: PaginationProps) {
+  const { t } = useLang();
   return (
     <div className="flex flex-col items-center justify-between gap-3 border-t border-gray-200 px-5 py-4 md:flex-row">
       <p className="text-sm text-gray-500">
-        Page {page} of {totalPages}
+        {t("Page")} {page} / {totalPages}
       </p>
 
       <div className="flex items-center gap-2">

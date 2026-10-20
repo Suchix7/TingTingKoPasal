@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  Phone,
   Loader2,
   Search,
   SlidersHorizontal,
@@ -13,6 +15,7 @@ import {
 import {
   useCatalogCategories,
   useCatalogModels,
+  useCatalogStore,
   useCovers,
 } from "@/hooks/useCatalog";
 import type { CatalogCategory, Cover } from "@/hooks/useCatalog";
@@ -54,6 +57,7 @@ export default function CatalogPage() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
+  const { data: store } = useCatalogStore();
   const { data: modelList = [] } = useCatalogModels(category);
   const {
     data: categories = [],
@@ -107,12 +111,12 @@ export default function CatalogPage() {
     <div className="min-h-dvh bg-gray-50">
       <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 pb-3 pt-3">
-          <div className="mb-3 flex items-center gap-2.5">
+          <div className="relative flex flex-col items-center gap-1.5 text-center">
             {category && (
               <button
                 type="button"
                 onClick={back}
-                className="-ml-2 shrink-0 rounded-full p-2 text-gray-700 active:bg-gray-100"
+                className="absolute left-0 top-0 -ml-2 shrink-0 rounded-full p-2 text-gray-700 active:bg-gray-100"
                 aria-label="Back to categories"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -122,11 +126,11 @@ export default function CatalogPage() {
             <img
               src="/logo.png"
               alt="Ting Ting ko pasal"
-              width={48}
-              height={48}
-              className="h-11 w-11 shrink-0 rounded-full sm:h-12 sm:w-12"
+              width={56}
+              height={56}
+              className="h-14 w-14 shrink-0 rounded-full sm:h-16 sm:w-16"
             />
-            <div className="min-w-0">
+            <div className="min-w-0 max-w-full px-10">
               <h1 className="truncate text-base font-semibold leading-tight tracking-tight text-gray-900 sm:text-lg">
                 {category ? (categoryName ?? "Items") : "Ting Ting ko pasal"}
               </h1>
@@ -136,46 +140,68 @@ export default function CatalogPage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            {
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search design or phone, e.g. Hello Kitty, iPhone 14"
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm outline-none focus:border-gray-400 focus:bg-white"
-                  enterKeyHint="search"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-400"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            }
-            {!showMenu && isCase && (
-              <button
-                type="button"
-                onClick={() => setFilterOpen(true)}
-                className="relative flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-800 active:bg-gray-50"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                <span className="hidden sm:inline">Filter</span>
-                {activeCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-900 px-1 text-[11px] font-semibold text-white">
-                    {activeCount}
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
+          {(store?.address || store?.phone) && (
+            <div className="mb-3 mt-3 flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 text-xs ring-1 ring-gray-200">
+              {store?.address && (
+                <span className="flex min-w-0 items-center gap-1.5 text-gray-700">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-red-500" />
+                  <span className="truncate">{store.address}</span>
+                </span>
+              )}
+              {store?.phone && (
+                <a
+                  href={`tel:${store.phone.replace(/[^\d+]/g, "")}`}
+                  className="flex shrink-0 items-center gap-1.5 font-semibold text-gray-900"
+                >
+                  <Phone className="h-3.5 w-3.5 text-green-600" />
+                  {store.phone}
+                </a>
+              )}
+            </div>
+          )}
+
+          {!showMenu && (
+            <div className="flex gap-2">
+              {
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search design or phone, e.g. Hello Kitty, iPhone 14"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm outline-none focus:border-gray-400 focus:bg-white"
+                    enterKeyHint="search"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-400"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              }
+              {!showMenu && isCase && (
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen(true)}
+                  className="relative flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-800 active:bg-gray-50"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span className="hidden sm:inline">Filter</span>
+                  {activeCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-900 px-1 text-[11px] font-semibold text-white">
+                      {activeCount}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
 
           {models.length > 0 && !showMenu && isCase && (
             <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5">
@@ -233,14 +259,17 @@ export default function CatalogPage() {
             )}
 
             {isLoading ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-[3/4] animate-pulse rounded-2xl bg-gray-200"
-                  />
-                ))}
-              </div>
+              <>
+                <WakingNotice loading />
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[3/4] animate-pulse rounded-2xl bg-gray-200"
+                    />
+                  ))}
+                </div>
+              </>
             ) : isError ? (
               <div className="py-20 text-center">
                 <p className="text-sm text-gray-600">
@@ -392,6 +421,35 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
+// After a few seconds of loading, explain why: the server is waking up.
+function WakingNotice({ loading }: { loading: boolean }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => {
+      clearTimeout(t);
+      setSlow(false);
+    };
+  }, [loading]);
+  if (!loading || !slow) return null;
+  return (
+    <div
+      role="status"
+      className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+    >
+      <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-amber-600" />
+      <p className="text-sm text-amber-900">
+        <span className="font-semibold">Waking up the shop…</span>
+        <span className="block text-xs text-amber-800/80">
+          It was resting, so the first load can take up to a minute. It will
+          show up by itself, no need to refresh.
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function CategoryMenu({
   categories,
   loading,
@@ -407,14 +465,17 @@ function CategoryMenu({
 }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="aspect-square animate-pulse rounded-2xl bg-gray-200"
-          />
-        ))}
-      </div>
+      <>
+        <WakingNotice loading />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square animate-pulse rounded-2xl bg-gray-200"
+            />
+          ))}
+        </div>
+      </>
     );
   }
   if (error) {

@@ -19,9 +19,11 @@ import {
   Calculator,
   LogOut,
   History,
+  Building2,
 } from "lucide-react";
 import { useDashboardOverview } from "@/hooks/useDashboard";
 import { useAuthStore } from "@/store/auth.store";
+import { useLang } from "@/lib/i18n";
 
 export type MainTab =
   | "dashboard"
@@ -108,6 +110,7 @@ const SIDEBAR_LINKS: {
         tab: "payment-methods",
         icon: DollarSign,
       },
+      { name: "Store Profile", tab: "store-info", icon: Building2 },
       { name: "Security", tab: "security", icon: Shield },
     ],
   },
@@ -120,6 +123,7 @@ export default function SidebarTabs({
   onMobileClose,
 }: SidebarTabsProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const { t } = useLang();
 
   const logout = useAuthStore((state) => state.logout);
   const { data: dashboardData } = useDashboardOverview({
@@ -174,7 +178,7 @@ export default function SidebarTabs({
           <div key={section.section}>
             {showLabelsHere && (
               <h2 className="px-4 text-gray-400 text-sm uppercase">
-                {section.section}
+                {t(section.section)}
               </h2>
             )}
 
@@ -209,7 +213,7 @@ export default function SidebarTabs({
 
                     {showLabelsHere && (
                       <span className="ml-2 flex-1 flex items-center justify-between">
-                        <span>{link.name}</span>
+                        <span>{t(link.name)}</span>
 
                         {/* Notification Badge (when sidebar is open) */}
                         {showNotificationBadge && (
@@ -233,11 +237,11 @@ export default function SidebarTabs({
         <button
           type="button"
           onClick={logout}
-          title="Log out"
+          title={t("Log out")}
           className="w-full cursor-pointer px-4 py-2 flex items-center text-left text-red-300 hover:bg-gray-800 hover:text-red-200 transition-colors"
         >
           <LogOut className="h-5 w-5 shrink-0" />
-          {showLabelsHere && <span className="ml-2">Log out</span>}
+          {showLabelsHere && <span className="ml-2">{t("Log out")}</span>}
         </button>
       </div>
     </>

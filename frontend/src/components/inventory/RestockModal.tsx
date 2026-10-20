@@ -1,7 +1,8 @@
 "use client";
 
-import { X, TrendingUp, Package, ArrowUpCircle } from "lucide-react";
+import { Loader2, X, TrendingUp, Package, ArrowUpCircle } from "lucide-react";
 import { type RestockFormData } from "@/components/tabs/InventoryTab";
+import { useLang } from "@/lib/i18n";
 
 type RestockModalProps = {
   closeModal: () => void;
@@ -18,6 +19,7 @@ export default function RestockModal({
   onSubmit,
   isSubmitting,
 }: RestockModalProps) {
+  const { t } = useLang();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
@@ -38,10 +40,10 @@ export default function RestockModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Restock Inventory
+                {t("Restock Inventory")}
               </h2>
               <p className="text-sm text-slate-500">
-                Add stock to this product
+                {t("Add stock to this product")}
               </p>
             </div>
           </div>
@@ -62,10 +64,10 @@ export default function RestockModal({
               </div>
               <div>
                 <h3 className="font-semibold text-emerald-900">
-                  Stock Addition
+                  {t("Stock Addition")}
                 </h3>
                 <p className="text-sm text-emerald-700">
-                  Enter the quantity you want to add
+                  {t("Enter the quantity you want to add")}
                 </p>
               </div>
             </div>
@@ -73,7 +75,7 @@ export default function RestockModal({
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Quantity to Add
+              {t("Quantity to Add")}
             </label>
             <div className="relative">
               <input
@@ -93,7 +95,7 @@ export default function RestockModal({
               </div>
             </div>
             <p className="text-xs text-slate-400">
-              This quantity will be added to the current stock
+              {t("This quantity will be added to the current stock")}
             </p>
           </div>
 
@@ -103,10 +105,9 @@ export default function RestockModal({
                 <TrendingUp className="h-4 w-4 text-emerald-600" />
               </div>
               <div className="text-sm text-slate-600">
-                <p className="font-medium text-slate-700">Restock Summary</p>
+                <p className="font-medium text-slate-700">{t("Restock Summary")}</p>
                 <p className="mt-1 text-xs">
-                  The stock will be immediately updated and available for sales
-                  after restocking.
+                  {t("The stock will be immediately updated and available for sales after restocking.")}
                 </p>
               </div>
             </div>
@@ -119,15 +120,19 @@ export default function RestockModal({
               disabled={isSubmitting}
               className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting || formData.quantity <= 0}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <TrendingUp className="h-4 w-4" />
-              {isSubmitting ? "Restocking..." : "Confirm Restock"}
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <TrendingUp className="h-4 w-4" />
+              )}
+              {isSubmitting ? t("Restocking...") : t("Confirm Restock")}
             </button>
           </div>
         </form>

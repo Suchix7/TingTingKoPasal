@@ -17,7 +17,10 @@ import { useDebounced } from "@/hooks/useDebounced";
 import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
 import CategoriesModal from "@/components/categories/modal";
+import { useLang } from "@/lib/i18n";
+import { StatCardsSkeleton, Skeleton } from "@/components/layout/Skeleton";
 
+import Tn from "@/components/layout/Tn";
 const LIMIT = 10;
 
 type Category = {
@@ -77,6 +80,7 @@ function StatCard({
 }
 
 export default function CategoriesPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -119,10 +123,10 @@ export default function CategoriesPage() {
 
     try {
       await deleteCategory.mutateAsync(deleteConfirm.id);
-      toast.success("Category deleted successfully");
+      toast.success(t("Category deleted successfully"));
       setDeleteConfirm(null);
     } catch {
-      toast.error("Failed to delete category");
+      toast.error(t("Failed to delete category"));
     }
   };
 
@@ -146,9 +150,11 @@ export default function CategoriesPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t("Categories")}
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage product categories for your business.
+            {t("Manage product categories for your business.")}
           </p>
         </div>
 
@@ -157,31 +163,35 @@ export default function CategoriesPage() {
           className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
         >
           <Plus size={18} />
-          Add Category
+          {t("Add Category")}
         </button>
       </div>
 
       {/* Statistics Cards */}
+      {isLoading && !data ? (
+        <StatCardsSkeleton count={3} className="grid gap-4 grid-cols-1 md:grid-cols-3" />
+      ) : (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <StatCard
-          title="Total Categories"
+          title={t("Total Categories")}
           value={data?.stats?.totalCategories || 0}
           icon={FolderTree}
-          subtitle="All product categories"
+          subtitle={t("All product categories")}
         />
         <StatCard
-          title="With Description"
+          title={t("With Description")}
           value={data?.stats?.categoriesWithDesc || 0}
           icon={FileText}
-          subtitle="Categories that have descriptions"
+          subtitle={t("Categories that have descriptions")}
         />
         <StatCard
-          title="New This Week"
+          title={t("New This Week")}
           value={data?.stats?.recentCategories || 0}
           icon={Clock}
-          subtitle="Added in last 7 days"
+          subtitle={t("Added in last 7 days")}
         />
       </div>
+      )}
 
       {/* Search Bar */}
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
@@ -193,7 +203,7 @@ export default function CategoriesPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search categories by name or description..."
+            placeholder={t("Search categories by name or description...")}
             className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
           />
         </div>
@@ -203,8 +213,10 @@ export default function CategoriesPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h2 className="font-bold text-gray-900">All Categories</h2>
-            <p className="text-sm text-gray-500">{totalCount} total records</p>
+            <h2 className="font-bold text-gray-900">{t("All Categories")}</h2>
+            <p className="text-sm text-gray-500">
+              {totalCount} {t("total records")}
+            </p>
           </div>
           {isFetching ? (
             <Loader2 className="animate-spin text-gray-400" size={20} />
@@ -215,27 +227,33 @@ export default function CategoriesPage() {
           <table className="w-full min-w-[800px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-5 py-3">SN</th>
-                <th className="px-5 py-3">Thumbnail</th>
-                <th className="px-5 py-3">Category Name</th>
-                <th className="px-5 py-3">Description</th>
-                <th className="px-5 py-3">Created</th>
-                <th className="px-5 py-3">Last Updated</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3">{t("SN")}</th>
+                <th className="px-5 py-3">{t("Thumbnail")}</th>
+                <th className="px-5 py-3">{t("Category Name")}</th>
+                <th className="px-5 py-3">{t("Description")}</th>
+                <th className="px-5 py-3">{t("Created")}</th>
+                <th className="px-5 py-3">{t("Last Updated")}</th>
+                <th className="px-5 py-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody
+              className={`divide-y divide-gray-100 transition-opacity ${
+                isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-5 py-16 text-center text-gray-500"
-                  >
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
-                    Loading categories...
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, r) => (
+                  <tr key={r} aria-hidden>
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-6" /></td>
+                    <td className="px-5 py-4"><Skeleton className="h-12 w-12 rounded-lg" /></td>
+                    {Array.from({ length: 5 }).map((_, c) => (
+                      <td key={c} className="px-5 py-4">
+                        <Skeleton className={`h-4 ${c % 2 ? "w-1/2" : "w-3/4"}`} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
               ) : categories.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-16 text-center">
@@ -244,12 +262,12 @@ export default function CategoriesPage() {
                       size={48}
                     />
                     <h3 className="text-base font-semibold text-gray-900">
-                      No categories found
+                      {t("No categories found")}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
                       {search
-                        ? "Try adjusting your search terms"
-                        : "Add your first category to organize products"}
+                        ? t("Try adjusting your search terms")
+                        : t("Add your first category to organize products")}
                     </p>
                     {!search && (
                       <button
@@ -257,7 +275,7 @@ export default function CategoriesPage() {
                         className="mt-4 cursor-pointer inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
                       >
                         <Plus size={16} />
-                        Add Category
+                        {t("Add Category")}
                       </button>
                     )}
                   </td>
@@ -286,7 +304,7 @@ export default function CategoriesPage() {
 
                     <td className="px-5 py-4">
                       <p className="font-medium text-gray-900">
-                        {category.category_name}
+                        <Tn v={category.category_name} />
                       </p>
                     </td>
 
@@ -294,7 +312,7 @@ export default function CategoriesPage() {
                       <p className="text-sm text-gray-500">
                         {category.description || (
                           <span className="italic text-gray-400">
-                            No description
+                            {t("No description")}
                           </span>
                         )}
                       </p>
@@ -313,14 +331,14 @@ export default function CategoriesPage() {
                         <button
                           onClick={() => openEditModal(category)}
                           className="cursor-pointer rounded-xl p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
-                          aria-label="Edit category"
+                          aria-label={t("Edit category")}
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(category)}
                           className="rounded-xl cursor-pointer p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Delete category"
+                          aria-label={t("Delete category")}
                         >
                           <Trash2 size={18} />
                         </button>

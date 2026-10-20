@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  ListSkeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 import { useMemo, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -16,6 +21,7 @@ import {
   Plus,
   Edit3,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import {
   useInventoryCosts,
@@ -28,6 +34,8 @@ import { useProducts } from "@/hooks/useProducts";
 import { useDebounced } from "@/hooks/useDebounced";
 import InventoryCostModal from "@/components/inventory-costs/InventoryCostModal";
 import Pagination from "@/components/layout/Pagination";
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
 
 export type InventoryCostFormData = {
   product_id: string | "";
@@ -100,6 +108,7 @@ const formatPercentage = (value: number) => {
 };
 
 export default function InventoryCostsPage() {
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const [costFilter, setCostFilter] = useState<CostRatingKey | "ALL">("ALL");
   const [sortBy, setSortBy] = useState<
@@ -124,6 +133,7 @@ export default function InventoryCostsPage() {
   const {
     data: costsData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useInventoryCosts(
@@ -189,9 +199,9 @@ export default function InventoryCostsPage() {
     setDeleteConfirmId(productId);
     try {
       await deleteMutation.mutateAsync(productId);
-      toast.success("Inventory cost deleted successfully");
+      toast.success(t("Inventory cost deleted successfully"));
     } catch (error) {
-      toast.error("Failed to delete inventory cost");
+      toast.error(t("Failed to delete inventory cost"));
       console.error("Delete failed:", error);
     } finally {
       setDeleteConfirmId(null);
@@ -200,7 +210,7 @@ export default function InventoryCostsPage() {
 
   const handleSubmit = async () => {
     if (!formData.product_id) {
-      toast.error("Please select a product");
+      toast.error(t("Please select a product"));
       return;
     }
 
@@ -215,7 +225,7 @@ export default function InventoryCostsPage() {
           insurance_cost: formData.insurance_cost,
           spoilage_rate: formData.spoilage_rate,
         });
-        toast.success("Inventory cost updated successfully");
+        toast.success(t("Inventory cost updated successfully"));
       } else {
         await createMutation.mutateAsync({
           product_id: formData.product_id as string,
@@ -224,14 +234,14 @@ export default function InventoryCostsPage() {
           insurance_cost: formData.insurance_cost,
           spoilage_rate: formData.spoilage_rate,
         });
-        toast.success("Inventory cost created successfully");
+        toast.success(t("Inventory cost created successfully"));
       }
       setShowModal(false);
     } catch (error) {
       toast.error(
         selectedCost
-          ? "Failed to update inventory cost"
-          : "Failed to create inventory cost",
+          ? t("Failed to update inventory cost")
+          : t("Failed to create inventory cost"),
       );
       console.error("Submit failed:", error);
     } finally {
@@ -248,17 +258,17 @@ export default function InventoryCostsPage() {
               <AlertTriangle className="h-10 w-10 text-rose-400" />
             </div>
             <h3 className="mt-6 text-xl font-semibold text-slate-900">
-              Failed to Load Inventory Costs
+              {t("Failed to Load Inventory Costs")}
             </h3>
             <p className="mt-3 text-sm text-slate-500">
-              Please check your connection and try again.
+              {t("Please check your connection and try again.")}
             </p>
             <button
               onClick={() => refetch()}
               className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
             >
               <RefreshCw className="h-4 w-4" />
-              Retry
+              {t("Retry")}
             </button>
           </div>
         </div>
@@ -280,10 +290,10 @@ export default function InventoryCostsPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Inventory Costs
+                  {t("Inventory Costs")}
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                  Track holding, storage, insurance costs and spoilage rates
+                  {t("Track holding, storage, insurance costs and spoilage rates")}
                 </p>
               </div>
             </div>
@@ -293,7 +303,7 @@ export default function InventoryCostsPage() {
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by product name..."
+                  placeholder={t("Search by product name...")}
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -312,10 +322,10 @@ export default function InventoryCostsPage() {
                     }
                     className="w-full outline-none"
                   >
-                    <option value="ALL">All Cost Levels</option>
-                    <option value="HIGH">High Cost</option>
-                    <option value="MEDIUM">Medium Cost</option>
-                    <option value="LOW">Low Cost</option>
+                    <option value="ALL">{t("All Cost Levels")}</option>
+                    <option value="HIGH">{t("High Cost")}</option>
+                    <option value="MEDIUM">{t("Medium Cost")}</option>
+                    <option value="LOW">{t("Low Cost")}</option>
                   </select>
                 </div>
 
@@ -325,12 +335,12 @@ export default function InventoryCostsPage() {
                     onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                     className="w-full outline-none"
                   >
-                    <option value="updated_desc">Last Updated</option>
-                    <option value="name_asc">Name A-Z</option>
-                    <option value="name_desc">Name Z-A</option>
-                    <option value="total_asc">Total Cost Low-High</option>
-                    <option value="total_desc">Total Cost High-Low</option>
-                    <option value="spoilage_desc">Highest Spoilage</option>
+                    <option value="updated_desc">{t("Last Updated")}</option>
+                    <option value="name_asc">{t("Name A-Z")}</option>
+                    <option value="name_desc">{t("Name Z-A")}</option>
+                    <option value="total_asc">{t("Total Cost Low-High")}</option>
+                    <option value="total_desc">{t("Total Cost High-Low")}</option>
+                    <option value="spoilage_desc">{t("Highest Spoilage")}</option>
                   </select>
                 </div>
 
@@ -339,13 +349,19 @@ export default function InventoryCostsPage() {
                   className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Cost
+                  {t("Add Cost")}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Stats Cards */}
+          {isLoading ? (
+            <StatCardsSkeleton
+              count={4}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            />
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md">
               <div className="flex items-center gap-3">
@@ -354,7 +370,7 @@ export default function InventoryCostsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Total Products
+                    {t("Total Products")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {costsData?.stats?.total}
@@ -370,7 +386,7 @@ export default function InventoryCostsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Total Costs
+                    {t("Total Costs")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {formatCurrency(costsData?.stats?.totalCosts || 0)}
@@ -386,7 +402,7 @@ export default function InventoryCostsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Avg. Spoilage
+                    {t("Avg. Spoilage")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {formatPercentage(costsData?.stats?.avgSpoilage || 0)}
@@ -402,7 +418,7 @@ export default function InventoryCostsPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Insurance Total
+                    {t("Insurance Total")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {formatCurrency(costsData?.stats?.totalInsurance || 0)}
@@ -411,14 +427,21 @@ export default function InventoryCostsPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Cost Breakdown Cards */}
+          {isLoading ? (
+            <StatCardsSkeleton
+              count={3}
+              className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            />
+          ) : (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-emerald-700">
-                    Holding Costs
+                    {t("Holding Costs")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-emerald-900">
                     {formatCurrency(costsData?.stats?.totalHolding || 0)}
@@ -434,7 +457,7 @@ export default function InventoryCostsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-blue-700">
-                    Storage Costs
+                    {t("Storage Costs")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-blue-900">
                     {formatCurrency(costsData?.stats?.totalStorage || 0)}
@@ -450,7 +473,7 @@ export default function InventoryCostsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-purple-700">
-                    Insurance Costs
+                    {t("Insurance Costs")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-purple-900">
                     {formatCurrency(costsData?.stats?.totalInsurance || 0)}
@@ -462,30 +485,64 @@ export default function InventoryCostsPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Table */}
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+          <div
+            className={`overflow-hidden rounded-3xl border border-slate-200 bg-white transition-opacity ${
+              isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-20 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
-              </div>
+              <>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Product")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Holding Cost/Unit")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Storage Cost")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Insurance")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Spoilage Rate")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Total Cost")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={6} cols={7} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 lg:hidden">
+                  <ListSkeleton rows={4} />
+                </div>
+              </>
             ) : inventoryCosts.length === 0 ? (
               <div className="p-12 text-center">
                 <Calculator className="mx-auto h-12 w-12 text-slate-300" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">
                   {search || costFilter !== "ALL"
-                    ? "No matching costs found"
-                    : "No inventory costs recorded"}
+                    ? t("No matching costs found")
+                    : t("No inventory costs recorded")}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   {search || costFilter !== "ALL"
-                    ? "Try adjusting your search or filters."
-                    : "Add cost information for your products to get started."}
+                    ? t("Try adjusting your search or filters.")
+                    : t("Add cost information for your products to get started.")}
                 </p>
                 {!search && costFilter === "ALL" && (
                   <button
@@ -493,7 +550,7 @@ export default function InventoryCostsPage() {
                     className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
                   >
                     <Plus className="h-4 w-4" />
-                    Add First Cost Entry
+                    {t("Add First Cost Entry")}
                   </button>
                 )}
               </div>
@@ -504,25 +561,25 @@ export default function InventoryCostsPage() {
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Product
+                          {t("Product")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Holding Cost/Unit
+                          {t("Holding Cost/Unit")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Storage Cost
+                          {t("Storage Cost")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Insurance
+                          {t("Insurance")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Spoilage Rate
+                          {t("Spoilage Rate")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Total Cost
+                          {t("Total Cost")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Actions
+                          {t("Actions")}
                         </th>
                       </tr>
                     </thead>
@@ -565,7 +622,7 @@ export default function InventoryCostsPage() {
                                 </div>
                                 <div>
                                   <p className="font-medium text-slate-900">
-                                    {item.product_name}
+                                    <Tn v={item.product_name} />
                                   </p>
                                 </div>
                               </div>
@@ -613,7 +670,7 @@ export default function InventoryCostsPage() {
                                   <span
                                     className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${ratingStyle.badge}`}
                                   >
-                                    {COST_RATING[rating].label}
+                                    {t(COST_RATING[rating].label)}
                                   </span>
                                 </div>
                                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -634,7 +691,7 @@ export default function InventoryCostsPage() {
                                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   <Edit3 className="h-3.5 w-3.5" />
-                                  Edit
+                                  {t("Edit")}
                                 </button>
                                 <button
                                   onClick={() => handleDelete(item.product_id)}
@@ -644,10 +701,14 @@ export default function InventoryCostsPage() {
                                   }
                                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  {deleteConfirmId === item.product_id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
                                   {deleteConfirmId === item.product_id
-                                    ? "Deleting..."
-                                    : "Delete"}
+                                    ? t("Deleting...")
+                                    : t("Delete")}
                                 </button>
                               </div>
                             </td>
@@ -689,7 +750,7 @@ export default function InventoryCostsPage() {
                             </div>
                             <div>
                               <h3 className="font-semibold text-slate-900">
-                                {item.product_name}
+                                <Tn v={item.product_name} />
                               </h3>
                             </div>
                           </div>
@@ -697,14 +758,14 @@ export default function InventoryCostsPage() {
                             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${ratingStyle.badge}`}
                           >
                             <RatingIcon className="h-3 w-3" />
-                            {COST_RATING[rating].label}
+                            {t(COST_RATING[rating].label)}
                           </span>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3">
                           <div>
                             <p className="text-xs text-slate-500">
-                              Holding Cost/Unit
+                              {t("Holding Cost/Unit")}
                             </p>
                             <p className="font-semibold text-slate-900">
                               {formatCurrency(item.holding_cost_per_unit)}
@@ -712,21 +773,21 @@ export default function InventoryCostsPage() {
                           </div>
                           <div>
                             <p className="text-xs text-slate-500">
-                              Storage Cost
+                              {t("Storage Cost")}
                             </p>
                             <p className="font-semibold text-slate-900">
                               {formatCurrency(item.storage_cost)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-slate-500">Insurance</p>
+                            <p className="text-xs text-slate-500">{t("Insurance")}</p>
                             <p className="font-semibold text-slate-900">
                               {formatCurrency(item.insurance_cost)}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-slate-500">
-                              Spoilage Rate
+                              {t("Spoilage Rate")}
                             </p>
                             <p className="font-semibold text-slate-900">
                               {formatPercentage(item.spoilage_rate)}
@@ -736,7 +797,7 @@ export default function InventoryCostsPage() {
 
                         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
                           <div>
-                            <p className="text-xs text-slate-500">Total Cost</p>
+                            <p className="text-xs text-slate-500">{t("Total Cost")}</p>
                             <p className="text-lg font-bold text-slate-900">
                               {formatCurrency(
                                 item.holding_cost_per_unit +
@@ -761,7 +822,11 @@ export default function InventoryCostsPage() {
                               }
                               className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteConfirmId === item.product_id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </button>
                           </div>
                         </div>

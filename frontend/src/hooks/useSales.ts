@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useMutation,
   useQuery,
@@ -164,7 +165,7 @@ export const useCreateSale = () => {
       queryClient.invalidateQueries({ queryKey: ["abc-classification"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create sale.");
+      toast.error(error.response?.data?.message || tr("Failed to create sale."));
     },
   });
 };
@@ -200,7 +201,7 @@ export const useUpdateSale = () => {
       queryClient.invalidateQueries({ queryKey: ["abc-classification"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to update sale.");
+      toast.error(error.response?.data?.message || tr("Failed to update sale."));
     },
   });
 };
@@ -237,7 +238,7 @@ export const useRevokeSale = () => {
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to revoke sale.");
+      toast.error(error.response?.data?.message || tr("Failed to revoke sale."));
     },
   });
 };
@@ -269,7 +270,7 @@ export const useDeleteSale = () => {
       queryClient.invalidateQueries({ queryKey: ["abc-classification"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to delete sale.");
+      toast.error(error.response?.data?.message || tr("Failed to delete sale."));
     },
   });
 };
@@ -294,7 +295,7 @@ export const useUploadSalePaymentProof = () => {
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Failed to upload payment proof photo.",
+          tr("Failed to upload payment proof photo."),
       );
     },
   });

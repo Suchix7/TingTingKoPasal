@@ -3,6 +3,7 @@ import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 import { Toaster } from "react-hot-toast";
 import { Poppins } from "next/font/google";
+import { LanguageProvider } from "@/lib/i18n";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
-        <QueryProvider>{children}</QueryProvider>
+        <LanguageProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </LanguageProvider>
         <Toaster position="top-right" />
       </body>
     </html>

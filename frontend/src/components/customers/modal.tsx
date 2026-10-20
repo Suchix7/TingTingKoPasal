@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLang } from "@/lib/i18n";
 import {
   useCustomers,
   useCreateCustomer,
@@ -36,6 +37,7 @@ export default function CustomerModal({
   selectedCustomer,
   setIsModalOpen,
 }: any) {
+  const { t } = useLang();
   const [formData, setFormData] = useState(emptyCustomer);
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
@@ -91,12 +93,12 @@ export default function CustomerModal({
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">
-                {selectedCustomer ? "Edit Customer" : "Add New Customer"}
+                {selectedCustomer ? t("Edit Customer") : t("Add New Customer")}
               </h2>
               <p className="text-sm text-gray-500 mt-0.5">
                 {selectedCustomer
-                  ? "Update customer information"
-                  : "Fill in the details to add a new customer"}
+                  ? t("Update customer information")
+                  : t("Fill in the details to add a new customer")}
               </p>
             </div>
           </div>
@@ -114,11 +116,11 @@ export default function CustomerModal({
           <div className="grid gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Customer Name <span className="text-red-500">*</span>
+                {t("Customer Name")} <span className="text-red-500">*</span>
               </label>
               <input
                 required
-                placeholder="Enter customer name"
+                placeholder={t("Enter customer name")}
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -129,12 +131,12 @@ export default function CustomerModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone
+                {t("Phone")}
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
-                  placeholder="Phone number"
+                  placeholder={t("Phone number")}
                   value={formData.phone}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
@@ -146,13 +148,13 @@ export default function CustomerModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                {t("Email")}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="email"
-                  placeholder="Email address"
+                  placeholder={t("Email address")}
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
@@ -164,7 +166,7 @@ export default function CustomerModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
+                {t("Status")}
               </label>
               <select
                 value={formData.status}
@@ -176,19 +178,19 @@ export default function CustomerModal({
                 }
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900"
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="Active">{t("Active")}</option>
+                <option value="Inactive">{t("Inactive")}</option>
               </select>
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address
+                {t("Address")}
               </label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <textarea
-                  placeholder="Customer address"
+                  placeholder={t("Customer address")}
                   value={formData.address}
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
@@ -201,7 +203,7 @@ export default function CustomerModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Credit
+                {t("Current Credit")}
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -223,7 +225,7 @@ export default function CustomerModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Credit Limit
+                {t("Credit Limit")}
               </label>
               <div className="relative">
                 <BarChart3 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -246,10 +248,10 @@ export default function CustomerModal({
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes
+                {t("Notes")}
               </label>
               <textarea
-                placeholder="Additional notes about this customer"
+                placeholder={t("Additional notes about this customer")}
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
@@ -265,9 +267,10 @@ export default function CustomerModal({
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors"
+              disabled={createCustomer.isPending || updateCustomer.isPending}
+              className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
 
             <button
@@ -278,12 +281,12 @@ export default function CustomerModal({
               {createCustomer.isPending || updateCustomer.isPending ? (
                 <>
                   <Loader className="h-4 w-4 animate-spin" />
-                  Saving...
+                  {t("Saving...")}
                 </>
               ) : selectedCustomer ? (
-                "Update Customer"
+                t("Update Customer")
               ) : (
-                "Create Customer"
+                t("Create Customer")
               )}
             </button>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Loader2,
   X,
   TrendingDown,
   Package,
@@ -8,6 +9,7 @@ import {
   ArrowDownCircle,
 } from "lucide-react";
 import { type DeductFormData } from "@/components/tabs/InventoryTab";
+import { useLang } from "@/lib/i18n";
 
 type DeductModalProps = {
   closeModal: () => void;
@@ -24,6 +26,7 @@ export default function DeductModal({
   onSubmit,
   isSubmitting,
 }: DeductModalProps) {
+  const { t } = useLang();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();
@@ -44,10 +47,10 @@ export default function DeductModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Deduct Inventory
+                {t("Deduct Inventory")}
               </h2>
               <p className="text-sm text-slate-500">
-                Remove stock from this product
+                {t("Remove stock from this product")}
               </p>
             </div>
           </div>
@@ -67,9 +70,9 @@ export default function DeductModal({
                 <ArrowDownCircle className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-rose-900">Stock Deduction</h3>
+                <h3 className="font-semibold text-rose-900">{t("Stock Deduction")}</h3>
                 <p className="text-sm text-rose-700">
-                  Enter the quantity you want to remove
+                  {t("Enter the quantity you want to remove")}
                 </p>
               </div>
             </div>
@@ -77,7 +80,7 @@ export default function DeductModal({
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Quantity to Deduct
+              {t("Quantity to Deduct")}
             </label>
             <div className="relative">
               <input
@@ -97,7 +100,7 @@ export default function DeductModal({
               </div>
             </div>
             <p className="text-xs text-slate-400">
-              This quantity will be subtracted from the current stock
+              {t("This quantity will be subtracted from the current stock")}
             </p>
           </div>
 
@@ -107,10 +110,9 @@ export default function DeductModal({
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
               </div>
               <div className="text-sm text-slate-600">
-                <p className="font-medium text-amber-700">Important Note</p>
+                <p className="font-medium text-amber-700">{t("Important Note")}</p>
                 <p className="mt-1 text-xs text-amber-600">
-                  Ensure the deduction quantity does not exceed the available
-                  stock. This action cannot be undone.
+                  {t("Ensure the deduction quantity does not exceed the available stock. This action cannot be undone.")}
                 </p>
               </div>
             </div>
@@ -123,15 +125,19 @@ export default function DeductModal({
               disabled={isSubmitting}
               className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting || formData.quantity <= 0}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <TrendingDown className="h-4 w-4" />
-              {isSubmitting ? "Deducting..." : "Confirm Deduction"}
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <TrendingDown className="h-4 w-4" />
+              )}
+              {isSubmitting ? t("Deducting...") : t("Confirm Deduction")}
             </button>
           </div>
         </form>

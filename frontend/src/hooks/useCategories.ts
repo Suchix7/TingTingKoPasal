@@ -9,6 +9,7 @@ import axiosInstance from "@/lib/axiosInstance";
 type Category = {
   id: string;
   category_name: string;
+  category_name_zh?: string | null;
   description?: string;
   thumbnail_url?: string | null;
   created_at: string;
@@ -60,6 +61,7 @@ export const useCreateCategory = () => {
   return useMutation({
     mutationFn: async (newCategory: {
       category_name: string;
+      category_name_zh?: string;
       description?: string;
     }) => {
       try {

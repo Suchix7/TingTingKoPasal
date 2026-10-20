@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useMutation,
   useQuery,
@@ -91,11 +92,11 @@ export const useCreateSupplier = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success("Supplier created successfully.");
+      toast.success(tr("Supplier created successfully."));
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to create supplier.",
+        error.response?.data?.message || tr("Failed to create supplier."),
       );
     },
   });
@@ -115,11 +116,11 @@ export const useUpdateSupplier = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       queryClient.invalidateQueries({ queryKey: ["suppliers", id] });
-      toast.success("Supplier updated successfully.");
+      toast.success(tr("Supplier updated successfully."));
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to update supplier.",
+        error.response?.data?.message || tr("Failed to update supplier."),
       );
     },
   });
@@ -135,11 +136,11 @@ export const useDeleteSupplier = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success("Supplier deleted successfully.");
+      toast.success(tr("Supplier deleted successfully."));
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to delete supplier.",
+        error.response?.data?.message || tr("Failed to delete supplier."),
       );
     },
   });

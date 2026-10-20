@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 
@@ -154,7 +155,7 @@ const fetchDaybook = async (date: string): Promise<DaybookResponse> => {
     return res.data;
   } catch (error) {
     console.log("Error while fetching daybook:", error);
-    throw new Error("Failed to fetch daybook");
+    throw new Error(tr("Failed to fetch daybook"));
   }
 };
 

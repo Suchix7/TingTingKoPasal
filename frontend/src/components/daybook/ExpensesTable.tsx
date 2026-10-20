@@ -1,8 +1,10 @@
 "use client";
 
 import { CreditCard } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 import type { DaybookExpense } from "@/hooks/useDaybook";
 
+import Tn from "@/components/layout/Tn";
 const categoryColors: Record<string, string> = {
   Rent: "bg-purple-100 text-purple-700 border-purple-200",
   Utilities: "bg-blue-100 text-blue-700 border-blue-200",
@@ -23,10 +25,11 @@ export default function DaybookExpensesTable({
   expenses,
   money,
 }: DaybookExpensesTableProps) {
+  const { t } = useLang();
   if (expenses.length === 0) {
     return (
       <div className="p-8 text-center text-sm text-gray-500">
-        No expenses recorded for this day
+        {t("No expenses recorded for this day")}
       </div>
     );
   }
@@ -36,11 +39,11 @@ export default function DaybookExpensesTable({
       <table className="w-full min-w-[800px] text-sm">
         <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-5 py-3">Title</th>
-            <th className="px-5 py-3">Category</th>
-            <th className="px-5 py-3">Amount</th>
-            <th className="px-5 py-3">Payment Method</th>
-            <th className="px-5 py-3">Notes</th>
+            <th className="px-5 py-3">{t("Title")}</th>
+            <th className="px-5 py-3">{t("Category")}</th>
+            <th className="px-5 py-3">{t("Amount")}</th>
+            <th className="px-5 py-3">{t("Payment Method")}</th>
+            <th className="px-5 py-3">{t("Notes")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -56,7 +59,7 @@ export default function DaybookExpensesTable({
                     categoryColors[expense.category] || categoryColors.Other
                   }`}
                 >
-                  {expense.category}
+                  {t(expense.category)}
                 </span>
               </td>
               <td className="px-5 py-4 font-bold text-red-700">
@@ -66,10 +69,10 @@ export default function DaybookExpensesTable({
                 {expense.payment_method ? (
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <CreditCard size={14} className="text-gray-400" />
-                    {expense.payment_method}
+                    <Tn v={expense.payment_method} />
                   </div>
                 ) : (
-                  <span className="text-sm text-gray-400">Not specified</span>
+                  <span className="text-sm text-gray-400">{t("Not specified")}</span>
                 )}
               </td>
               <td className="px-5 py-4 max-w-[200px] truncate text-sm text-gray-600">

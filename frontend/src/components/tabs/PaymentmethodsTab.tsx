@@ -31,8 +31,11 @@ import PaymentMethodModal from "@/components/payment-methods/modal";
 import AddFundsModal from "@/components/payment-methods/add-funds-modal";
 import WithdrawFundsModal from "@/components/payment-methods/withdraw-funds-modal";
 import TransferFundsModal from "@/components/payment-methods/transfer-funds-modal";
+import { useLang } from "@/lib/i18n";
+import { Skeleton, StatCardsSkeleton } from "@/components/layout/Skeleton";
 import DeleteConfirmModal from "../layout/DeleteConfirmModal";
 
+import Tn from "@/components/layout/Tn";
 type FormState = {
   payment_method: string;
   type: string;
@@ -50,6 +53,7 @@ const initialForm: FormState = {
 };
 
 export default function PaymentMethodsPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -73,7 +77,7 @@ export default function PaymentMethodsPage() {
 
   const limit = 6;
 
-  const { data, isLoading } = usePaymentMethods(page, limit);
+  const { data, isLoading, isFetching } = usePaymentMethods(page, limit);
   const createMutation = useCreatePaymentMethod();
   const updateMutation = useUpdatePaymentMethod();
   const deleteMutation = useDeletePaymentMethod();
@@ -132,21 +136,21 @@ export default function PaymentMethodsPage() {
     const maxSizeInMb = 2;
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Please upload a PNG, JPG, or WEBP image.");
+      toast.error(t("Please upload a PNG, JPG, or WEBP image."));
       return;
     }
 
     if (file.size > maxSizeInMb * 1024 * 1024) {
-      toast.error("Image must be smaller than 2MB.");
+      toast.error(t("Image must be smaller than 2MB."));
       return;
     }
 
     try {
       const base64 = await readFileAsBase64(file);
       setForm((prev) => ({ ...prev, qr_code: base64 }));
-      toast.success("QR image uploaded.");
+      toast.success(t("QR image uploaded."));
     } catch {
-      toast.error("Failed to read image.");
+      toast.error(t("Failed to read image."));
     }
   };
 
@@ -158,12 +162,12 @@ export default function PaymentMethodsPage() {
 
   const validateForm = () => {
     if (!form.payment_method.trim()) {
-      toast.error("Payment method name is required.");
+      toast.error(t("Payment method name is required."));
       return false;
     }
 
     if (!form.type.trim()) {
-      toast.error("Payment type is required.");
+      toast.error(t("Payment type is required."));
       return false;
     }
 
@@ -189,12 +193,12 @@ export default function PaymentMethodsPage() {
 
     toast.promise(promise, {
       loading: editing
-        ? "Updating payment method..."
-        : "Creating payment method...",
-      success: editing ? "Payment method updated." : "Payment method created.",
+        ? t("Updating payment method...")
+        : t("Creating payment method..."),
+      success: editing ? t("Payment method updated.") : t("Payment method created."),
       error: editing
-        ? "Failed to update payment method."
-        : "Failed to create payment method.",
+        ? t("Failed to update payment method.")
+        : t("Failed to create payment method."),
     });
 
     try {
@@ -203,14 +207,14 @@ export default function PaymentMethodsPage() {
     } catch {
       toast.error(
         editing
-          ? "Failed to update payment method."
-          : "Failed to create payment method.",
+          ? t("Failed to update payment method.")
+          : t("Failed to create payment method."),
       );
     }
   };
 
   const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Delete this payment method?");
+    const confirmed = window.confirm(t("Delete this payment method?"));
     if (!confirmed) return;
 
     setDeletingId(id);
@@ -218,9 +222,9 @@ export default function PaymentMethodsPage() {
     const promise = deleteMutation.mutateAsync(id);
 
     toast.promise(promise, {
-      loading: "Deleting payment method...",
-      success: "Payment method deleted.",
-      error: "Failed to delete payment method.",
+      loading: t("Deleting payment method..."),
+      success: t("Payment method deleted."),
+      error: t("Failed to delete payment method."),
     });
 
     try {
@@ -244,16 +248,16 @@ export default function PaymentMethodsPage() {
     });
 
     toast.promise(promise, {
-      loading: "Adding funds...",
-      success: "Funds added successfully.",
-      error: "Failed to add funds.",
+      loading: t("Adding funds..."),
+      success: t("Funds added successfully."),
+      error: t("Failed to add funds."),
     });
 
     try {
       await promise;
       setAddFundsModal({ open: false, method: null });
     } catch {
-      toast.error("Failed to add funds.");
+      toast.error(t("Failed to add funds."));
     }
   };
 
@@ -271,16 +275,16 @@ export default function PaymentMethodsPage() {
     });
 
     toast.promise(promise, {
-      loading: "Withdrawing funds...",
-      success: "Funds withdrawn successfully.",
-      error: "Failed to withdraw funds.",
+      loading: t("Withdrawing funds..."),
+      success: t("Funds withdrawn successfully."),
+      error: t("Failed to withdraw funds."),
     });
 
     try {
       await promise;
       setWithdrawFundsModal({ open: false, method: null });
     } catch {
-      toast.error("Failed to withdraw funds.");
+      toast.error(t("Failed to withdraw funds."));
     }
   };
 
@@ -298,16 +302,16 @@ export default function PaymentMethodsPage() {
     });
 
     toast.promise(promise, {
-      loading: "Transferring funds...",
-      success: "Funds transferred successfully.",
-      error: "Failed to transfer funds.",
+      loading: t("Transferring funds..."),
+      success: t("Funds transferred successfully."),
+      error: t("Failed to transfer funds."),
     });
 
     try {
       await promise;
       setTransferFundsModal({ open: false, fromMethod: null });
     } catch {
-      toast.error("Failed to transfer funds.");
+      toast.error(t("Failed to transfer funds."));
     }
   };
 
@@ -342,10 +346,10 @@ export default function PaymentMethodsPage() {
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Payment Methods
+              {t("Payment Methods")}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Manage payment options and track balances across all methods.
+              {t("Manage payment options and track balances across all methods.")}
             </p>
           </div>
 
@@ -357,84 +361,99 @@ export default function PaymentMethodsPage() {
               className="inline-flex cursor-pointer h-11 items-center gap-2 justify-center rounded-xl border border-neutral-200 bg-white px-5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:border-neutral-300 active:scale-[0.98]"
             >
               <ArrowLeftRight className="h-4 w-4" />
-              Transfer
+              {t("Transfer")}
             </button>
             <button
               onClick={openCreate}
               className="inline-flex cursor-pointer h-11 items-center gap-2 justify-center rounded-xl bg-neutral-900 px-5 text-sm font-medium text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800 hover:shadow-neutral-900/20 active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
-              Add payment method
+              {t("Add payment method")}
             </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="mb-8 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
-                <Wallet className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm text-neutral-500">Total Balance</p>
-                <p className="text-2xl font-semibold text-neutral-900">
-                  {formatCurrency(totalBalance)}
-                </p>
+        {isLoading ? (
+          <StatCardsSkeleton
+            count={3}
+            className="mb-8 grid gap-4 lg:grid-cols-3"
+          />
+        ) : (
+          <div className="mb-8 grid gap-4 lg:grid-cols-3">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+                  <Wallet className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-neutral-500">{t("Total Balance")}</p>
+                  <p className="text-2xl font-semibold text-neutral-900">
+                    {formatCurrency(totalBalance)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-neutral-500">Total Inflow</p>
-                <p className="text-2xl font-semibold text-blue-600">
-                  {formatCurrency(totalInflow)}
-                </p>
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-neutral-500">{t("Total Inflow")}</p>
+                  <p className="text-2xl font-semibold text-blue-600">
+                    {formatCurrency(totalInflow)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-neutral-500">Total Outflow</p>
-                <p className="text-2xl font-semibold text-red-600">
-                  {formatCurrency(totalOutflow)}
-                </p>
+            <div className="rounded-2xl border border-gray-200 bg-white p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-neutral-500">{t("Total Outflow")}</p>
+                  <p className="text-2xl font-semibold text-red-600">
+                    {formatCurrency(totalOutflow)}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Stats Bar */}
+        {isLoading ? (
+          <div className="mb-6 flex flex-wrap items-center gap-4" aria-hidden>
+            <Skeleton className="h-9 w-24 rounded-xl" />
+            <Skeleton className="h-9 w-24 rounded-xl" />
+            <Skeleton className="h-9 w-24 rounded-xl" />
+          </div>
+        ) : (
         <div className="mb-6 flex flex-wrap items-center gap-4">
           <div className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-600">
             <span className="font-medium text-neutral-900">
               {data?.totalCount ?? 0}
             </span>{" "}
-            methods
+            {t("methods")}
           </div>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
             <span className="font-medium">
               {methods.filter((item) => item.status === "Active").length}
             </span>{" "}
-            active
+            {t("active")}
           </div>
           <div className="rounded-xl border border-neutral-200 bg-neutral-100 px-4 py-2 text-sm text-neutral-600">
             <span className="font-medium">
               {methods.filter((item) => item.status === "Inactive").length}
             </span>{" "}
-            inactive
+            {t("inactive")}
           </div>
         </div>
+        )}
 
         {/* Payment Method Cards */}
         {isLoading ? (
@@ -453,24 +472,27 @@ export default function PaymentMethodsPage() {
                 <Wallet className="h-8 w-8 text-neutral-400" />
               </div>
               <h3 className="mt-6 text-base font-semibold text-neutral-900">
-                No payment methods yet
+                {t("No payment methods yet")}
               </h3>
               <p className="mt-2 text-sm text-neutral-500">
-                Add your first payment method to start tracking balances and
-                transactions.
+                {t("Add your first payment method to start tracking balances and transactions.")}
               </p>
               <button
                 onClick={openCreate}
                 className="mt-6 inline-flex h-10 items-center gap-2 justify-center rounded-xl bg-neutral-900 px-4 text-sm font-medium text-white transition hover:bg-neutral-800"
               >
                 <Plus className="h-4 w-4" />
-                Add payment method
+                {t("Add payment method")}
               </button>
             </div>
           </div>
         ) : (
           <>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-opacity ${
+                isFetching ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               {methods.map((item) => {
                 const isDeleting = deletingId === item.id;
 
@@ -486,7 +508,7 @@ export default function PaymentMethodsPage() {
                           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white">
                             <img
                               src={item.qr_code}
-                              alt={`${item.payment_method} QR`}
+                              alt={`${item.payment_method} ${t("QR")}`}
                               className="h-full w-full object-cover"
                             />
                           </div>
@@ -497,7 +519,7 @@ export default function PaymentMethodsPage() {
                         )}
                         <div>
                           <h3 className="font-semibold text-neutral-900">
-                            {item.payment_method}
+                            <Tn v={item.payment_method} />
                           </h3>
                           <span
                             className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -506,7 +528,7 @@ export default function PaymentMethodsPage() {
                                 : "bg-blue-100 text-blue-700"
                             }`}
                           >
-                            {item.type}
+                            {t(item.type)}
                           </span>
                         </div>
                       </div>
@@ -518,7 +540,7 @@ export default function PaymentMethodsPage() {
                           }
                           disabled={isDeleting || isSubmitting}
                           className="rounded-lg p-2 cursor-pointer text-neutral-400 transition hover:bg-emerald-50 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
-                          title="Add funds"
+                          title={t("Add funds")}
                         >
                           <DollarSign className="h-4 w-4" />
                         </button>
@@ -528,7 +550,7 @@ export default function PaymentMethodsPage() {
                           }
                           disabled={isDeleting || isSubmitting}
                           className="rounded-lg p-2 cursor-pointer text-neutral-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                          title="Withdraw funds"
+                          title={t("Withdraw funds")}
                         >
                           <MinusCircle className="h-4 w-4" />
                         </button>
@@ -556,7 +578,7 @@ export default function PaymentMethodsPage() {
                     {/* Balance */}
                     <div className="mb-4">
                       <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Current Balance
+                        {t("Current Balance")}
                       </p>
                       <p
                         className={`text-2xl font-bold ${
@@ -575,7 +597,7 @@ export default function PaymentMethodsPage() {
                         <div className="flex items-center gap-1 mb-1">
                           <ArrowUpRight className="h-3.5 w-3.5 text-emerald-600" />
                           <p className="text-xs font-medium text-emerald-700">
-                            Inflow
+                            {t("Inflow")}
                           </p>
                         </div>
                         <p className="text-sm font-semibold text-emerald-700">
@@ -586,7 +608,7 @@ export default function PaymentMethodsPage() {
                         <div className="flex items-center gap-1 mb-1">
                           <ArrowDownRight className="h-3.5 w-3.5 text-red-600" />
                           <p className="text-xs font-medium text-red-700">
-                            Outflow
+                            {t("Outflow")}
                           </p>
                         </div>
                         <p className="text-sm font-semibold text-red-700">
@@ -605,11 +627,11 @@ export default function PaymentMethodsPage() {
                               : "bg-neutral-100 text-neutral-600 ring-1 ring-inset ring-neutral-200"
                           }`}
                         >
-                          {item.status}
+                          {t(item.status)}
                         </span>
                       </div>
                       <p className="text-xs text-neutral-400">
-                        {item.transaction_count || 0} transactions
+                        {item.transaction_count || 0} {t("transactions")}
                       </p>
                     </div>
 
@@ -632,7 +654,7 @@ export default function PaymentMethodsPage() {
                         className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <DollarSign className="h-3.5 w-3.5" />
-                        Add
+                        {t("Add Funds")}
                       </button>
                       <button
                         onClick={() =>
@@ -642,7 +664,7 @@ export default function PaymentMethodsPage() {
                         className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <MinusCircle className="h-3.5 w-3.5" />
-                        Withdraw
+                        {t("Withdraw")}
                       </button>
                     </div>
                   </div>
@@ -653,7 +675,7 @@ export default function PaymentMethodsPage() {
             {/* Pagination */}
             <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white px-6 py-4 sm:flex-row">
               <p className="text-sm text-neutral-500">
-                Showing page {page} of {totalPages}
+                {t("Showing page")} {page} / {totalPages}
               </p>
 
               <div className="flex items-center gap-2">
@@ -662,7 +684,7 @@ export default function PaymentMethodsPage() {
                   onClick={() => setPage((p) => p - 1)}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 px-4 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Previous
+                  {t("Previous")}
                 </button>
 
                 <button
@@ -670,7 +692,7 @@ export default function PaymentMethodsPage() {
                   onClick={() => setPage((p) => p + 1)}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-neutral-200 px-4 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Next
+                  {t("Next")}
                 </button>
               </div>
             </div>
@@ -726,15 +748,15 @@ export default function PaymentMethodsPage() {
       {deleteConfirm && (
         <DeleteConfirmModal
           invoiceNo={deleteConfirm.payment_method}
-          label="payment method"
+          label={t("payment method")}
           isPending={deleteMutation.isPending}
           onConfirm={async () => {
             try {
               await deleteMutation.mutateAsync(deleteConfirm.id);
-              toast.success("Payment method deleted successfully");
+              toast.success(t("Payment method deleted successfully"));
               setDeleteConfirm(null);
             } catch {
-              toast.error("Failed to delete payment method.");
+              toast.error(t("Failed to delete payment method."));
             }
           }}
           onCancel={() => setDeleteConfirm(null)}

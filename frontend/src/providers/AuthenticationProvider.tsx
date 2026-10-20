@@ -1,9 +1,10 @@
 "use client";
 
 import { useAuthStore } from "@/store/auth.store";
-import { Shield } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLang } from "@/lib/i18n";
+import { SlowNotice } from "@/components/layout/Skeleton";
 
 export default function AuthenticationProvider({
   children,
@@ -11,6 +12,7 @@ export default function AuthenticationProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useLang();
   const { checkAuth, authUser } = useAuthStore();
 
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -53,25 +55,22 @@ export default function AuthenticationProvider({
 
   if (isCheckingAuth) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-6">
-          <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-200">
-            <div className="flex flex-col items-center gap-4">
-              <div className="rounded-xl bg-gray-100 p-4">
-                <Shield className="h-8 w-8 text-gray-700 animate-pulse" />
-              </div>
-
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Verifying Access
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Please wait while we check your credentials...
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-50 px-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt=""
+          width={96}
+          height={96}
+          className="h-24 w-24 animate-pulse rounded-full"
+        />
+        <h2 className="mt-5 text-lg font-semibold text-gray-900">
+          {t("Verifying Access")}
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          {t("Please wait while we check your credentials...")}
+        </p>
+        <SlowNotice loading />
       </div>
     );
   }

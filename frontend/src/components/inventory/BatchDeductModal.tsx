@@ -1,7 +1,8 @@
 // components/inventory/BatchDeductModal.tsx
 "use client";
 
-import { X, TrendingDown, Package, AlertTriangle } from "lucide-react";
+import { Loader2, X, TrendingDown, Package, AlertTriangle } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 
 type BatchDeductFormData = {
   batch_id: number | "";
@@ -25,6 +26,7 @@ const BatchDeductModal = ({
   isSubmitting,
   batchNumber,
 }: BatchDeductModalProps) => {
+  const { t } = useLang();
   const handleQuantityChange = (value: string) => {
     const quantity = value === "" ? 0 : Number(value);
     setFormData((prev) => ({
@@ -51,16 +53,17 @@ const BatchDeductModal = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                Deduct from Batch
+                {t("Deduct from Batch")}
               </h2>
               {batchNumber && (
-                <p className="text-sm text-slate-500">Batch: {batchNumber}</p>
+                <p className="text-sm text-slate-500">{t("Batch")}: {batchNumber}</p>
               )}
             </div>
           </div>
           <button
             onClick={closeModal}
-            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            disabled={isSubmitting}
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -74,7 +77,7 @@ const BatchDeductModal = ({
                 htmlFor="batch-deduct-quantity"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                Quantity to Deduct
+                {t("Quantity to Deduct")}
               </label>
               <div className="relative">
                 <Package className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -84,12 +87,12 @@ const BatchDeductModal = ({
                   min="1"
                   value={formData.quantity === 0 ? "" : formData.quantity}
                   onChange={(e) => handleQuantityChange(e.target.value)}
-                  placeholder="Enter quantity"
+                  placeholder={t("Enter quantity")}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
                 />
               </div>
               <p className="mt-1.5 text-xs text-slate-500">
-                Enter the number of units to remove from this batch.
+                {t("Enter the number of units to remove from this batch.")}
               </p>
             </div>
 
@@ -97,8 +100,7 @@ const BatchDeductModal = ({
             <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3">
               <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
               <p className="text-xs text-amber-700">
-                Please ensure the deduction quantity does not exceed the
-                available batch quantity.
+                {t("Please ensure the deduction quantity does not exceed the available batch quantity.")}
               </p>
             </div>
           </div>
@@ -111,7 +113,7 @@ const BatchDeductModal = ({
             disabled={isSubmitting}
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             onClick={onSubmit}
@@ -120,13 +122,13 @@ const BatchDeductModal = ({
           >
             {isSubmitting ? (
               <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Deducting...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("Deducting...")}
               </>
             ) : (
               <>
                 <TrendingDown className="h-4 w-4" />
-                Deduct from Batch
+                {t("Deduct from Batch")}
               </>
             )}
           </button>

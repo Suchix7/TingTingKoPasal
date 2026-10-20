@@ -11,6 +11,7 @@ import {
   QrCode,
   Banknote,
   CreditCard,
+  Loader2,
 } from "lucide-react";
 import {
   useCreatePurchaseOrder,
@@ -29,7 +30,10 @@ import ProductModal from "../product/modal";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import type { SalePayment } from "@/hooks/useSales";
 import PaymentMethodModal from "../payment-methods/modal";
+import { useLang } from "@/lib/i18n";
+import { Skeleton } from "@/components/layout/Skeleton";
 
+import Tn from "@/components/layout/Tn";
 type OrderItem = {
   product_id: string;
   batch_id?: string | null;
@@ -46,6 +50,7 @@ type Props = {
 };
 
 export default function CreatePurchaseOrderModal({ closeModal }: Props) {
+  const { t } = useLang();
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | "">("");
   const [isSupplierDropdownOpen, setIsSupplierDropdownOpen] = useState(false);
   const [supplierSearchTerm, setSupplierSearchTerm] = useState("");
@@ -103,7 +108,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
     if (safeAmount > availableBalances[methodId]) {
       toast.error(
-        `Insufficient balance. Available: ${availableBalances[methodId]}`,
+        `${t("Insufficient balance. Available:")} ${availableBalances[methodId]}`,
       );
       return;
     }
@@ -168,7 +173,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
   const removeItem = (index: number) => {
     if (items.length === 1) {
-      toast.error("At least one item is required");
+      toast.error(t("At least one item is required"));
       return;
     }
     setItems(items.filter((_, i) => i !== index));
@@ -248,21 +253,21 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
   const validateForm = (): boolean => {
     if (!selectedSupplierId) {
-      toast.error("Please select a supplier");
+      toast.error(t("Please select a supplier"));
       return false;
     }
 
     for (const item of items) {
       if (!item.product_id) {
-        toast.error("Please select a product for all items");
+        toast.error(t("Please select a product for all items"));
         return false;
       }
       if (item.quantity <= 0) {
-        toast.error("Quantity must be greater than 0");
+        toast.error(t("Quantity must be greater than 0"));
         return false;
       }
       if (item.unit_cost <= 0) {
-        toast.error("Unit cost must be greater than 0");
+        toast.error(t("Unit cost must be greater than 0"));
         return false;
       }
     }
@@ -278,7 +283,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
     const hasValidPayment = payments.some((payment) => payment.amount > 0);
 
     if (!hasValidPayment) {
-      toast.error("Please add at least one payment method with amount");
+      toast.error(t("Please add at least one payment method with amount"));
       return;
     }
 
@@ -287,7 +292,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
     if (totalPayment < totalCost) {
       toast.error(
-        `Total payment (NPR ${totalPayment}) cannot be less than total cost (NPR ${totalCost})`,
+        `${t("Total payment")} (NPR ${totalPayment}) ${t("cannot be less than total cost")} (NPR ${totalCost})`,
       );
       return;
     }
@@ -308,11 +313,11 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
       };
 
       await createPurchaseOrder.mutateAsync(payload);
-      toast.success("Purchase order created successfully");
+      toast.success(t("Purchase order created successfully"));
       closeModal();
     } catch (error) {
       console.error("Failed to create purchase order:", error);
-      toast.error("Failed to create purchase order");
+      toast.error(t("Failed to create purchase order"));
     } finally {
       setIsSubmitting(false);
     }
@@ -323,7 +328,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
     const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
     const remainingAmount = totalCost - totalPayment;
     if (remainingAmount > availableBalances[id]) {
-      toast.error("Insufficient balance. Available: " + availableBalances[id]);
+      toast.error(t("Insufficient balance. Available:") + " " + availableBalances[id]);
       return;
     }
     if (remainingAmount > 0) {
@@ -362,10 +367,10 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
-                  Create Purchase Order
+                  {t("Create Purchase Order")}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Add items and specify quantities
+                  {t("Add items and specify quantities")}
                 </p>
               </div>
             </div>
@@ -382,7 +387,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
               {/* Supplier Selection with Search */}
               <div ref={supplierDropdownRef} className="relative">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Supplier <span className="text-rose-500">*</span>
+                  {t("Supplier")} <span className="text-rose-500">*</span>
                 </label>
 
                 <DropdownWithSearch
@@ -397,13 +402,13 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                   selectedId={selectedSupplierId}
                   onSelect={(option) => setSelectedSupplierId(option?.id || "")}
                   isLoading={isLoadingSuppliers}
-                  placeholder="Select a supplier"
-                  searchPlaceholder="Search suppliers by name or email..."
-                  emptyMessage="No suppliers found"
+                  placeholder={t("Select a supplier")}
+                  searchPlaceholder={t("Search suppliers by name or email...")}
+                  emptyMessage={t("No suppliers found")}
                   onSearch={(searchTerm) => setSupplierSearchTerm(searchTerm)}
                   showAddNew={true}
                   onAddNew={() => setShowCreateModal(true)}
-                  addNewLabel="Add New Supplier"
+                  addNewLabel={t("Add New Supplier")}
                 />
 
                 {/* Supplier Dropdown Menu */}
@@ -420,7 +425,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                           onChange={(e) =>
                             setSupplierSearchTerm(e.target.value)
                           }
-                          placeholder="Search suppliers by name or email..."
+                          placeholder={t("Search suppliers by name or email...")}
                           className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                         />
                       </div>
@@ -434,7 +439,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                         </div>
                       ) : suppliers.length === 0 ? (
                         <div className="py-8 text-center text-sm text-slate-500">
-                          No suppliers found
+                          {t("No suppliers found")}
                         </div>
                       ) : (
                         suppliers.map((supplier: Supplier) => (
@@ -482,20 +487,20 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Notes (Optional)
+                  {t("Notes (Optional)")}
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                  placeholder="Add any additional notes..."
+                  placeholder={t("Add any additional notes...")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Ordering Cost (Optional)
+                  {t("Ordering Cost (Optional)")}
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
@@ -519,7 +524,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <label className="text-sm font-medium text-slate-700">
-                  Order Items <span className="text-rose-500">*</span>
+                  {t("Order Items")} <span className="text-rose-500">*</span>
                 </label>
                 <button
                   type="button"
@@ -527,7 +532,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Item
+                  {t("Add Item")}
                 </button>
               </div>
 
@@ -539,7 +544,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                   >
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <h4 className="text-sm font-semibold text-slate-900">
-                        Item {index + 1}
+                        {t("Item")} {index + 1}
                       </h4>
                       <button
                         type="button"
@@ -554,7 +559,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                       {/* Product Selection with Batch Support */}
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-slate-600 mb-1">
-                          Product <span className="text-rose-500">*</span>
+                          {t("Product")} <span className="text-rose-500">*</span>
                         </label>
                         <ProductBatchDropdown
                           selectedProductId={item.product_id || null}
@@ -562,9 +567,9 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                           onSelect={(selection) =>
                             handleProductBatchSelect(index, selection)
                           }
-                          placeholder="Select product or batch"
-                          searchPlaceholder="Search products by name..."
-                          emptyMessage="No products found"
+                          placeholder={t("Select product or batch")}
+                          searchPlaceholder={t("Search products by name...")}
+                          emptyMessage={t("No products found")}
                           showBatchQuantities={true}
                           showBatchPrices={true}
                           maxHeight="max-h-64"
@@ -573,7 +578,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1">
-                          Quantity <span className="text-rose-500">*</span>
+                          {t("Quantity")} <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="number"
@@ -589,7 +594,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1">
-                          Unit Cost <span className="text-rose-500">*</span>
+                          {t("Unit Cost")} <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
@@ -611,7 +616,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-slate-600 mb-1">
-                          Total Cost
+                          {t("Total Cost")}
                         </label>
                         <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900">
                           NPR {item.total_cost.toFixed(2)}
@@ -625,7 +630,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
             <div className="flex items-center justify-between mb-4">
               <label className="text-sm font-medium text-slate-700">
-                Payment Methods
+                {t("Payment Methods")}
               </label>
               <button
                 type="button"
@@ -633,13 +638,22 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                 className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add Payment Method
+                {t("Add Payment Method")}
               </button>
             </div>
 
-            {paymentMethods.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-busy>
+                {[0, 1].map((i) => (
+                  <div key={i} className="rounded-xl border border-gray-200 bg-white p-3 space-y-3">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : paymentMethods.length === 0 ? (
               <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
-                No payment methods available. Please add payment methods first.
+                {t("No payment methods available. Please add payment methods first.")}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
@@ -670,11 +684,11 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
 
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-gray-900">
-                              {method.payment_method}
+                              <Tn v={method.payment_method} />
                             </p>
 
                             <p className="text-xs capitalize text-gray-500">
-                              {method.type}
+                              <Tn v={method.type} />
                             </p>
                           </div>
                         </div>
@@ -684,7 +698,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                             onClick={() => fillRemainingPayment(method.id)}
                             className="rounded-full cursor-pointer bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200"
                           >
-                            Fill
+                            {t("Fill")}
                           </button>
 
                           {isSelected && (
@@ -693,7 +707,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                               onClick={() => clearPaymentAmount(method.id)}
                               className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
                             >
-                              Clear
+                              {t("Clear")}
                             </button>
                           )}
                         </div>
@@ -730,7 +744,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
             {/* Summary */}
             <div className="rounded-2xl bg-slate-50 p-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Subtotal:</span>
+                <span className="text-slate-600">{t("Subtotal")}:</span>
                 <span className="font-medium text-slate-900">
                   NPR{" "}
                   {items
@@ -739,14 +753,14 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm mt-2">
-                <span className="text-slate-600">Ordering Cost:</span>
+                <span className="text-slate-600">{t("Ordering Cost")}:</span>
                 <span className="font-medium text-slate-900">
                   NPR {orderingCost.toFixed(2)}
                 </span>
               </div>
               <div className="border-t border-slate-200 mt-3 pt-3">
                 <div className="flex items-center justify-between font-semibold">
-                  <span className="text-slate-900">Total:</span>
+                  <span className="text-slate-900">{t("Total")}:</span>
                   <span className="text-lg text-slate-900">
                     NPR {calculateTotalCost().toFixed(2)}
                   </span>
@@ -759,16 +773,18 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
               <button
                 type="button"
                 onClick={closeModal}
-                className="flex-1 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                disabled={isSubmitting}
+                className="flex-1 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 cursor-pointer rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 cursor-pointer rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               >
-                {isSubmitting ? "Creating..." : "Create Order"}
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSubmitting ? t("Creating...") : t("Create Order")}
               </button>
             </div>
           </form>

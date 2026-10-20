@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
-import { X, RefreshCw, AlertCircle, Info } from "lucide-react";
+import { X, RefreshCw, AlertCircle, Info, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useLang, tr } from "@/lib/i18n";
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBarcodeScanned: (barcode: string) => void;
   buttonLabel?: string;
+  isLookingUp?: boolean;
 }
 
 export function BarcodeScannerModal({
@@ -18,7 +20,9 @@ export function BarcodeScannerModal({
   onClose,
   onBarcodeScanned,
   buttonLabel = "Scan Barcode",
+  isLookingUp = false,
 }: BarcodeScannerModalProps) {
+  const { t } = useLang();
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -128,7 +132,7 @@ export function BarcodeScannerModal({
               // Show hint after 20 errors (frames without barcode detection)
               if (errorCountRef.current === 20) {
                 setScanHint(
-                  "Align the barcode within the red frame. Make sure it's well-lit and in focus.",
+                  tr("Align the barcode within the red frame. Make sure it's well-lit and in focus."),
                 );
                 setHintType("info");
               }
@@ -136,7 +140,7 @@ export function BarcodeScannerModal({
               // Show stronger warning after 35 errors
               if (errorCountRef.current === 35) {
                 setScanHint(
-                  "Barcode not detected yet. Try moving closer or adjusting the angle.",
+                  tr("Barcode not detected yet. Try moving closer or adjusting the angle."),
                 );
                 setHintType("warning");
               }
@@ -144,7 +148,7 @@ export function BarcodeScannerModal({
               // Show failure message after 50 errors
               if (errorCountRef.current === 50) {
                 setScanHint(
-                  "Failed to scan barcode. Please try again or enter the barcode manually.",
+                  tr("Failed to scan barcode. Please try again or enter the barcode manually."),
                 );
                 setHintType("error");
 
@@ -175,32 +179,32 @@ export function BarcodeScannerModal({
               case "NotAllowedError":
                 setErrorMessage(
                   error.message.toLowerCase().includes("dismissed")
-                    ? "Camera permission prompt was dismissed. Click the camera icon in the address bar, allow access, then try again."
-                    : "Camera permission denied. Please allow camera access.",
+                    ? tr("Camera permission prompt was dismissed. Click the camera icon in the address bar, allow access, then try again.")
+                    : tr("Camera permission denied. Please allow camera access."),
                 );
                 break;
               case "NotFoundError":
-                setErrorMessage("No camera found on this device.");
+                setErrorMessage(tr("No camera found on this device."));
                 break;
               case "NotReadableError":
                 setErrorMessage(
-                  "Camera is already in use by another application.",
+                  tr("Camera is already in use by another application."),
                 );
                 break;
               case "SecurityError":
-                setErrorMessage("Camera access is blocked by the browser.");
+                setErrorMessage(tr("Camera access is blocked by the browser."));
                 break;
               default:
-                setErrorMessage(error.message || "Unable to start camera.");
+                setErrorMessage(error.message || tr("Unable to start camera."));
             }
           } else {
-            setErrorMessage("Unable to start the camera.");
+            setErrorMessage(tr("Unable to start the camera."));
           }
         });
     } catch (error) {
       console.error("Fatal scanner error:", error);
       setStatus("error");
-      setErrorMessage("Unable to start the scanner.");
+      setErrorMessage(tr("Unable to start the scanner."));
     }
   }, [stopScanner, onBarcodeScanned, onClose]);
 
@@ -228,10 +232,10 @@ export function BarcodeScannerModal({
         <div className="mb-4 flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">
-              {buttonLabel}
+              {t(buttonLabel)}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Point your camera at a barcode to scan it
+              {t("Point your camera at a barcode to scan it")}
             </p>
           </div>
           <button
@@ -271,8 +275,8 @@ export function BarcodeScannerModal({
           {status === "initializing" && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60">
               <div className="text-center text-white">
-                <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-                <p>Starting camera...</p>
+                <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin" />
+                <p>{t("Starting camera...")}</p>
               </div>
             </div>
           )}
@@ -282,7 +286,7 @@ export function BarcodeScannerModal({
             <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-6">
               <div className="text-center text-white">
                 <AlertCircle className="mx-auto mb-2" size={32} />
-                <p className="mb-2 text-lg font-semibold">Camera Error</p>
+                <p className="mb-2 text-lg font-semibold">{t("Camera Error")}</p>
                 <p className="text-sm">{errorMessage}</p>
               </div>
             </div>
@@ -329,22 +333,33 @@ export function BarcodeScannerModal({
           </div>
         )}
 
+        {isLookingUp && (
+          <div
+            role="status"
+            className="mt-4 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+          >
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t("Looking up product...")}
+          </div>
+        )}
+
         {/* Actions */}
         <div className="mt-4 flex justify-end gap-3">
           <button
             type="button"
             onClick={startScanner}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            disabled={status === "initializing" || isLookingUp}
+            className="disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
           >
             <RefreshCw size={14} />
-            Restart
+            {t("Restart")}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
           >
-            Cancel
+            {t("Cancel")}
           </button>
         </div>
 

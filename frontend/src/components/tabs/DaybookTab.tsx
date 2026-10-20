@@ -24,6 +24,13 @@ import {
   ArrowDownCircle as ArrowDownIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useLang } from "@/lib/i18n";
+import {
+  Skeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+  CardGridSkeleton,
+} from "@/components/layout/Skeleton";
 
 import { useDaybook, DaybookResponse } from "@/hooks/useDaybook";
 import DaybookSalesTable from "@/components/daybook/SalesTable";
@@ -67,6 +74,7 @@ function StatCard({
   trend?: "up" | "down" | "neutral";
   color?: "green" | "red" | "blue" | "gray" | "purple" | "orange";
 }) {
+  const { t } = useLang();
   const colorClasses = {
     green: "bg-green-100 text-green-700",
     red: "bg-red-100 text-red-700",
@@ -80,7 +88,7 @@ function StatCard({
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-sm font-medium text-gray-500">{t(title)}</p>
           <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
           {subtitle && <p className="mt-1 text-xs text-gray-500">{subtitle}</p>}
         </div>
@@ -134,6 +142,7 @@ function PaymentMethodBalanceCard({
   closingBalance: number;
   paymentMethodType: string;
 }) {
+  const { t } = useLang();
   const getTypeColor = (type: string) => {
     const colors = {
       Cash: "bg-green-100 text-green-700 border-green-200",
@@ -162,12 +171,12 @@ function PaymentMethodBalanceCard({
             <span
               className={`text-xs px-2 py-0.5 rounded-full border ${getTypeColor(paymentMethodType)}`}
             >
-              {paymentMethodType}
+              {t(paymentMethodType)}
             </span>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-500">Closing Balance</p>
+          <p className="text-xs text-gray-500">{t("Closing Balance")}</p>
           <p className="text-lg font-bold text-gray-900">
             {money(closingBalance)}
           </p>
@@ -176,22 +185,22 @@ function PaymentMethodBalanceCard({
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Opening Balance</span>
+          <span className="text-gray-500">{t("Opening Balance")}</span>
           <span className="font-medium text-gray-700">
             {money(openingBalance)}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Total In</span>
+          <span className="text-gray-500">{t("Total In")}</span>
           <span className="font-medium text-green-600">{money(totalIn)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Total Out</span>
+          <span className="text-gray-500">{t("Total Out")}</span>
           <span className="font-medium text-red-600">{money(totalOut)}</span>
         </div>
         <div className="pt-2 border-t border-gray-100">
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-gray-700">Net Change</span>
+            <span className="font-medium text-gray-700">{t("Net Change")}</span>
             <span
               className={`font-bold ${totalIn - totalOut >= 0 ? "text-green-600" : "text-red-600"}`}
             >
@@ -246,11 +255,12 @@ function Building(props: any) {
 }
 
 export default function DaybookPage() {
+  const { t } = useLang();
   const today = formatDate(new Date());
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedSaleId, setSelectedSaleId] = useState<number | undefined>();
 
-  const { data, isLoading, isError, refetch } = useDaybook(selectedDate);
+  const { data, isLoading, isFetching, isError, refetch } = useDaybook(selectedDate);
 
   const daybook = data;
 
@@ -309,9 +319,9 @@ export default function DaybookPage() {
       {/* Header with Date Navigation */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Daybook</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Daybook")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Daily summary of sales, expenses, and payments
+            {t("Daily summary of sales, expenses, and payments")}
           </p>
         </div>
 
@@ -321,7 +331,7 @@ export default function DaybookPage() {
             <button
               onClick={() => navigateDay("prev")}
               className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
-              title="Previous day"
+              title={t("Previous day")}
             >
               <ChevronLeft size={18} />
             </button>
@@ -344,7 +354,7 @@ export default function DaybookPage() {
               onClick={() => navigateDay("next")}
               disabled={isToday}
               className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Next day"
+              title={t("Next day")}
             >
               <ChevronRight size={18} />
             </button>
@@ -356,23 +366,39 @@ export default function DaybookPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
             >
               <RotateCcw size={16} />
-              Today
+              {t("Today")}
             </button>
           )}
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading State: skeletons shaped like the real report */}
       {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <Loader2
-              className="mx-auto mb-3 animate-spin text-gray-400"
-              size={32}
+        <div className="space-y-6" aria-busy>
+          <Skeleton className="h-[88px] w-full rounded-2xl" />
+          <StatCardsSkeleton
+            count={4}
+            className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          />
+          <div className="rounded-2xl border border-gray-200 bg-white">
+            <div className="border-b border-gray-200 px-5 py-4">
+              <Skeleton className="h-5 w-32" />
+            </div>
+            <table className="w-full">
+              <tbody>
+                <TableRowsSkeleton rows={5} cols={7} />
+              </tbody>
+            </table>
+          </div>
+          <StatCardsSkeleton
+            count={3}
+            className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          />
+          <div className="rounded-2xl border border-gray-200 bg-white p-5">
+            <CardGridSkeleton
+              count={4}
+              className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             />
-            <p className="text-sm text-gray-500">
-              Loading daybook for {formatDisplayDate(selectedDate)}...
-            </p>
           </div>
         </div>
       )}
@@ -382,19 +408,23 @@ export default function DaybookPage() {
         <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
           <AlertCircle className="mx-auto mb-3 text-red-400" size={32} />
           <p className="text-sm font-medium text-red-700">
-            Failed to load daybook
+            {t("Failed to load daybook")}
           </p>
           <button
             onClick={() => refetch()}
             className="mt-3 text-sm font-medium text-red-600 hover:text-red-700 underline"
           >
-            Try again
+            {t("Try again")}
           </button>
         </div>
       )}
 
       {daybook && !isLoading && (
-        <>
+        <div
+          className={`space-y-6 transition-opacity ${
+            isFetching ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
           {/* Date Display */}
           <div className="rounded-2xl border border-gray-200 bg-linear-to-r from-gray-900 to-gray-800 p-5">
             <div className="flex items-center justify-between">
@@ -403,11 +433,11 @@ export default function DaybookPage() {
                   {formatDisplayDate(daybook.date)}
                 </h2>
                 <p className="mt-1 text-sm text-gray-400">
-                  Daily financial report
+                  {t("Daily financial report")}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-400">Net Cash Flow</p>
+                <p className="text-sm text-gray-400">{t("Net Cash Flow")}</p>
                 <p
                   className={`text-2xl font-bold ${
                     daybook.summary.net_cash_flow >= 0
@@ -427,7 +457,7 @@ export default function DaybookPage() {
               title="Total Sales"
               value={money(daybook.summary.total_sales_amount)}
               icon={ShoppingCart}
-              subtitle={`${daybook.summary.total_sales_count} transactions`}
+              subtitle={`${daybook.summary.total_sales_count} ${t("transactions")}`}
               color="blue"
               trend="up"
             />
@@ -435,7 +465,7 @@ export default function DaybookPage() {
               title="Gross Profit"
               value={money(daybook.summary.gross_profit)}
               icon={TrendingUp}
-              subtitle={`${profitMargin.toFixed(1)}% margin`}
+              subtitle={`${profitMargin.toFixed(1)}% ${t("margin")}`}
               color="green"
               trend="up"
             />
@@ -443,7 +473,7 @@ export default function DaybookPage() {
               title="Total Expenses"
               value={money(daybook.summary.total_expense_amount)}
               icon={ArrowDownCircle}
-              subtitle={`${daybook.summary.total_expense_count} expenses`}
+              subtitle={`${daybook.summary.total_expense_count} ${t("expenses")}`}
               color="red"
               trend="down"
             />
@@ -451,7 +481,7 @@ export default function DaybookPage() {
               title="Net Profit"
               value={money(daybook.summary.net_profit)}
               icon={DollarSign}
-              subtitle="After expenses"
+              subtitle={t("After expenses")}
               color="purple"
               trend={daybook.summary.net_profit >= 0 ? "up" : "down"}
             />
@@ -461,7 +491,7 @@ export default function DaybookPage() {
           <div className="rounded-2xl border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-5 py-4">
               <h3 className="font-bold text-gray-900">
-                Sales ({daybook.sales.length})
+                {t("Sales")} ({daybook.sales.length})
               </h3>
             </div>
             <DaybookSalesTable
@@ -478,21 +508,21 @@ export default function DaybookPage() {
               title="Total Received"
               value={money(daybook.summary.total_received)}
               icon={Banknote}
-              subtitle={`Paid: ${money(daybook.summary.total_paid_amount)}`}
+              subtitle={`${t("Paid")}: ${money(daybook.summary.total_paid_amount)}`}
               color="green"
             />
             <StatCard
               title="Remaining"
               value={money(daybook.summary.total_remaining_amount)}
               icon={FileText}
-              subtitle={`Change: ${money(daybook.summary.total_change_amount)}`}
+              subtitle={`${t("Change")}: ${money(daybook.summary.total_change_amount)}`}
               color="orange"
             />
             <StatCard
               title="Cost of Goods"
               value={money(daybook.summary.total_cost_of_goods)}
               icon={Package}
-              subtitle="Inventory cost"
+              subtitle={t("Inventory cost")}
               color="gray"
             />
           </div>
@@ -506,14 +536,14 @@ export default function DaybookPage() {
                     <div>
                       <h3 className="font-bold text-gray-900 flex items-center gap-2">
                         <Wallet size={20} className="text-gray-600" />
-                        Payment Method Balances
+                        {t("Payment Method Balances")}
                       </h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        Opening and closing balances for each payment method
+                        {t("Opening and closing balances for each payment method")}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-500">Total Balance</p>
+                      <p className="text-xs text-gray-500">{t("Total Balance")}</p>
                       <p className="text-sm font-bold text-gray-900">
                         {money(totalClosingBalance)}
                       </p>
@@ -538,13 +568,13 @@ export default function DaybookPage() {
                   <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                       <div>
-                        <p className="text-xs text-gray-500">Total Opening</p>
+                        <p className="text-xs text-gray-500">{t("Total Opening")}</p>
                         <p className="text-sm font-semibold text-gray-700">
                           {money(totalOpeningBalance)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Total In</p>
+                        <p className="text-xs text-gray-500">{t("Total In")}</p>
                         <p className="text-sm font-semibold text-green-600">
                           {money(
                             daybook.paymentMethodBalances.reduce(
@@ -555,7 +585,7 @@ export default function DaybookPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Total Out</p>
+                        <p className="text-xs text-gray-500">{t("Total Out")}</p>
                         <p className="text-sm font-semibold text-red-600">
                           {money(
                             daybook.paymentMethodBalances.reduce(
@@ -566,7 +596,7 @@ export default function DaybookPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Total Closing</p>
+                        <p className="text-xs text-gray-500">{t("Total Closing")}</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {money(totalClosingBalance)}
                         </p>
@@ -581,11 +611,11 @@ export default function DaybookPage() {
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             {/* Payment Status Distribution */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <h3 className="font-bold text-gray-900 mb-4">Payment Status</h3>
+              <h3 className="font-bold text-gray-900 mb-4">{t("Payment Status")}</h3>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Paid</span>
+                    <span className="text-gray-600">{t("Paid")}</span>
                     <span className="font-medium text-green-700">
                       {daybook.summary.paid_sales_count}
                     </span>
@@ -598,7 +628,7 @@ export default function DaybookPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Partial</span>
+                    <span className="text-gray-600">{t("Partial")}</span>
                     <span className="font-medium text-yellow-700">
                       {daybook.summary.partial_sales_count}
                     </span>
@@ -611,7 +641,7 @@ export default function DaybookPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Unpaid</span>
+                    <span className="text-gray-600">{t("Unpaid")}</span>
                     <span className="font-medium text-red-700">
                       {daybook.summary.unpaid_sales_count}
                     </span>
@@ -624,7 +654,7 @@ export default function DaybookPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Refunded</span>
+                    <span className="text-gray-600">{t("Refunded")}</span>
                     <span className="font-medium text-blue-700">
                       {daybook.summary.refunded_sales_count}
                     </span>
@@ -637,7 +667,7 @@ export default function DaybookPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Cancelled</span>
+                    <span className="text-gray-600">{t("Cancelled")}</span>
                     <span className="font-medium text-red-700">
                       {daybook.summary.cancel_sales_count}
                     </span>
@@ -652,7 +682,7 @@ export default function DaybookPage() {
                 <div className="pt-2 border-t border-gray-100">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium text-gray-700">
-                      Completion Rate
+                      {t("Completion Rate")}
                     </span>
                     <span className="font-bold text-green-700">
                       {paymentCompletionRate.toFixed(1)}%
@@ -664,7 +694,7 @@ export default function DaybookPage() {
 
             {/* Sale Status Distribution */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <h3 className="font-bold text-gray-900 mb-4">Sale Status</h3>
+              <h3 className="font-bold text-gray-900 mb-4">{t("Sale Status")}</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-xl">
                   <CheckCircle
@@ -674,14 +704,14 @@ export default function DaybookPage() {
                   <p className="text-2xl font-bold text-green-700">
                     {daybook.summary.completed_sales_count}
                   </p>
-                  <p className="text-xs text-green-600 mt-1">Completed</p>
+                  <p className="text-xs text-green-600 mt-1">{t("Completed")}</p>
                 </div>
                 <div className="text-center p-4 bg-red-50 rounded-xl">
                   <XCircle className="mx-auto mb-2 text-red-600" size={24} />
                   <p className="text-2xl font-bold text-red-700">
                     {daybook.summary.cancelled_sales_count}
                   </p>
-                  <p className="text-xs text-red-600 mt-1">Cancelled</p>
+                  <p className="text-xs text-red-600 mt-1">{t("Cancelled")}</p>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-xl">
                   <RotateCcw
@@ -691,7 +721,7 @@ export default function DaybookPage() {
                   <p className="text-2xl font-bold text-purple-700">
                     {daybook.summary.returned_sales_count}
                   </p>
-                  <p className="text-xs text-purple-600 mt-1">Returned</p>
+                  <p className="text-xs text-purple-600 mt-1">{t("Returned")}</p>
                 </div>
               </div>
             </div>
@@ -711,7 +741,7 @@ export default function DaybookPage() {
             <div className="rounded-2xl border border-gray-200 bg-white">
               <div className="border-b border-gray-200 px-5 py-4">
                 <h3 className="font-bold text-gray-900">
-                  Expenses ({daybook.expenses.length})
+                  {t("Expenses")} ({daybook.expenses.length})
                 </h3>
               </div>
               <DaybookExpensesTable expenses={daybook.expenses} money={money} />
@@ -723,15 +753,15 @@ export default function DaybookPage() {
             <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center">
               <Receipt className="mx-auto mb-3 text-gray-300" size={48} />
               <p className="text-lg font-medium text-gray-500">
-                No transactions for this day
+                {t("No transactions for this day")}
               </p>
               <p className="mt-1 text-sm text-gray-400">
-                There are no sales or expenses recorded on{" "}
+                {t("There are no sales or expenses recorded on")}{" "}
                 {formatDisplayDate(selectedDate)}
               </p>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* Sale Details Modal */}

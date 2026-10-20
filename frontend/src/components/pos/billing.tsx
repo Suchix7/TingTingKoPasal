@@ -12,7 +12,9 @@ import {
   Zap,
   Layers,
   FileText,
+  Loader2,
 } from "lucide-react";
+import { ListSkeleton } from "@/components/layout/Skeleton";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useCustomers, type Customer } from "@/hooks/useCustomers";
@@ -24,6 +26,8 @@ import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import { useDebounced } from "@/hooks/useDebounced";
 import toast from "react-hot-toast";
 
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
 type CartSummary = {
   subtotal: number;
   totalItems: number;
@@ -59,6 +63,7 @@ interface BillingSectionProps {
   openCustomerModal: (customer?: Customer | null) => void;
 
   paymentMethods: PaymentMethod[];
+  paymentMethodsLoading?: boolean;
   payments: SalePayment[];
   setPayments: Dispatch<SetStateAction<SalePayment[]>>;
   paidAmount: number;
@@ -115,6 +120,7 @@ function ProductTaxModal({
   onClose: () => void;
   onSave: (taxAmount: number, isInclusive: boolean, batchId?: string) => void;
 }) {
+  const { t } = useLang();
   const [taxType, setTaxType] = useState<"percentage" | "fixed">(
     item.tax_amount && item.unit_price > 0
       ? item.tax_amount % 1 === 0 && item.tax_amount <= item.unit_price
@@ -157,7 +163,7 @@ function ProductTaxModal({
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">
-            Tax Settings - {item.product_name}
+            {t("Tax Settings")} - <Tn v={item.product_name} />
           </h3>
           <button
             onClick={onClose}
@@ -171,25 +177,25 @@ function ProductTaxModal({
           {/* Product Info */}
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Unit Price</span>
+              <span className="text-gray-600">{t("Unit Price")}</span>
               <span className="font-semibold">Rs. {item.unit_price}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Quantity</span>
+              <span className="text-gray-600">{t("Quantity")}</span>
               <span className="font-semibold">{item.quantity}</span>
             </div>
             {item.tax_amount && item.tax_amount > 0 && (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Current Tax</span>
+                  <span className="text-gray-600">{t("Current Tax")}</span>
                   <span className="font-semibold text-blue-600">
-                    Rs. {item.tax_amount} per unit
+                    Rs. {item.tax_amount} {t("per unit")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax Type</span>
+                  <span className="text-gray-600">{t("Tax Type")}</span>
                   <span className="font-semibold">
-                    {item.tax_inclusive ? "Inclusive" : "Exclusive"}
+                    {item.tax_inclusive ? t("Inclusive") : t("Exclusive")}
                   </span>
                 </div>
               </>
@@ -199,7 +205,7 @@ function ProductTaxModal({
           {/* Tax Type Toggle */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tax Type
+              {t("Tax Type")}
             </label>
             <div className="flex gap-2">
               <button
@@ -217,7 +223,7 @@ function ProductTaxModal({
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Percentage (%)
+                {t("Percentage (%)")}
               </button>
               <button
                 type="button"
@@ -234,7 +240,7 @@ function ProductTaxModal({
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Fixed (Rs.)
+                {t("Fixed (Rs.)")}
               </button>
             </div>
           </div>
@@ -242,7 +248,7 @@ function ProductTaxModal({
           {/* Tax Value Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tax Value
+              {t("Tax Value")}
             </label>
             <div className="relative">
               <input
@@ -257,7 +263,7 @@ function ProductTaxModal({
                   )
                 }
                 onWheel={(e) => e.currentTarget.blur()}
-                placeholder={taxType === "percentage" ? "Tax %" : "Tax amount"}
+                placeholder={taxType === "percentage" ? t("Tax %") : t("Tax amount")}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-12 text-sm outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
@@ -270,14 +276,14 @@ function ProductTaxModal({
           {taxValue > 0 && (
             <div className="bg-blue-50 rounded-lg p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-blue-700">Tax per unit</span>
+                <span className="text-blue-700">{t("Tax per unit")}</span>
                 <span className="font-semibold text-blue-700">
                   Rs. {calculatedTax.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-1">
                 <span className="text-blue-700">
-                  Total tax ({item.quantity} units)
+                  {t("Total tax")} ({item.quantity} {t("units")})
                 </span>
                 <span className="font-semibold text-blue-700">
                   Rs. {(calculatedTax * item.quantity).toFixed(2)}
@@ -285,8 +291,8 @@ function ProductTaxModal({
               </div>
               {isInclusive && (
                 <div className="mt-2 text-xs text-blue-600 bg-blue-100 rounded p-2">
-                  ⚠️ Tax inclusive: Unit price of Rs. {item.unit_price} includes
-                  Rs. {calculatedTax.toFixed(2)} tax
+                  ⚠️ {t("Tax inclusive")}: {t("Unit price of")} Rs. {item.unit_price}{" "}
+                  {t("includes")} Rs. {calculatedTax.toFixed(2)} {t("tax")}
                 </div>
               )}
             </div>
@@ -298,7 +304,7 @@ function ProductTaxModal({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-gray-900">
-                    Tax Inclusive
+                    {t("Tax Inclusive")}
                   </p>
                   <button
                     type="button"
@@ -310,17 +316,17 @@ function ProductTaxModal({
                 </div>
                 <p className="text-xs text-gray-500">
                   {isInclusive
-                    ? "Tax is included in the unit price"
-                    : "Tax is added on top of unit price"}
+                    ? t("Tax is included in the unit price")
+                    : t("Tax is added on top of unit price")}
                 </p>
                 {showInfo && (
                   <div className="mt-2 p-2 bg-white rounded border border-gray-200 text-xs text-gray-600">
-                    <p className="font-medium mb-1">Tax Inclusive:</p>
-                    <p>• Unit price includes the tax amount</p>
-                    <p>• Final price = Unit price</p>
-                    <p className="mt-1 font-medium">Tax Exclusive:</p>
-                    <p>• Tax is added to unit price</p>
-                    <p>• Final price = Unit price + Tax</p>
+                    <p className="font-medium mb-1">{t("Tax Inclusive")}:</p>
+                    <p>• {t("Unit price includes the tax amount")}</p>
+                    <p>• {t("Final price = Unit price")}</p>
+                    <p className="mt-1 font-medium">{t("Tax Exclusive")}:</p>
+                    <p>• {t("Tax is added to unit price")}</p>
+                    <p>• {t("Final price = Unit price + Tax")}</p>
                   </div>
                 )}
               </div>
@@ -351,14 +357,14 @@ function ProductTaxModal({
             }}
             className="flex-1 cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Remove Tax
+            {t("Remove Tax")}
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="flex-1 cursor-pointer rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
           >
-            Apply Tax
+            {t("Apply Tax")}
           </button>
         </div>
       </div>
@@ -378,6 +384,7 @@ export default function BillingSection({
   setCustomerId,
   openCustomerModal,
   paymentMethods,
+  paymentMethodsLoading = false,
   payments,
   setPayments,
   paidAmount,
@@ -404,11 +411,13 @@ export default function BillingSection({
   paymentProofFile,
   setPaymentProofFile,
 }: BillingSectionProps) {
+  const { t } = useLang();
   const sectionRef = useRef<HTMLDivElement | null>(null);
 
   const [height, setHeight] = useState(300);
+  // "final": type the price the bill was sold for; the discount is worked out
   const [localDiscountType, setLocalDiscountType] = useState<
-    "percentage" | "fixed"
+    "percentage" | "fixed" | "final"
   >(discountType);
   const [localDiscountValue, setLocalDiscountValue] = useState(discountValue);
   const [showQr, setShowQr] = useState("");
@@ -508,14 +517,30 @@ export default function BillingSection({
     updatePaymentAmount(methodId, 0);
   };
 
-  const handleDiscountTypeChange = (type: "percentage" | "fixed") => {
+  const handleDiscountTypeChange = (type: "percentage" | "fixed" | "final") => {
     setLocalDiscountType(type);
-    setDiscountType?.(type);
+    setDiscountType?.(type === "percentage" ? "percentage" : "fixed");
 
     setLocalDiscountValue(0);
     setDiscountValue?.(0);
     setDiscountAmount?.(0);
   };
+
+  // What the items come to before any bill-level discount
+  const itemsTotal = cartItems.reduce((sum, item) => sum + item.total_price, 0);
+  const finalPriceDiscount = (finalPrice: number) =>
+    finalPrice > 0
+      ? Math.round(
+          Math.min(Math.max(itemsTotal - finalPrice, 0), itemsTotal) * 100,
+        ) / 100
+      : 0;
+
+  // In "final price" mode the discount follows the cart if items change
+  useEffect(() => {
+    if (!isDiscountEnabled || localDiscountType !== "final") return;
+    setDiscountAmount?.(finalPriceDiscount(localDiscountValue));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsTotal]);
 
   const handleDiscountValueChange = (value: number) => {
     const safeValue = Math.max(0, Number(value || 0));
@@ -525,7 +550,9 @@ export default function BillingSection({
 
     if (!setDiscountAmount) return;
 
-    if (localDiscountType === "percentage") {
+    if (localDiscountType === "final") {
+      setDiscountAmount(finalPriceDiscount(safeValue));
+    } else if (localDiscountType === "percentage") {
       const safePercentage = Math.min(safeValue, 100);
       const calculatedDiscount = (cartSummary.subtotal * safePercentage) / 100;
       setDiscountAmount(Math.min(calculatedDiscount, cartSummary.subtotal));
@@ -574,9 +601,10 @@ export default function BillingSection({
   };
 
   const handleQuickSaleSubmit = async () => {
+    if (createQuickSale.isPending) return;
     const validPayments = payments.filter((p) => p.amount > 0);
     if (validPayments.length === 0) {
-      toast.error("Please add at least one valid payment method");
+      toast.error(t("Please add at least one valid payment method"));
       return;
     }
 
@@ -586,7 +614,7 @@ export default function BillingSection({
         notes: quickSaleNotes || null,
       });
 
-      toast.success("Quick sale created successfully!");
+      toast.success(t("Quick sale created successfully!"));
 
       // Reset form
       setQuickSalePrice(0);
@@ -598,7 +626,7 @@ export default function BillingSection({
       setPayments([]);
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || "Failed to create quick sale",
+        error?.response?.data?.message || t("Failed to create quick sale"),
       );
     }
   };
@@ -625,7 +653,7 @@ export default function BillingSection({
           >
             <div className="flex items-center justify-center gap-2">
               <ShoppingCart className="h-4 w-4" />
-              Regular Sale
+              {t("Regular Sale")}
             </div>
             {activeTab === "regular" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
@@ -642,7 +670,7 @@ export default function BillingSection({
           >
             <div className="flex items-center justify-center gap-2">
               <Zap className="h-4 w-4" />
-              Quick Sale
+              {t("Quick Sale")}
             </div>
             {activeTab === "quick" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
@@ -657,12 +685,12 @@ export default function BillingSection({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5 text-gray-900" />
-                  <h2 className="text-xl font-bold text-gray-900">Bill</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t("Bill")}</h2>
                 </div>
 
                 {cartSummary.totalItems > 0 && (
                   <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                    {cartSummary.totalItems} items
+                    {cartSummary.totalItems} {t("items")}
                   </span>
                 )}
               </div>
@@ -672,8 +700,8 @@ export default function BillingSection({
               {cartItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400">
                   <ShoppingCart className="h-12 w-12 mb-4" />
-                  <p className="text-lg font-medium">Cart is empty</p>
-                  <p className="text-sm mt-1">Add products from the catalog</p>
+                  <p className="text-lg font-medium">{t("Cart is empty")}</p>
+                  <p className="text-sm mt-1">{t("Add products from the catalog")}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -685,20 +713,20 @@ export default function BillingSection({
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900 text-sm">
-                            {item.product_name}
+                            <Tn v={item.product_name} />
                           </h3>
 
                           {(item.tax_amount ?? 0) > 0 && (
                             <div className="mt-1 flex items-center gap-2">
                               <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                                Tax: Rs. {item.tax_amount}/unit
+                                {t("Tax")}: Rs. {item.tax_amount}/{t("unit")}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => setEditingTaxProduct(item)}
                                 className="text-xs text-gray-500 hover:text-gray-700 underline cursor-pointer"
                               >
-                                Edit Tax
+                                {t("Edit Tax")}
                               </button>
                             </div>
                           )}
@@ -709,7 +737,7 @@ export default function BillingSection({
                             type="button"
                             onClick={() => setEditingTaxProduct(item)}
                             className="text-gray-400 cursor-pointer hover:text-blue-500 transition-colors p-1"
-                            title="Set product tax"
+                            title={t("Set product tax")}
                           >
                             <Percent className="h-4 w-4" />
                           </button>
@@ -761,7 +789,7 @@ export default function BillingSection({
 
                           {(item.tax_amount ?? 0) > 0 && (
                             <p className="text-xs text-blue-600">
-                              Tax: Rs.{" "}
+                              {t("Tax")}: Rs.{" "}
                               {((item.tax_amount ?? 0) * item.quantity).toFixed(
                                 2,
                               )}
@@ -778,7 +806,7 @@ export default function BillingSection({
                         <div className="mt-3 border-t border-gray-200 pt-3">
                           <div className="flex items-center gap-2">
                             <label className="shrink-0 text-xs font-medium text-gray-600">
-                              Sold at (optional)
+                              {t("Sold for each (optional)")}
                             </label>
                             <input
                               type="number"
@@ -787,12 +815,16 @@ export default function BillingSection({
                               placeholder={String(item.unit_price)}
                               value={item.sold_price ?? ""}
                               onChange={(e) =>
-                                updateItemDiscount(item.product_id, item.batch_id, {
-                                  sold_price:
-                                    e.target.value === ""
-                                      ? undefined
-                                      : Math.max(Number(e.target.value), 0),
-                                })
+                                updateItemDiscount(
+                                  item.product_id,
+                                  item.batch_id,
+                                  {
+                                    sold_price:
+                                      e.target.value === ""
+                                        ? undefined
+                                        : Math.max(Number(e.target.value), 0),
+                                  },
+                                )
                               }
                               className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-gray-400"
                             />
@@ -801,25 +833,29 @@ export default function BillingSection({
                           {item.sold_price !== undefined &&
                             item.sold_price >= item.unit_price && (
                               <p className="mt-1 text-xs text-gray-400">
-                                Enter a price lower than Rs. {item.unit_price}{" "}
-                                to record a discount.
+                                {t("Enter a price lower than")} Rs. {item.unit_price}{" "}
+                                {t("to record a discount.")}
                               </p>
                             )}
 
                           {item.discount_amount > 0 && (
                             <div className="mt-2 space-y-1.5">
                               <p className="text-xs font-medium text-amber-700">
-                                Below marked price: Rs. {item.discount_amount}{" "}
-                                less (marked Rs. {item.unit_price} each)
+                                {t("Below marked price")}: Rs. {item.discount_amount}{" "}
+                                {t("less")} ({t("marked")} Rs. {item.unit_price} {t("each")})
                               </p>
                               <input
                                 type="text"
-                                placeholder="Reason (optional)"
+                                placeholder={t("Reason (optional)")}
                                 value={item.discount_reason ?? ""}
                                 onChange={(e) =>
-                                  updateItemDiscount(item.product_id, item.batch_id, {
-                                    discount_reason: e.target.value,
-                                  })
+                                  updateItemDiscount(
+                                    item.product_id,
+                                    item.batch_id,
+                                    {
+                                      discount_reason: e.target.value,
+                                    },
+                                  )
                                 }
                                 className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-gray-400"
                               />
@@ -846,7 +882,7 @@ export default function BillingSection({
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-600">{t("Subtotal")}</span>
                     <span className="font-medium">
                       Rs. {cartSummary.subtotal}
                     </span>
@@ -854,7 +890,7 @@ export default function BillingSection({
 
                   {totalProductTax > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total Tax</span>
+                      <span className="text-gray-600">{t("Total Tax")}</span>
                       <span className="font-medium text-blue-600">
                         Rs. {totalProductTax.toFixed(2)}
                       </span>
@@ -862,14 +898,14 @@ export default function BillingSection({
                   )}
 
                   <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                    <span>Grand Total</span>
+                    <span>{t("Grand Total")}</span>
                     <span>Rs. {cartSummary.grandTotal}</span>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer
+                    {t("Customer")}
                   </label>
 
                   <DropdownWithSearch
@@ -881,13 +917,13 @@ export default function BillingSection({
                     }))}
                     selectedId={customerId}
                     onSelect={(option) => setCustomerId(option?.id || null)}
-                    placeholder="Select a customer"
-                    searchPlaceholder="Search customers by name or phone..."
+                    placeholder={t("Select a customer")}
+                    searchPlaceholder={t("Search customers by name or phone...")}
                     onSearch={(searchTerm) => setSearchCustomer(searchTerm)}
                     isLoading={customersLoading}
-                    emptyMessage="No customers found"
+                    emptyMessage={t("No customers found")}
                     showAddNew={true}
-                    addNewLabel="Add new customer"
+                    addNewLabel={t("Add new customer")}
                     onAddNew={() => openCustomerModal(null)}
                   />
                 </div>
@@ -895,18 +931,19 @@ export default function BillingSection({
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <label className="block text-sm font-medium text-gray-700">
-                      Payment Method
+                      {t("Payment Method")}
                     </label>
 
                     <span className="text-xs text-gray-500">
-                      Paid: Rs. {paidAmount}
+                      {t("Paid")}: Rs. {paidAmount}
                     </span>
                   </div>
 
-                  {paymentMethods.length === 0 ? (
+                  {paymentMethodsLoading && paymentMethods.length === 0 ? (
+ <ListSkeleton rows={3} />
+ ) : paymentMethods.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
-                      No payment methods available. Please add payment methods
-                      first.
+                      {t("No payment methods available. Please add payment methods first.")}
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
@@ -961,7 +998,7 @@ export default function BillingSection({
 
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-semibold text-gray-900">
-                                  {method.payment_method}
+                                  <Tn v={method.payment_method} />
                                 </p>
 
                                 <span
@@ -971,13 +1008,13 @@ export default function BillingSection({
                                       : "bg-blue-100 text-blue-700"
                                   }`}
                                 >
-                                  {method.type}
+                                  <Tn v={method.type} />
                                 </span>
                               </div>
 
                               {isSelected && (
                                 <span className="shrink-0 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                  Selected
+                                  {t("Selected")}
                                 </span>
                               )}
                             </button>
@@ -1003,7 +1040,7 @@ export default function BillingSection({
                               setPaymentProofFile && (
                                 <div className="mt-3">
                                   <label className="mb-1 block text-xs font-medium text-gray-600">
-                                    Payment proof photo (optional)
+                                    {t("Payment proof photo (optional)")}
                                   </label>
                                   {paymentProofFile ? (
                                     <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700">
@@ -1017,7 +1054,7 @@ export default function BillingSection({
                                         }
                                         className="ml-2 shrink-0 text-red-500 hover:text-red-600"
                                       >
-                                        Remove
+                                        {t("Remove")}
                                       </button>
                                     </div>
                                   ) : (
@@ -1031,7 +1068,7 @@ export default function BillingSection({
                                           if (file) setPaymentProofFile(file);
                                         }}
                                       />
-                                      Attach screenshot/photo of payment
+                                      {t("Attach screenshot/photo of payment")}
                                     </label>
                                   )}
                                 </div>
@@ -1048,11 +1085,11 @@ export default function BillingSection({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
-                        Enable Discount
+                        {t("Enable Discount")}
                       </p>
 
                       <p className="text-xs text-gray-500">
-                        Add discount to the bill
+                        {t("Add discount to the bill")}
                       </p>
                     </div>
 
@@ -1074,29 +1111,26 @@ export default function BillingSection({
                   {isDiscountEnabled && (
                     <>
                       <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleDiscountTypeChange("percentage")}
-                          className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${
-                            localDiscountType === "percentage"
-                              ? "bg-gray-900 text-white"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                        >
-                          Percentage (%)
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDiscountTypeChange("fixed")}
-                          className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${
-                            localDiscountType === "fixed"
-                              ? "bg-gray-900 text-white"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                        >
-                          Amount (Rs.)
-                        </button>
+                        {(
+                          [
+                            ["percentage", "Percentage (%)"],
+                            ["fixed", "Amount (Rs.)"],
+                            ["final", "Final price"],
+                          ] as const
+                        ).map(([type, label]) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => handleDiscountTypeChange(type)}
+                            className={`flex-1 rounded-lg cursor-pointer px-2 py-2 text-xs font-medium transition-colors sm:text-sm ${
+                              localDiscountType === type
+                                ? "bg-gray-900 text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {t(label)}
+                          </button>
+                        ))}
                       </div>
 
                       <div className="relative">
@@ -1116,7 +1150,7 @@ export default function BillingSection({
                                 )
                               }
                               onWheel={(e) => e.currentTarget.blur()}
-                              placeholder="Discount percentage"
+                              placeholder={t("Discount percentage")}
                               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-12 text-sm outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
                             />
 
@@ -1133,7 +1167,11 @@ export default function BillingSection({
                             <input
                               type="number"
                               min={0}
-                              max={cartSummary.subtotal}
+                              max={
+                                localDiscountType === "final"
+                                  ? undefined
+                                  : cartSummary.subtotal
+                              }
                               step={10}
                               value={localDiscountValue || ""}
                               onChange={(e) =>
@@ -1144,7 +1182,11 @@ export default function BillingSection({
                                 )
                               }
                               onWheel={(e) => e.currentTarget.blur()}
-                              placeholder="Discount amount"
+                              placeholder={
+                                localDiscountType === "final"
+                                  ? t("Price you sold it for")
+                                  : t("Discount amount")
+                              }
                               className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
                             />
                           </>
@@ -1153,7 +1195,7 @@ export default function BillingSection({
 
                       {discountAmount > 0 && (
                         <div className="text-center text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2">
-                          Discount applied: Rs. {discountAmount}
+                          {t("Discount applied")}: Rs. {discountAmount}
                         </div>
                       )}
                     </>
@@ -1163,7 +1205,7 @@ export default function BillingSection({
                 {/* Bill Summary */}
                 <div className="rounded-xl bg-white border border-gray-200 p-3 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
+                    <span className="text-gray-600">{t("Subtotal")}</span>
                     <span className="font-semibold">
                       Rs. {cartSummary.subtotal}
                     </span>
@@ -1171,7 +1213,7 @@ export default function BillingSection({
 
                   {totalProductTax > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tax</span>
+                      <span className="text-gray-600">{t("Tax")}</span>
                       <span className="font-semibold text-blue-600">
                         + Rs. {totalProductTax.toFixed(2)}
                       </span>
@@ -1180,7 +1222,7 @@ export default function BillingSection({
 
                   {isDiscountEnabled && discountAmount > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Discount</span>
+                      <span className="text-gray-600">{t("Discount")}</span>
                       <span className="font-semibold text-green-600">
                         - Rs. {discountAmount}
                       </span>
@@ -1189,7 +1231,7 @@ export default function BillingSection({
 
                   <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
                     <span className="text-gray-900 font-medium">
-                      Final Amount
+                      {t("Final Amount")}
                     </span>
                     <span className="font-bold">
                       Rs. {cartSummary.grandTotal}
@@ -1197,12 +1239,12 @@ export default function BillingSection({
                   </div>
 
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Total Paid</span>
+                    <span className="text-gray-600">{t("Total Paid")}</span>
                     <span className="font-semibold">Rs. {paidAmount}</span>
                   </div>
 
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Remaining</span>
+                    <span className="text-gray-600">{t("Remaining")}</span>
                     <span className="font-semibold text-red-600">
                       Rs. {cartSummary.remainingAmount}
                     </span>
@@ -1210,7 +1252,7 @@ export default function BillingSection({
 
                   {changeAmount > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Change</span>
+                      <span className="text-gray-600">{t("Change")}</span>
                       <span className="font-semibold text-green-600">
                         Rs. {changeAmount}
                       </span>
@@ -1226,12 +1268,12 @@ export default function BillingSection({
                 >
                   {isCheckingOut ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processing...
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("Processing...")}
                     </>
                   ) : (
                     <>
-                      Complete Sale
+                      {t("Complete Sale")}
                       <ArrowRight className="h-5 w-5" />
                     </>
                   )}
@@ -1248,12 +1290,13 @@ export default function BillingSection({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <CreditCard className="h-3.5 w-3.5 inline mr-1" />
-                Payment Methods
+                {t("Payment Methods")}
               </label>
-              {paymentMethods.length === 0 ? (
+              {paymentMethodsLoading && paymentMethods.length === 0 ? (
+ <ListSkeleton rows={3} />
+ ) : paymentMethods.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
-                  No payment methods available. Please add payment methods
-                  first.
+                  {t("No payment methods available. Please add payment methods first.")}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
@@ -1284,11 +1327,11 @@ export default function BillingSection({
 
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-gray-900">
-                                {method.payment_method}
+                                <Tn v={method.payment_method} />
                               </p>
 
                               <p className="text-xs capitalize text-gray-500">
-                                {method.type}
+                                <Tn v={method.type} />
                               </p>
                             </div>
                           </div>
@@ -1340,12 +1383,12 @@ export default function BillingSection({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="h-3.5 w-3.5 inline mr-1" />
-                Notes
+                {t("Notes")}
               </label>
               <textarea
                 value={quickSaleNotes}
                 onChange={(e) => setQuickSaleNotes(e.target.value)}
-                placeholder="Add any notes (optional)"
+                placeholder={t("Add any notes (optional)")}
                 rows={2}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 resize-none"
               />
@@ -1355,17 +1398,17 @@ export default function BillingSection({
             {quickSalePrice > 0 && (
               <div className="rounded-xl bg-white border border-gray-200 p-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Selling Price</span>
+                  <span className="text-gray-600">{t("Selling Price")}</span>
                   <span className="font-semibold">Rs. {quickSalePrice}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Paid Amount</span>
+                  <span className="text-gray-600">{t("Paid Amount")}</span>
                   <span className="font-semibold">
                     Rs. {payments.reduce((sum, p) => sum + p.amount, 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm border-t border-gray-100 pt-2">
-                  <span className="text-gray-600">Remaining</span>
+                  <span className="text-gray-600">{t("Remaining")}</span>
                   <span
                     className={`font-semibold ${quickSaleRemaining > 0 ? "text-red-600" : "text-green-600"}`}
                   >
@@ -1374,11 +1417,11 @@ export default function BillingSection({
                 </div>
                 {quickSalePaymentMethodId && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Payment Method</span>
+                    <span className="text-gray-600">{t("Payment Method")}</span>
                     <span className="font-semibold text-gray-900">
                       {paymentMethods.find(
                         (m) => m.id === quickSalePaymentMethodId,
-                      )?.payment_method || "N/A"}
+                      )?.payment_method || t("N/A")}
                     </span>
                   </div>
                 )}
@@ -1393,13 +1436,13 @@ export default function BillingSection({
             >
               {createQuickSale.isPending ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creating...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("Processing...")}
                 </>
               ) : (
                 <>
                   <Zap className="h-5 w-5" />
-                  Create Quick Sale
+                  {t("Create Quick Sale")}
                 </>
               )}
             </button>
@@ -1421,7 +1464,7 @@ export default function BillingSection({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {showPaymentName} QR Code
+              {showPaymentName} {t("QR Code")}
             </h3>
             <img src={showQr} alt="QR" />
           </div>

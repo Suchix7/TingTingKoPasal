@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useQuery,
   keepPreviousData,
@@ -185,7 +186,7 @@ const fetchInventory = async ({
 
     return res.data;
   } catch (error) {
-    throw new Error(getErrorMessage(error, "Failed to fetch inventory"));
+    throw new Error(getErrorMessage(error, tr("Failed to fetch inventory")));
   }
 };
 
@@ -226,7 +227,7 @@ export const useInventoryByProductId = (productId: number) => {
 
         return res.data;
       } catch (error) {
-        throw new Error(getErrorMessage(error, "Failed to fetch inventory"));
+        throw new Error(getErrorMessage(error, tr("Failed to fetch inventory")));
       }
     },
 
@@ -265,11 +266,11 @@ export const useUpdateInventory = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success("Inventory updated successfully.");
+      toast.success(tr("Inventory updated successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to update inventory."));
+      toast.error(getErrorMessage(error, tr("Failed to update inventory.")));
     },
   });
 };
@@ -303,11 +304,11 @@ export const useRestockInventory = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success("Inventory restocked successfully.");
+      toast.success(tr("Inventory restocked successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to restock inventory."));
+      toast.error(getErrorMessage(error, tr("Failed to restock inventory.")));
     },
   });
 };
@@ -340,11 +341,11 @@ export const useDeductInventory = () => {
       queryClient.invalidateQueries({ queryKey: ["eoq"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      toast.success("Inventory deducted successfully.");
+      toast.success(tr("Inventory deducted successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to deduct inventory."));
+      toast.error(getErrorMessage(error, tr("Failed to deduct inventory.")));
     },
   });
 };
@@ -380,11 +381,11 @@ export const useUpdateProductBatch = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success("Product batch updated successfully.");
+      toast.success(tr("Product batch updated successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to update product batch."));
+      toast.error(getErrorMessage(error, tr("Failed to update product batch.")));
     },
   });
 };
@@ -422,11 +423,11 @@ export const useRestockProductBatch = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success("Product batch restocked successfully.");
+      toast.success(tr("Product batch restocked successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to restock product batch."));
+      toast.error(getErrorMessage(error, tr("Failed to restock product batch.")));
     },
   });
 };
@@ -464,11 +465,11 @@ export const useDeductProductBatch = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success("Product batch deducted successfully.");
+      toast.success(tr("Product batch deducted successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to deduct product batch."));
+      toast.error(getErrorMessage(error, tr("Failed to deduct product batch.")));
     },
   });
 };

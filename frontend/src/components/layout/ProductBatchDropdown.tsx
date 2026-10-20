@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
 import { useProducts, Product, ProductBatch } from "@/hooks/useProducts";
+import { useLang } from "@/lib/i18n";
+import Tn from "@/components/layout/Tn";
+import { Skeleton } from "@/components/layout/Skeleton";
 
 export type ProductBatchSelection = {
   productId: string | null;
@@ -54,6 +57,7 @@ export function ProductBatchDropdown({
   autoFocus = true,
   maxHeight = "max-h-80",
 }: ProductBatchDropdownProps) {
+  const { t } = useLang();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedProductId, setExpandedProductId] = useState<string | null>(
@@ -182,11 +186,15 @@ export function ProductBatchDropdown({
 
   const getDisplayText = () => {
     if (selectedProduct && selectedBatch) {
-      return `${selectedProduct.product_name} - ${selectedBatch.batch_number}`;
+      return (
+        <>
+          <Tn v={selectedProduct.product_name} /> - {selectedBatch.batch_number}
+        </>
+      );
     }
 
     if (selectedProduct) {
-      return selectedProduct.product_name;
+      return <Tn v={selectedProduct.product_name} />;
     }
 
     return null;
@@ -197,11 +205,11 @@ export function ProductBatchDropdown({
       const parts: string[] = [];
 
       if (showBatchQuantities && selectedBatch.quantity !== undefined) {
-        parts.push(`Qty: ${selectedBatch.quantity}`);
+        parts.push(`${t("Qty")}: ${selectedBatch.quantity}`);
       }
 
       if (showBatchPrices && selectedBatch.sale_price !== undefined) {
-        parts.push(`Price: ${formatPrice(selectedBatch.sale_price)}`);
+        parts.push(`${t("Price")}: ${formatPrice(selectedBatch.sale_price)}`);
       }
 
       return parts.join(" • ");
@@ -211,7 +219,7 @@ export function ProductBatchDropdown({
       const parts: string[] = [];
 
       if (showBatchPrices && selectedProduct.sale_price !== undefined) {
-        parts.push(`Price: ${formatPrice(selectedProduct.sale_price)}`);
+        parts.push(`${t("Price")}: ${formatPrice(selectedProduct.sale_price)}`);
       }
 
       return parts.join(" • ");
@@ -244,8 +252,10 @@ export function ProductBatchDropdown({
                   </div>
                 )}
               </>
+            ) : isLoading && selectedProductId ? (
+              <Skeleton className="h-4 w-32" />
             ) : (
-              <span className="text-sm text-slate-400">{placeholder}</span>
+              <span className="text-sm text-slate-400">{t(placeholder)}</span>
             )}
           </div>
 
@@ -278,7 +288,7 @@ export function ProductBatchDropdown({
                 type="text"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={searchPlaceholder}
+                placeholder={t(searchPlaceholder)}
                 className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                 onClick={(event) => event.stopPropagation()}
               />
@@ -289,29 +299,45 @@ export function ProductBatchDropdown({
             {isError ? (
               <div className="px-4 py-8 text-center">
                 <div className="text-sm font-medium text-rose-500">
-                  Failed to load products
+                  {t("Failed to load products")}
                 </div>
 
                 <div className="mt-1 text-xs text-slate-400">
-                  {error?.message || "Something went wrong"}
+                  {error?.message || t("Something went wrong")}
                 </div>
               </div>
             ) : isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              <div role="status" aria-label={t("Loading...")} className="space-y-1 px-4 py-3">
+                <div className="flex items-center gap-2 pb-1 text-xs text-slate-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {t("Loading...")}
+                </div>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 py-2">
+                    <Skeleton className="h-4 w-4 shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-1/3" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : products.length === 0 ? (
               <div className="py-8 text-center text-sm text-slate-500">
                 {debouncedSearchTerm
-                  ? `No products found for "${debouncedSearchTerm}"`
-                  : emptyMessage}
+                  ? `${t("No products found for")} "${debouncedSearchTerm}"`
+                  : t(emptyMessage)}
               </div>
             ) : (
-              <>
+              <div
+                className={`transition-opacity ${
+                  isFetching ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
                 {isFetching && (
                   <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2 text-xs text-slate-400">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Searching...
+                    {t("Searching...")}
                   </div>
                 )}
 
@@ -346,7 +372,7 @@ export function ProductBatchDropdown({
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="truncate font-medium text-slate-900">
-                                  {product.product_name}
+                                  <Tn v={product.product_name} />
                                 </span>
 
                                 {isSelected && (
@@ -358,14 +384,16 @@ export function ProductBatchDropdown({
                                 {showBatchPrices &&
                                   product.sale_price !== undefined && (
                                     <span className="ml-2">
-                                      Price: {formatPrice(product.sale_price)}
+                                      {t("Price")}: {formatPrice(product.sale_price)}
                                     </span>
                                   )}
 
                                 {hasBatches && (
                                   <span className="ml-2">
-                                    • {product.batches!.length} batch
-                                    {product.batches!.length !== 1 ? "es" : ""}
+                                    • {product.batches!.length}{" "}
+                                    {product.batches!.length !== 1
+                                      ? t("batches")
+                                      : t("batch")}
                                   </span>
                                 )}
                               </div>
@@ -379,7 +407,9 @@ export function ProductBatchDropdown({
                             onClick={() => handleToggleProduct(product)}
                             className="cursor-pointer px-3 py-3 hover:bg-slate-100"
                             aria-label={
-                              isExpanded ? "Collapse batches" : "Expand batches"
+                              isExpanded
+                                ? t("Collapse batches")
+                                : t("Expand batches")
                             }
                           >
                             {isExpanded ? (
@@ -394,7 +424,7 @@ export function ProductBatchDropdown({
                       {isExpanded && hasBatches && (
                         <div className="ml-4 border-l-4 border-l-blue-200 bg-slate-50">
                           <div className="px-4 pb-1 pt-2 text-xs font-medium text-slate-500">
-                            Batches ({product.batches!.length})
+                            {t("Batches")} ({product.batches!.length})
                           </div>
 
                           {product.batches!.map((batch) => {
@@ -419,7 +449,7 @@ export function ProductBatchDropdown({
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm text-slate-700 truncate">
-                                        Batch: {batch.batch_number}
+                                        {t("Batch")}: {batch.batch_number}
                                       </span>
 
                                       {isBatchSelected && (
@@ -430,7 +460,9 @@ export function ProductBatchDropdown({
                                     <div className="mt-0.5 text-xs text-slate-500">
                                       {showBatchQuantities &&
                                         batch.quantity !== undefined && (
-                                          <span>Qty: {batch.quantity}</span>
+                                          <span>
+                                            {t("Qty")}: {batch.quantity}
+                                          </span>
                                         )}
 
                                       {showBatchPrices && (
@@ -441,14 +473,14 @@ export function ProductBatchDropdown({
                                             )}
 
                                           <span>
-                                            Sale:{" "}
+                                            {t("Sale Price")}:{" "}
                                             {formatPrice(batch.sale_price)}
                                           </span>
 
                                           <span className="mx-1.5">•</span>
 
                                           <span>
-                                            Cost:{" "}
+                                            {t("Cost")}:{" "}
                                             {formatPrice(batch.cost_price)}
                                           </span>
                                         </>
@@ -464,7 +496,7 @@ export function ProductBatchDropdown({
                     </div>
                   );
                 })}
-              </>
+              </div>
             )}
           </div>
         </div>

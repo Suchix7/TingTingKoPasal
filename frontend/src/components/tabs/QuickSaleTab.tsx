@@ -32,6 +32,8 @@ import EditSaleModal from "@/components/sales/EditSaleModal";
 import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
 import { dateTime } from "@/utils/nepaliTime";
+import { useLang } from "@/lib/i18n";
+import { TableRowsSkeleton } from "@/components/layout/Skeleton";
 
 const LIMIT = 20;
 
@@ -55,11 +57,12 @@ const statusLabel: Record<QuickSaleStatus, string> = {
 };
 
 function StatusBadge({ status }: { status: QuickSaleStatus }) {
+  const { t } = useLang();
   return (
     <span
       className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[status]}`}
     >
-      {statusLabel[status]}
+      {t(statusLabel[status])}
     </span>
   );
 }
@@ -94,6 +97,7 @@ function StatCard({
 }
 
 export default function QuickSalesPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -122,26 +126,26 @@ export default function QuickSalesPage() {
   }, [debouncedSearch, status]);
 
   const handleDelete = async () => {
-    if (!deleteConfirm) return;
+    if (!deleteConfirm || deleteQuickSale.isPending) return;
 
     try {
       await deleteQuickSale.mutateAsync(deleteConfirm.id);
-      toast.success("Quick sale deleted successfully.");
+      toast.success(t("Quick sale deleted successfully."));
       setDeleteConfirm(null);
     } catch {
-      toast.error("Failed to delete quick sale.");
+      toast.error(t("Failed to delete quick sale."));
     }
   };
 
   const handleCancel = async () => {
-    if (!cancelConfirm) return;
+    if (!cancelConfirm || cancelQuickSale.isPending) return;
 
     try {
       await cancelQuickSale.mutateAsync(cancelConfirm.id);
-      toast.success("Quick sale cancelled successfully.");
+      toast.success(t("Quick sale cancelled successfully."));
       setCancelConfirm(null);
     } catch {
-      toast.error("Failed to cancel quick sale.");
+      toast.error(t("Failed to cancel quick sale."));
     }
   };
 
@@ -197,9 +201,9 @@ export default function QuickSalesPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quick Sales</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Quick Sales")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage quick sales and convert them to full sales.
+            {t("Manage quick sales and convert them to full sales.")}
           </p>
         </div>
       </div>
@@ -241,7 +245,7 @@ export default function QuickSalesPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search customer name, phone, or notes..."
+              placeholder={t("Search customer name, phone, or notes...")}
               className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
             />
           </div>
@@ -254,10 +258,10 @@ export default function QuickSalesPage() {
               }
               className="w-full outline-none"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="converted">Converted</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t("All Status")}</option>
+              <option value="pending">{t("Pending")}</option>
+              <option value="converted">{t("Converted")}</option>
+              <option value="cancelled">{t("Cancelled")}</option>
             </select>
           </div>
         </div>
@@ -266,8 +270,8 @@ export default function QuickSalesPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h2 className="font-bold text-gray-900">All Quick Sales</h2>
-            <p className="text-sm text-gray-500">{totalCount} total records</p>
+            <h2 className="font-bold text-gray-900">{t("All Quick Sales")}</h2>
+            <p className="text-sm text-gray-500">{totalCount} {t("total records")}</p>
           </div>
           {isFetching ? (
             <Loader2 className="animate-spin text-gray-400" size={20} />
@@ -278,34 +282,30 @@ export default function QuickSalesPage() {
           <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-5 py-3">Quick Sale</th>
-                <th className="px-5 py-3">Total Amount</th>
-                <th className="px-5 py-3">Payment Methods</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Notes</th>
-                <th className="px-5 py-3">Created</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3">{t("Quick Sale")}</th>
+                <th className="px-5 py-3">{t("Total Amount")}</th>
+                <th className="px-5 py-3">{t("Payment Methods")}</th>
+                <th className="px-5 py-3">{t("Status")}</th>
+                <th className="px-5 py-3">{t("Notes")}</th>
+                <th className="px-5 py-3">{t("Created")}</th>
+                <th className="px-5 py-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody
+              className={`divide-y divide-gray-100 transition-opacity ${
+                isFetching && !isLoading ? "opacity-60" : ""
+              }`}
+            >
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-5 py-16 text-center text-gray-500"
-                  >
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
-                    Loading quick sales...
-                  </td>
-                </tr>
+                <TableRowsSkeleton rows={6} cols={7} />
               ) : !quickSales.length ? (
                 <tr>
                   <td
                     colSpan={9}
                     className="px-5 py-16 text-center text-gray-500"
                   >
-                    No quick sales found.
+                    {t("No quick sales found.")}
                   </td>
                 </tr>
               ) : (
@@ -321,12 +321,12 @@ export default function QuickSalesPage() {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">
-                            Quick Sale #{quickSale.id}
+                            {t("Quick Sale")} #{quickSale.id}
                           </p>
                           <p className="text-xs text-gray-500">
                             {quickSale.converted_sale_id
-                              ? `→ Sale #${quickSale.converted_sale_id}`
-                              : "Not converted"}
+                              ? `→ ${t("Sale")} #${quickSale.converted_sale_id}`
+                              : t("Not converted")}
                           </p>
                         </div>
                       </div>
@@ -344,7 +344,7 @@ export default function QuickSalesPage() {
                           ? quickSale.payments
                               .map((p) => p.payment_method_name)
                               .join(", ")
-                          : "No payments"}
+                          : t("No payments")}
                       </p>
                     </td>
 
@@ -355,7 +355,7 @@ export default function QuickSalesPage() {
                     <td className="px-5 py-4 max-w-[200px]">
                       <p className="truncate text-sm text-gray-600">
                         {quickSale.notes || (
-                          <span className="text-gray-400">No notes</span>
+                          <span className="text-gray-400">{t("No notes")}</span>
                         )}
                       </p>
                     </td>
@@ -370,8 +370,8 @@ export default function QuickSalesPage() {
                           <button
                             onClick={() => setConvertSale(quickSale)}
                             className="rounded-xl p-2 text-gray-500 transition hover:bg-green-50 hover:text-green-600"
-                            aria-label="Convert to sale"
-                            title="Convert to sale"
+                            aria-label={t("Convert to sale")}
+                            title={t("Convert to sale")}
                           >
                             <RefreshCw size={18} />
                           </button>
@@ -380,8 +380,8 @@ export default function QuickSalesPage() {
                           <button
                             onClick={() => setCancelConfirm(quickSale)}
                             className="rounded-xl p-2 text-gray-500 transition hover:bg-yellow-50 hover:text-yellow-600"
-                            aria-label="Cancel quick sale"
-                            title="Cancel quick sale"
+                            aria-label={t("Cancel quick sale")}
+                            title={t("Cancel quick sale")}
                           >
                             <XCircle size={18} />
                           </button>
@@ -389,8 +389,8 @@ export default function QuickSalesPage() {
                         <button
                           onClick={() => setDeleteConfirm(quickSale)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Delete quick sale"
-                          title="Delete quick sale"
+                          aria-label={t("Delete quick sale")}
+                          title={t("Delete quick sale")}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -413,8 +413,8 @@ export default function QuickSalesPage() {
 
       {deleteConfirm ? (
         <DeleteConfirmModal
-          invoiceNo={`Quick Sale #${deleteConfirm.id}`}
-          label="quick sale"
+          invoiceNo={`${t("Quick Sale")} #${deleteConfirm.id}`}
+          label={t("quick sale")}
           isPending={deleteQuickSale.isPending}
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm(null)}
@@ -423,13 +423,13 @@ export default function QuickSalesPage() {
 
       {cancelConfirm ? (
         <DeleteConfirmModal
-          invoiceNo={`Quick Sale #${cancelConfirm.id}`}
-          label="quick sale cancellation"
+          invoiceNo={`${t("Quick Sale")} #${cancelConfirm.id}`}
+          label={t("quick sale cancellation")}
           isPending={cancelQuickSale.isPending}
           onConfirm={handleCancel}
           onCancel={() => setCancelConfirm(null)}
-          confirmLabel="Cancel Quick Sale"
-          description="Are you sure you want to cancel this quick sale? This action cannot be undone."
+          confirmLabel={t("Cancel Quick Sale")}
+          description={t("Are you sure you want to cancel this quick sale? This action cannot be undone.")}
         />
       ) : null}
 

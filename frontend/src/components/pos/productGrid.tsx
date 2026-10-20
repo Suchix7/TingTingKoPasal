@@ -1,7 +1,8 @@
 // components/pos/productGrid.tsx (Updated)
 "use client";
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import PhotoLightbox from "@/components/layout/PhotoLightbox";
+import { coverImage } from "@/components/catalog/image";
 import {
   Edit,
   Package,
@@ -10,6 +11,7 @@ import {
   ScanLine,
   Loader2,
   ImageIcon,
+  Maximize2,
 } from "lucide-react";
 import type { Product } from "@/hooks/useProducts";
 import {
@@ -22,6 +24,8 @@ import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
 import { useProductByBarcode } from "@/hooks/useProducts";
 import toast from "react-hot-toast";
 
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
 type CartItem = {
   product_id: string;
   product_name: string;
@@ -46,7 +50,9 @@ export default function ProductGrid({
   cartItems,
   addToCart,
 }: ProductGridProps) {
+  const { t, tn } = useLang();
   const [open, setOpen] = useState(false);
+  const [zoom, setZoom] = useState<{ url: string; title: string } | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [batchSelectionProduct, setBatchSelectionProduct] =
@@ -70,7 +76,7 @@ export default function ProductGrid({
 
       if (scannedProductData.retired) {
         toast.error(
-          `This is a retired barcode for ${product.product_name} — please reprint a new label.`,
+          `${t("This is a retired barcode for")} ${tn(product.product_name)} — ${t("please reprint a new label.")}`,
           { duration: 6000 },
         );
       }
@@ -78,7 +84,7 @@ export default function ProductGrid({
       // Check if product is active
       if (product.status !== "Active") {
         toast.error(
-          `${product.product_name} is currently ${product.status.toLowerCase()}`,
+          `${tn(product.product_name)} ${t("is currently")} ${t(product.status.toLowerCase())}`,
         );
         setScannedBarcode("");
         setIsProcessingBarcode(false);
@@ -93,7 +99,7 @@ export default function ProductGrid({
       if (scannedBatch) {
         if (scannedBatch.quantity <= 0) {
           toast.error(
-            `${product.product_name} (${scannedBatch.batch_number}) is out of stock`,
+            `${tn(product.product_name)} (${scannedBatch.batch_number}) ${t("is out of stock")}`,
           );
           setScannedBarcode("");
           setIsProcessingBarcode(false);
@@ -108,7 +114,7 @@ export default function ProductGrid({
       } else {
         // Check stock
         if (product.stock_quantity <= 0) {
-          toast.error(`${product.product_name} is out of stock`);
+          toast.error(`${tn(product.product_name)} ${t("is out of stock")}`);
           setScannedBarcode("");
           setIsProcessingBarcode(false);
           return;
@@ -130,19 +136,18 @@ export default function ProductGrid({
   // mislabeled sticker before it becomes a sale.
   const showScanConfirmation = (product: Product, model?: string) => {
     toast.custom(
-      (t) => (
+      (toastItem) => (
         <div
           className={`flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg transition-opacity ${
-            t.visible ? "opacity-100" : "opacity-0"
+            toastItem.visible ? "opacity-100" : "opacity-0"
           }`}
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
             {product.photo_url ? (
-              <Image
-                src={product.photo_url}
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverImage(product.photo_url, 200)}
                 alt={product.product_name}
-                width={40}
-                height={40}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -151,10 +156,10 @@ export default function ProductGrid({
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">
-              {product.product_name}
+              <Tn v={product.product_name} />
               {model ? ` — ${model}` : ""}
             </p>
-            <p className="text-xs text-gray-500">Added to cart</p>
+            <p className="text-xs text-gray-500">{t("Added to cart")}</p>
           </div>
         </div>
       ),
@@ -168,11 +173,11 @@ export default function ProductGrid({
       const errorMessage =
         scannedProductError instanceof Error
           ? scannedProductError.message
-          : "Failed to fetch product";
+          : t("Failed to fetch product");
 
       // Check if it's a 404 (product not found)
       if (errorMessage.includes("not found") || errorMessage.includes("404")) {
-        toast.error(`No product found with barcode: ${scannedBarcode}`);
+        toast.error(`${t("No product found with barcode")}: ${scannedBarcode}`);
       } else {
         toast.error(errorMessage);
       }
@@ -205,10 +210,12 @@ export default function ProductGrid({
   // Handle barcode scanning
   const handleBarcodeScanned = (barcode: string) => {
     // Trim the barcode
+    // A lookup is already running: ignore repeat scans of the same sticker
+    if (isProcessingBarcode) return;
     const trimmedBarcode = barcode.trim();
 
     if (!trimmedBarcode) {
-      toast.error("Invalid barcode");
+      toast.error(t("Invalid barcode"));
       return;
     }
 
@@ -225,13 +232,13 @@ export default function ProductGrid({
       )!;
       if (localModelOwner.status !== "Active") {
         toast.error(
-          `${localModelOwner.product_name} is currently ${localModelOwner.status.toLowerCase()}`,
+          `${tn(localModelOwner.product_name)} ${t("is currently")} ${t(localModelOwner.status.toLowerCase())}`,
         );
         return;
       }
       if (batch.quantity <= 0) {
         toast.error(
-          `${localModelOwner.product_name} (${batch.batch_number}) is out of stock`,
+          `${tn(localModelOwner.product_name)} (${batch.batch_number}) ${t("is out of stock")}`,
         );
         return;
       }
@@ -241,7 +248,7 @@ export default function ProductGrid({
     } else if (localProduct) {
       processProduct(localProduct);
     } else {
-      const toastId = toast.loading("Searching for product...");
+      const toastId = toast.loading(t("Searching for product..."));
       setIsProcessingBarcode(true);
       setScannedBarcode(trimmedBarcode);
       toast.dismiss(toastId);
@@ -251,7 +258,7 @@ export default function ProductGrid({
   const processProduct = (product: Product) => {
     if (product.status !== "Active") {
       toast.error(
-        `${product.product_name} is currently ${product.status.toLowerCase()}`,
+        `${tn(product.product_name)} ${t("is currently")} ${t(product.status.toLowerCase())}`,
       );
       return;
     }
@@ -262,7 +269,7 @@ export default function ProductGrid({
       setIsBarcodeScannerOpen(false);
     } else {
       if (product.stock_quantity <= 0) {
-        toast.error(`${product.product_name} is out of stock`);
+        toast.error(`${tn(product.product_name)} ${t("is out of stock")}`);
         return;
       }
       addToCart(product, product.sale_price);
@@ -287,16 +294,25 @@ export default function ProductGrid({
               <ScanLine size={18} />
             )}
             {isProcessingBarcode || isLoadingScannedProduct
-              ? "Searching..."
-              : "Scan Barcode"}
+              ? t("Searching...")
+              : t("Scan Barcode")}
           </button>
+          {(isProcessingBarcode || isLoadingScannedProduct) && (
+            <span
+              role="status"
+              className="inline-flex items-center gap-2 text-sm text-gray-500"
+            >
+              <Loader2 size={14} className="animate-spin" />
+              {t("Looking up product...")}
+            </span>
+          )}
         </div>
 
         {products.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <Package className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">No products found</p>
-            <p className="text-sm mt-1">Try adjusting your search</p>
+            <p className="text-lg font-medium">{t("No products found")}</p>
+            <p className="text-sm mt-1">{t("Try adjusting your search")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-4">
@@ -322,23 +338,23 @@ export default function ProductGrid({
                   className="group relative bg-white border border-gray-200 rounded-xl p-3 sm:p-5 text-left transition-all hover:border-gray-400 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:shadow-none cursor-pointer w-full"
                 >
                   {isOutOfStock && (
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 text-[10px] sm:text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-medium">
-                      Out of Stock
+                    <span className="absolute top-2 left-2 z-10 sm:top-3 sm:left-3 text-[10px] sm:text-xs bg-red-100 text-red-700 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-medium">
+                      {t("Out of Stock")}
                     </span>
                   )}
 
                   {currentInCart > 0 && !isOutOfStock && (
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 text-[10px] sm:text-xs bg-gray-900 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-medium">
-                      {currentInCart} in cart
+                    <span className="absolute top-2 left-2 z-10 sm:top-3 sm:left-3 text-[10px] sm:text-xs bg-gray-900 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-medium">
+                      {currentInCart} {t("in cart")}
                     </span>
                   )}
 
                   {/* Batch indicator */}
                   {hasBatches && !isOutOfStock && (
-                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium text-blue-700">
+                    <span className="absolute top-2 left-2 z-10 sm:top-3 sm:left-3 flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium text-blue-700">
                       <Layers size={10} />
                       {product.batches?.length}{" "}
-                      {product.batches?.length === 1 ? "model" : "models"}
+                      {product.batches?.length === 1 ? t("model") : t("models")}
                     </span>
                   )}
 
@@ -351,20 +367,39 @@ export default function ProductGrid({
 
                   <div className="flex flex-col h-full">
                     <div className="flex-1">
-                      <div className="mb-2 flex items-start justify-between gap-2">
-                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
-                          {product.photo_url ? (
-                            <Image
-                              src={product.photo_url}
-                              alt={product.product_name}
-                              width={40}
-                              height={40}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <ImageIcon className="h-4 w-4 text-gray-300" />
-                          )}
-                        </div>
+                      <div className="relative -mx-3 -mt-3 mb-3 aspect-square overflow-hidden rounded-t-xl bg-gray-100 sm:-mx-5 sm:-mt-5">
+                        {product.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={coverImage(product.photo_url, 480)}
+                            alt={product.product_name}
+                            loading="lazy"
+                            decoding="async"
+                            className={`h-full w-full object-cover ${
+                              isOutOfStock ? "opacity-60 grayscale" : ""
+                            }`}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <ImageIcon className="h-8 w-8 text-gray-300" />
+                          </div>
+                        )}
+                        {product.photo_url && (
+                          <span
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setZoom({
+                                url: product.photo_url!,
+                                title: product.product_name,
+                              });
+                            }}
+                            className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur active:bg-black/75"
+                            aria-label={t("View photo")}
+                          >
+                            <Maximize2 className="h-4 w-4" />
+                          </span>
+                        )}
                         <span
                           onClick={(e) => {
                             e.preventDefault();
@@ -384,15 +419,15 @@ export default function ProductGrid({
                               variants: [],
                             });
                           }}
-                          className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gray-300"
-                          aria-label="Edit product"
+                          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-gray-300"
+                          aria-label={t("Edit product")}
                         >
-                          <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-700" />
+                          <Edit className="h-3.5 w-3.5 text-gray-700" />
                         </span>
                       </div>
 
                       <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-700 line-clamp-2 pr-2">
-                        {product.product_name}
+                        <Tn v={product.product_name} />
                       </h3>
                     </div>
 
@@ -404,7 +439,7 @@ export default function ProductGrid({
                           </span>
                           {hasBatches && (
                             <span className="text-[10px] sm:text-xs text-blue-600 font-medium">
-                              Multiple prices
+                              {t("Multiple prices")}
                             </span>
                           )}
                         </div>
@@ -414,12 +449,11 @@ export default function ProductGrid({
                           >
                             {totalStock} {product.unit}
                           </span>
-                          {totalStock <= 5 &&
-                            totalStock > 0 && (
-                              <p className="text-[10px] sm:text-xs text-orange-500">
-                                Low stock
-                              </p>
-                            )}
+                          {totalStock <= 5 && totalStock > 0 && (
+                            <p className="text-[10px] sm:text-xs text-orange-500">
+                              {t("Low stock")}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -437,16 +471,24 @@ export default function ProductGrid({
             >
               <Plus className="h-4 w-4 text-gray-400 group-hover:text-gray-700" />{" "}
               <span className="text-sm text-gray-400 group-hover:text-gray-700">
-                Add Product
+                {t("Add Product")}
               </span>
             </button>
           </div>
         )}
         <p className="mt-4 text-center text-xs text-gray-500">
-          Showing {products.length} products. Search, choose a category, or scan
-          barcode to find more.
+          {t("Showing")} {products.length} {t("products")}.{" "}
+          {t("Search, choose a category, or scan barcode to find more.")}
         </p>
       </div>
+
+      {zoom && (
+        <PhotoLightbox
+          url={zoom.url}
+          title={zoom.title}
+          onClose={() => setZoom(null)}
+        />
+      )}
 
       {/* Product Modal */}
       {open && (
@@ -470,7 +512,8 @@ export default function ProductGrid({
         isOpen={isBarcodeScannerOpen}
         onClose={() => setIsBarcodeScannerOpen(false)}
         onBarcodeScanned={handleBarcodeScanned}
-        buttonLabel="Scan Product Barcode"
+        buttonLabel={t("Scan Product Barcode")}
+        isLookingUp={isProcessingBarcode || isLoadingScannedProduct}
       />
     </>
   );

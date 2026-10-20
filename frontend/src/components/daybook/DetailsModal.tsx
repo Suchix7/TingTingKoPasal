@@ -1,7 +1,9 @@
 "use client";
 
-import { X, Loader2, Calendar, User, Phone, FileText } from "lucide-react";
+import { X, Calendar, User, Phone, FileText } from "lucide-react";
 import { useDaybook } from "@/hooks/useDaybook";
+import { useLang } from "@/lib/i18n";
+import { Skeleton, TableRowsSkeleton } from "@/components/layout/Skeleton";
 
 interface DaybookSaleDetailsModalProps {
   saleId: number;
@@ -16,6 +18,7 @@ export default function DaybookSaleDetailsModal({
   onClose,
   money,
 }: DaybookSaleDetailsModalProps) {
+  const { t } = useLang();
   const { data, isLoading } = useDaybook(date);
   const sale = data?.sales.find((s) => s.id === saleId);
   const saleItems = data?.saleItems.filter((si) => si.sale_id === saleId) || [];
@@ -33,7 +36,7 @@ export default function DaybookSaleDetailsModal({
     >
       <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white shadow-xl">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Sale Details</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t("Sale Details")}</h2>
           <button
             onClick={onClose}
             className="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
@@ -43,8 +46,30 @@ export default function DaybookSaleDetailsModal({
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin text-gray-400" size={24} />
+          <div className="p-6 space-y-6" aria-busy>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="ml-auto h-7 w-28" />
+                <Skeleton className="ml-auto h-5 w-16 rounded-full" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+              ))}
+            </div>
+            <table className="w-full">
+              <tbody>
+                <TableRowsSkeleton rows={3} cols={4} />
+              </tbody>
+            </table>
           </div>
         ) : sale ? (
           <div className="p-6 space-y-6">
@@ -80,7 +105,7 @@ export default function DaybookSaleDetailsModal({
                         : "bg-red-100 text-red-700 border-red-200"
                   }`}
                 >
-                  {sale.payment_status}
+                  {t(sale.payment_status)}
                 </span>
               </div>
             </div>
@@ -88,31 +113,31 @@ export default function DaybookSaleDetailsModal({
             {/* Financial Breakdown */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Subtotal</p>
+                <p className="text-sm text-gray-500">{t("Subtotal")}</p>
                 <p className="font-medium">{money(sale.subtotal)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Discount</p>
+                <p className="text-sm text-gray-500">{t("Discount")}</p>
                 <p className="font-medium text-red-600">
                   -{money(sale.discount_amount)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Tax</p>
+                <p className="text-sm text-gray-500">{t("Tax")}</p>
                 <p className="font-medium">{money(sale.tax_amount)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Grand Total</p>
+                <p className="text-sm text-gray-500">{t("Grand Total")}</p>
                 <p className="font-bold">{money(sale.grand_total)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Paid</p>
+                <p className="text-sm text-gray-500">{t("Paid")}</p>
                 <p className="font-medium text-green-600">
                   {money(sale.paid_amount)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Remaining</p>
+                <p className="text-sm text-gray-500">{t("Remaining")}</p>
                 <p className="font-medium text-red-600">
                   {money(sale.remaining_amount)}
                 </p>
@@ -123,15 +148,15 @@ export default function DaybookSaleDetailsModal({
             {saleItems.length > 0 && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">
-                  Items ({saleItems.length})
+                  {t("Items")} ({saleItems.length})
                 </h4>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-3 py-2 text-left">Product</th>
-                      <th className="px-3 py-2 text-right">Qty</th>
-                      <th className="px-3 py-2 text-right">Price</th>
-                      <th className="px-3 py-2 text-right">Total</th>
+                      <th className="px-3 py-2 text-left">{t("Product")}</th>
+                      <th className="px-3 py-2 text-right">{t("Qty")}</th>
+                      <th className="px-3 py-2 text-right">{t("Price")}</th>
+                      <th className="px-3 py-2 text-right">{t("Total")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -158,7 +183,7 @@ export default function DaybookSaleDetailsModal({
             {salePayments.length > 0 && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">
-                  Payments ({salePayments.length})
+                  {t("Payments")} ({salePayments.length})
                 </h4>
                 <div className="space-y-2">
                   {salePayments.map((payment) => (
@@ -168,7 +193,7 @@ export default function DaybookSaleDetailsModal({
                     >
                       <div>
                         <p className="font-medium text-sm">
-                          {payment.payment_method}
+                          {t(payment.payment_method || "")}
                         </p>
                         <p className="text-xs text-gray-500">
                           {new Date(payment.created_at).toLocaleTimeString()}
@@ -186,7 +211,7 @@ export default function DaybookSaleDetailsModal({
             {/* Notes */}
             {sale.notes && (
               <div>
-                <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
+                <h4 className="font-medium text-gray-900 mb-2">{t("Notes")}</h4>
                 <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">
                   {sale.notes}
                 </p>
@@ -194,7 +219,7 @@ export default function DaybookSaleDetailsModal({
             )}
           </div>
         ) : (
-          <div className="py-12 text-center text-gray-500">Sale not found</div>
+          <div className="py-12 text-center text-gray-500">{t("Sale not found")}</div>
         )}
       </div>
     </div>

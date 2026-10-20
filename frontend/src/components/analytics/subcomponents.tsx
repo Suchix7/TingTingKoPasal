@@ -1,5 +1,6 @@
 import type { AnalyticsPreset } from "@/hooks/useAnalytics";
 import type { ReactNode } from "react";
+import { useLang } from "@/lib/i18n";
 
 export function AnalyticsHeader({
   preset,
@@ -16,6 +17,7 @@ export function AnalyticsHeader({
   endDate: string;
   setEndDate: (value: string) => void;
 }) {
+  const { t } = useLang();
   const today = new Date().toLocaleDateString("en-NP", {
     weekday: "long",
     month: "long",
@@ -27,11 +29,11 @@ export function AnalyticsHeader({
     <header className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
-          Analytics
+          {t("Analytics")}
         </h1>
 
         <p className="mt-1 text-sm text-neutral-400">
-          Overview of your shop performance
+          {t("Overview of your shop performance")}
         </p>
 
         <p className="mt-2 text-xs font-bold text-neutral-900">{today}</p>
@@ -40,7 +42,7 @@ export function AnalyticsHeader({
       <div className="flex flex-col gap-3 rounded-md bg-white p-3 shadow-sm ring-1 ring-neutral-100 sm:flex-row sm:items-end">
         <div>
           <label className="mb-1 block text-xs font-semibold text-neutral-500">
-            Date Filter
+            {t("Date Filter")}
           </label>
 
           <select
@@ -48,15 +50,15 @@ export function AnalyticsHeader({
             onChange={(e) => setPreset(e.target.value as AnalyticsPreset)}
             className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
           >
-            <option value="today">Today</option>
-            <option value="yesterday">Yesterday</option>
-            <option value="last_7_days">Last 7 Days</option>
-            <option value="last_30_days">Last 30 Days</option>
-            <option value="this_month">This Month</option>
-            <option value="last_month">Last Month</option>
-            <option value="this_year">This Year</option>
-            <option value="all">All Time</option>
-            <option value="custom">Custom</option>
+            <option value="today">{t("Today")}</option>
+            <option value="yesterday">{t("Yesterday")}</option>
+            <option value="last_7_days">{t("Last 7 Days")}</option>
+            <option value="last_30_days">{t("Last 30 Days")}</option>
+            <option value="this_month">{t("This Month")}</option>
+            <option value="last_month">{t("Last Month")}</option>
+            <option value="this_year">{t("This Year")}</option>
+            <option value="all">{t("All Time")}</option>
+            <option value="custom">{t("Custom")}</option>
           </select>
         </div>
 
@@ -64,7 +66,7 @@ export function AnalyticsHeader({
           <>
             <div>
               <label className="mb-1 block text-xs font-semibold text-neutral-500">
-                Start Date
+                {t("Start Date")}
               </label>
 
               <input
@@ -77,7 +79,7 @@ export function AnalyticsHeader({
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-neutral-500">
-                End Date
+                {t("End Date")}
               </label>
 
               <input

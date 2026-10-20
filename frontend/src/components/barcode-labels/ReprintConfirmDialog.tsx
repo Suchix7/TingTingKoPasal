@@ -1,6 +1,8 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
 
 export type ReprintConflict = {
   productId: string;
@@ -21,6 +23,7 @@ export function ReprintConfirmDialog({
   onCancel,
   onConfirm,
 }: ReprintConfirmDialogProps) {
+  const { t } = useLang();
   return (
     <div
       onClick={(e) => {
@@ -35,12 +38,10 @@ export function ReprintConfirmDialog({
           </div>
           <div>
             <h2 className="text-base font-bold text-gray-900">
-              Some labels were already printed
+              {t("Some labels were already printed")}
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              You're printing more than the unprinted stock for these
-              products, so some stickers will be duplicates of ones already
-              on the shelf.
+              {t("You're printing more than the unprinted stock for these products, so some stickers will be duplicates of ones already on the shelf.")}
             </p>
           </div>
         </div>
@@ -52,13 +53,13 @@ export function ReprintConfirmDialog({
               className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
             >
               <span className="min-w-0 truncate font-medium text-gray-900">
-                {conflict.productName}
+                <Tn v={conflict.productName} />
               </span>
               <span className="ml-3 flex-shrink-0 text-xs text-gray-500">
-                {conflict.alreadyPrinted} printed · {conflict.requested}{" "}
-                requested ·{" "}
+                {conflict.alreadyPrinted} {t("printed")} · {conflict.requested}{" "}
+                {t("requested")} ·{" "}
                 <span className="font-semibold text-amber-600">
-                  {conflict.overlap} overlap
+                  {conflict.overlap} {t("overlap")}
                 </span>
               </span>
             </div>
@@ -71,14 +72,14 @@ export function ReprintConfirmDialog({
             onClick={onCancel}
             className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
           >
-            Reprint Anyway
+            {t("Reprint Anyway")}
           </button>
         </div>
       </div>

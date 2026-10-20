@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
+  Loader2,
   X,
   DollarSign,
   Archive,
@@ -17,6 +18,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useDebounced } from "@/hooks/useDebounced";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import ProductModal from "../product/modal";
+import { useLang } from "@/lib/i18n";
 
 type InventoryCostModalProps = {
   isOpen: boolean;
@@ -37,6 +39,7 @@ export default function InventoryCostModal({
   isSubmitting,
   isEditMode,
 }: InventoryCostModalProps) {
+  const { t } = useLang();
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const debouncedSearch = useDebounced(productSearchTerm, 500);
@@ -110,18 +113,19 @@ export default function InventoryCostModal({
               </div>
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  {isEditMode ? "Edit Inventory Cost" : "Add Inventory Cost"}
+                  {isEditMode ? t("Edit Inventory Cost") : t("Add Inventory Cost")}
                 </h2>
                 <p className="text-sm text-slate-500">
                   {isEditMode
-                    ? "Update cost information for this product"
-                    : "Record cost details for a product"}
+                    ? t("Update cost information for this product")
+                    : t("Record cost details for a product")}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              disabled={isSubmitting}
+              className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
             >
               <X className="h-5 w-5" />
             </button>
@@ -133,14 +137,14 @@ export default function InventoryCostModal({
             <div ref={dropdownRef} className="relative">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Product
+                  {t("Product")}
                 </label>
                 <DropdownWithSearch
                   options={
                     productsData?.data?.map((product) => ({
                       id: product.id,
                       label: product.product_name,
-                      sublabel: `Stock: ${product.stock_quantity || 0} ${product.unit || "units"}`,
+                      sublabel: `${t("Stock")}: ${product.stock_quantity || 0} ${product.unit || t("units")}`,
                       metadata: product,
                     })) || []
                   }
@@ -149,15 +153,15 @@ export default function InventoryCostModal({
                     setFormData({ ...formData, product_id: String(option?.id || "") });
                   }}
                   isLoading={isLoading}
-                  placeholder="Select a product"
-                  searchPlaceholder="Search products by name..."
-                  emptyMessage="No products found"
+                  placeholder={t("Select a product")}
+                  searchPlaceholder={t("Search products by name...")}
+                  emptyMessage={t("No products found")}
                   disabled={isEditMode}
                   onSearch={(searchTerm) => {
                     setProductSearchTerm(searchTerm);
                   }}
                   showAddNew={true}
-                  addNewLabel="Add New Product"
+                  addNewLabel={t("Add New Product")}
                   onAddNew={() => setShowProductModal(true)}
                 />
               </div>
@@ -169,11 +173,11 @@ export default function InventoryCostModal({
                     <Package className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <div className="space-y-1">
                       <div className="font-medium">
-                        Current Inventory Status
+                        {t("Current Inventory Status")}
                       </div>
                       <div className="text-xs text-blue-600">
-                        Stock Quantity: {selectedProduct.stock_quantity || 0}{" "}
-                        {selectedProduct.unit || "units"} | Cost Price:{" "}
+                        {t("Stock Quantity")}: {selectedProduct.stock_quantity || 0}{" "}
+                        {selectedProduct.unit || t("units")} | {t("Cost Price")}:{" "}
                         {new Intl.NumberFormat("en-NP", {
                           style: "currency",
                           currency: "NPR",
@@ -189,7 +193,7 @@ export default function InventoryCostModal({
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Archive className="h-4 w-4 text-slate-400" />
-                Holding Cost per Unit
+                {t("Holding Cost per Unit")}
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
@@ -208,8 +212,7 @@ export default function InventoryCostModal({
                 />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Cost of holding one unit in inventory (e.g., capital cost,
-                obsolescence)
+                {t("Cost of holding one unit in inventory (e.g., capital cost, obsolescence)")}
               </p>
             </div>
 
@@ -217,7 +220,7 @@ export default function InventoryCostModal({
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Package className="h-4 w-4 text-slate-400" />
-                Storage Cost
+                {t("Storage Cost")}
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
@@ -234,7 +237,7 @@ export default function InventoryCostModal({
                 />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Warehouse, utilities, and handling costs
+                {t("Warehouse, utilities, and handling costs")}
               </p>
             </div>
 
@@ -242,7 +245,7 @@ export default function InventoryCostModal({
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Shield className="h-4 w-4 text-slate-400" />
-                Insurance Cost
+                {t("Insurance Cost")}
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
@@ -261,7 +264,7 @@ export default function InventoryCostModal({
                 />
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Insurance premium for inventory protection
+                {t("Insurance premium for inventory protection")}
               </p>
             </div>
 
@@ -269,7 +272,7 @@ export default function InventoryCostModal({
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <AlertTriangle className="h-4 w-4 text-slate-400" />
-                Spoilage Rate (%)
+                {t("Spoilage Rate")} (%)
               </label>
               <div className="relative">
                 <input
@@ -289,7 +292,7 @@ export default function InventoryCostModal({
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Expected percentage of inventory lost to spoilage/damage
+                {t("Expected percentage of inventory lost to spoilage/damage")}
               </p>
             </div>
 
@@ -297,7 +300,7 @@ export default function InventoryCostModal({
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">
-                  Total Cost
+                  {t("Total Cost")}
                 </span>
                 <span className="text-lg font-bold text-slate-900">
                   {new Intl.NumberFormat("en-NP", {
@@ -308,7 +311,7 @@ export default function InventoryCostModal({
                 </span>
               </div>
               <div className="mt-2 text-xs text-slate-500">
-                Sum of holding, storage, and insurance costs
+                {t("Sum of holding, storage, and insurance costs")}
               </div>
             </div>
           </div>
@@ -320,7 +323,7 @@ export default function InventoryCostModal({
               disabled={isSubmitting}
               className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               onClick={onSubmit}
@@ -329,13 +332,13 @@ export default function InventoryCostModal({
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  {isEditMode ? "Updating..." : "Creating..."}
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {isEditMode ? t("Updating...") : t("Creating...")}
                 </span>
               ) : isEditMode ? (
-                "Update Cost"
+                t("Update Cost")
               ) : (
-                "Add Cost"
+                t("Add Cost")
               )}
             </button>
           </div>

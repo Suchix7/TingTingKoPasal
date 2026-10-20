@@ -15,6 +15,8 @@ import {
 } from "@/components/tabs/ProductBatchTab";
 import { useDebounced } from "@/hooks/useDebounced";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
+import { useLang } from "@/lib/i18n";
+import Tn from "@/components/layout/Tn";
 
 export default function BatchModal({
   closeModal,
@@ -29,6 +31,7 @@ export default function BatchModal({
   defaultCostPrice?: number;
   defaultSalePrice?: number;
 }) {
+  const { t } = useLang();
   const [formData, setFormData] = useState<BatchFormData>(initialBatchFormData);
   const [searchProductTerm, setSearchProductTerm] = useState("");
   const debouncedSearchProductTerm = useDebounced(searchProductTerm, 300);
@@ -188,27 +191,27 @@ export default function BatchModal({
 
   const validateForm = () => {
     if (!formData.product_id) {
-      toast.error("Product is required.");
+      toast.error(t("Product is required."));
       return false;
     }
 
     if (!formData.batch_number.trim()) {
-      toast.error("Phone model / batch number is required.");
+      toast.error(t("Phone model / batch number is required."));
       return false;
     }
 
     if (Number(formData.quantity) < 0) {
-      toast.error("Quantity cannot be negative.");
+      toast.error(t("Quantity cannot be negative."));
       return false;
     }
 
     if (Number(formData.cost_price) < 0) {
-      toast.error("Cost price cannot be negative.");
+      toast.error(t("Cost price cannot be negative."));
       return false;
     }
 
     if (Number(formData.sale_price) < 0) {
-      toast.error("Sale price cannot be negative.");
+      toast.error(t("Sale price cannot be negative."));
       return false;
     }
 
@@ -221,7 +224,7 @@ export default function BatchModal({
     if (!validateForm()) return;
 
     if (formData.cost_price > formData.sale_price) {
-      toast.error("Cost price cannot be greater than sale price.");
+      toast.error(t("Cost price cannot be greater than sale price."));
       return;
     }
 
@@ -231,7 +234,9 @@ export default function BatchModal({
       formData.cost_price !== selectedBatch.cost_price
     ) {
       const confirmNewBatch = window.confirm(
-        "Cost price has changed. Would you like to create a new batch instead? Click OK to create new batch, Cancel to update this batch.",
+        t(
+          "Cost price has changed. Would you like to create a new batch instead? Click OK to create new batch, Cancel to update this batch.",
+        ),
       );
 
       if (confirmNewBatch) {
@@ -258,7 +263,7 @@ export default function BatchModal({
           : createBatchMutation.mutateAsync(payload);
 
       await promise;
-      toast.success(isEditMode ? "Batch updated." : "Batch created.");
+      toast.success(isEditMode ? t("Batch updated.") : t("Batch created."));
       closeModal();
     } catch (error: any) {
       console.error(
@@ -268,7 +273,7 @@ export default function BatchModal({
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          `Failed to ${isEditMode ? "update" : "create"} batch. Please try again later.`,
+          `${isEditMode ? t("Failed to update batch. Please try again later.") : t("Failed to create batch. Please try again later.")}`,
       );
     }
   };
@@ -280,13 +285,13 @@ export default function BatchModal({
   // Find product name for display when product is pre-selected
   const getSelectedProductName = () => {
     if (selectedProduct) {
-      return selectedProduct.product_name;
+      return <Tn v={selectedProduct.product_name} />;
     }
     // If product is pre-selected but not in the products list, show a placeholder
     if (formData.product_id && productsData?.data) {
-      return `Product ID: ${formData.product_id}`;
+      return `${t("Product ID")}: ${formData.product_id}`;
     }
-    return "N/A";
+    return t("N/A");
   };
 
   // Regenerate batch number
@@ -298,7 +303,7 @@ export default function BatchModal({
         ...prev,
         batch_number: newBatchNumber,
       }));
-      toast.success("Batch number regenerated");
+      toast.success(t("Batch number regenerated"));
     }
   };
 
@@ -318,14 +323,14 @@ export default function BatchModal({
           <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
-                {isEditMode ? "Update Batch" : "Add Batch"}
+                {isEditMode ? t("Update Batch") : t("Add Batch")}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {isEditMode
-                  ? "Update the batch details for this product."
+                  ? t("Update the batch details for this product.")
                   : productId
-                    ? `Create a new batch for the selected product with updated cost price.`
-                    : "Create a new batch with pricing for inventory tracking."}
+                    ? t("Create a new batch for the selected product with updated cost price.")
+                    : t("Create a new batch with pricing for inventory tracking.")}
               </p>
             </div>
             <button
@@ -342,7 +347,7 @@ export default function BatchModal({
               {/* Product Selection - Full width */}
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Product
+                  {t("Product")}
                 </label>
                 {productId ? (
                   // Display selected product as read-only when productId is provided
@@ -352,11 +357,11 @@ export default function BatchModal({
                         {getSelectedProductName()}
                       </span>
                       <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                        Pre-selected
+                        {t("Pre-selected")}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      Product is pre-selected and cannot be changed
+                      {t("Product is pre-selected and cannot be changed")}
                     </p>
                   </div>
                 ) : (
@@ -365,7 +370,7 @@ export default function BatchModal({
                       productsData?.data?.map((product) => ({
                         id: product.id,
                         label: product.product_name,
-                        sublabel: `Stock: ${product.stock_quantity || 0} ${product.unit || "units"}`,
+                        sublabel: `${t("Stock")}: ${product.stock_quantity || 0} ${product.unit || t("units")}`,
                         metadata: product,
                       })) || []
                     }
@@ -377,10 +382,10 @@ export default function BatchModal({
                       });
                     }}
                     isLoading={isProductsLoading}
-                    placeholder="Select product"
-                    searchPlaceholder="Search products by name..."
+                    placeholder={t("Select product")}
+                    searchPlaceholder={t("Search products by name...")}
                     disabled={isSubmitting || isEditMode}
-                    emptyMessage="No products found"
+                    emptyMessage={t("No products found")}
                     onSearch={(searchTerm) => {
                       setSearchProductTerm(searchTerm);
                     }}
@@ -388,7 +393,7 @@ export default function BatchModal({
                 )}
                 {isEditMode && (
                   <p className="mt-1 text-xs text-amber-600">
-                    Product cannot be changed when editing a batch.
+                    {t("Product cannot be changed when editing a batch.")}
                   </p>
                 )}
               </div>
@@ -396,13 +401,13 @@ export default function BatchModal({
               {/* Batch Number */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Phone Model / Batch Number
+                  {t("Phone Model / Batch Number")}
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     list="batch-phone-model-suggestions"
-                    placeholder="Pick a phone model, or keep the auto batch number"
+                    placeholder={t("Pick a phone model, or keep the auto batch number")}
                     value={formData.batch_number}
                     onChange={(e) =>
                       handleChange("batch_number", e.target.value)
@@ -416,9 +421,9 @@ export default function BatchModal({
                       onClick={handleRegenerateBatchNumber}
                       disabled={isSubmitting}
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
-                      title="Regenerate batch number"
+                      title={t("Regenerate batch number")}
                     >
-                      Regenerate
+                      {t("Regenerate")}
                     </button>
                   )}
                 </div>
@@ -433,12 +438,12 @@ export default function BatchModal({
               {/* Quantity */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Quantity
+                  {t("Quantity")}
                 </label>
                 <input
                   type="number"
                   min="0"
-                  placeholder="Enter quantity"
+                  placeholder={t("Enter quantity")}
                   value={String(formData.quantity)}
                   onChange={(e) =>
                     handleChange(
@@ -455,13 +460,13 @@ export default function BatchModal({
               {/* Cost Price */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Cost Price
+                  {t("Cost Price")}
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Enter cost price"
+                  placeholder={t("Enter cost price")}
                   value={String(formData.cost_price)}
                   onChange={(e) =>
                     handleChange(
@@ -476,7 +481,7 @@ export default function BatchModal({
                 />
                 {isEditMode && (
                   <p className="mt-1 text-xs text-amber-600">
-                    To change cost price you will need to create a new batch
+                    {t("To change cost price you will need to create a new batch")}
                   </p>
                 )}
               </div>
@@ -484,13 +489,13 @@ export default function BatchModal({
               {/* Sale Price */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Sale Price
+                  {t("Sale Price")}
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Enter sale price"
+                  placeholder={t("Enter sale price")}
                   value={String(formData.sale_price)}
                   onChange={(e) =>
                     handleChange(
@@ -508,23 +513,23 @@ export default function BatchModal({
               {formData.product_id && formData.quantity > 0 && (
                 <div className="sm:col-span-2 rounded-xl border border-blue-100 bg-blue-50 p-4">
                   <h3 className="text-sm font-medium text-blue-900">
-                    Batch Summary
+                    {t("Batch Summary")}
                   </h3>
                   <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-blue-700">Product</p>
+                      <p className="text-blue-700">{t("Product")}</p>
                       <p className="font-medium text-blue-900">
                         {getSelectedProductName()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-blue-700">Batch Number</p>
+                      <p className="text-blue-700">{t("Batch Number")}</p>
                       <p className="font-medium text-blue-900">
-                        {formData.batch_number || "N/A"}
+                        {formData.batch_number || t("N/A")}
                       </p>
                     </div>
                     <div>
-                      <p className="text-blue-700">Total Value (Cost)</p>
+                      <p className="text-blue-700">{t("Total Value (Cost)")}</p>
                       <p className="font-medium text-blue-900">
                         {new Intl.NumberFormat("en-NP", {
                           style: "currency",
@@ -534,7 +539,7 @@ export default function BatchModal({
                       </p>
                     </div>
                     <div>
-                      <p className="text-blue-700">Total Value (Sale)</p>
+                      <p className="text-blue-700">{t("Total Value (Sale)")}</p>
                       <p className="font-medium text-blue-900">
                         {new Intl.NumberFormat("en-NP", {
                           style: "currency",
@@ -545,7 +550,7 @@ export default function BatchModal({
                     </div>
                     {formData.cost_price > 0 && (
                       <div className="col-span-2">
-                        <p className="text-blue-700">Potential Profit</p>
+                        <p className="text-blue-700">{t("Potential Profit")}</p>
                         <p className="font-medium text-green-600">
                           {new Intl.NumberFormat("en-NP", {
                             style: "currency",
@@ -579,7 +584,7 @@ export default function BatchModal({
                 disabled={isSubmitting}
                 className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Cancel
+                {t("Cancel")}
               </button>
 
               <button
@@ -590,12 +595,12 @@ export default function BatchModal({
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    {isEditMode ? "Updating..." : "Saving..."}
+                    {isEditMode ? t("Updating...") : t("Saving...")}
                   </span>
                 ) : isEditMode ? (
-                  "Update Batch"
+                  t("Update Batch")
                 ) : (
-                  "Save Batch"
+                  t("Save Batch")
                 )}
               </button>
             </div>
@@ -624,39 +629,40 @@ export default function BatchModal({
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-slate-900">
-                Create New Batch
+                {t("Create New Batch")}
               </h3>
             </div>
 
             <p className="mb-4 text-sm text-slate-600">
-              You're changing the cost price of batch{" "}
+              {t("You're changing the cost price of batch")}{" "}
               <span className="font-semibold text-slate-900">
                 {selectedBatch?.batch_number}
               </span>{" "}
-              from{" "}
+              {t("from")}{" "}
               <span className="font-semibold text-slate-900">
                 NPR {selectedBatch?.cost_price?.toFixed(2)}
               </span>{" "}
-              to{" "}
+              {t("to")}{" "}
               <span className="font-semibold text-slate-900">
                 NPR {pendingFormData?.cost_price?.toFixed(2)}
               </span>
-              . Cost price changes should be tracked with a new batch for better
-              inventory management.
+              . {t("Cost price changes should be tracked with a new batch for better inventory management.")}
             </p>
 
             <div className="flex gap-3">
               <button
                 onClick={handleNewBatchCancel}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                disabled={isSubmitting}
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               >
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 onClick={handleNewBatchConfirm}
-                className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                disabled={isSubmitting}
+                className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
               >
-                Create New Batch
+                {t("Create New Batch")}
               </button>
             </div>
           </div>

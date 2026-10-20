@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, MinusCircle } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import { X, MinusCircle, Loader2 } from "lucide-react";
 
+import Tn from "@/components/layout/Tn";
 interface WithdrawFundsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -32,21 +34,23 @@ export default function WithdrawFundsModal({
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const { t } = useLang();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError("");
 
     const numAmount = parseFloat(amount);
     if (!amount || isNaN(numAmount) || numAmount <= 0) {
-      setError("Please enter a valid amount greater than 0.");
+      setError(t("Please enter a valid amount greater than 0."));
       return;
     }
 
     if (numAmount > paymentMethod.current_balance) {
-      setError("Insufficient balance. Amount exceeds current balance.");
+      setError(t("Insufficient balance. Amount exceeds current balance."));
       return;
     }
 
@@ -81,10 +85,10 @@ export default function WithdrawFundsModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-neutral-900">
-                Withdraw Funds
+                {t("Withdraw Funds")}
               </h2>
               <p className="text-sm text-neutral-500">
-                {paymentMethod.payment_method}
+                <Tn v={paymentMethod.payment_method} />
               </p>
             </div>
           </div>
@@ -99,7 +103,7 @@ export default function WithdrawFundsModal({
 
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4 rounded-xl bg-neutral-50 p-4">
-            <p className="text-sm text-neutral-500">Available Balance</p>
+            <p className="text-sm text-neutral-500">{t("Available Balance")}</p>
             <p className="text-2xl font-bold text-neutral-900">
               {formatCurrency(paymentMethod.current_balance)}
             </p>
@@ -107,7 +111,7 @@ export default function WithdrawFundsModal({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Amount *
+              {t("Amount")} *
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
@@ -120,7 +124,7 @@ export default function WithdrawFundsModal({
                   setAmount(e.target.value);
                   setError("");
                 }}
-                placeholder="Enter amount"
+                placeholder={t("Enter amount")}
                 step="0.01"
                 min="0.01"
                 max={paymentMethod.current_balance}
@@ -134,13 +138,13 @@ export default function WithdrawFundsModal({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Title
+              {t("Title")}
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="E.g., Expense payment, Cash withdrawal"
+              placeholder={t("E.g., Expense payment, Cash withdrawal")}
               disabled={isSubmitting}
               className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-red-500 focus:ring-2 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -148,12 +152,12 @@ export default function WithdrawFundsModal({
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Notes
+              {t("Notes")}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Additional details..."
+              placeholder={t("Additional details...")}
               rows={3}
               disabled={isSubmitting}
               className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-red-500 focus:ring-2 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
@@ -167,14 +171,15 @@ export default function WithdrawFundsModal({
               disabled={isSubmitting}
               className="flex-1 rounded-xl cursor-pointer border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 rounded-xl cursor-pointer bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl cursor-pointer bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? "Withdrawing..." : "Withdraw Funds"}
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting ? t("Withdrawing...") : t("Withdraw Funds")}
             </button>
           </div>
         </form>

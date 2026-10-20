@@ -1,6 +1,8 @@
 "use client";
 
 import { Package, Calendar, DollarSign, User, Hash } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import Tn from "@/components/layout/Tn";
 import {
   type PurchaseOrder,
   type PurchaseOrderItem,
@@ -12,6 +14,7 @@ type Props = {
 };
 
 export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
+  const { t } = useLang();
   const formatCurrency = (amount: number) => {
     return `Rs.${amount}`;
   };
@@ -52,10 +55,10 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900">
-                Purchase Order #{order.id}
+                {t("Purchase Order")} #{order.id}
               </h2>
               <p className="text-sm text-slate-500">
-                Created on {formatDate(order.created_at)}
+                {t("Created on")} {formatDate(order.created_at)}
               </p>
             </div>
           </div>
@@ -84,7 +87,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
               <div className="flex items-center gap-2 text-slate-500 mb-2">
                 <Hash className="h-4 w-4" />
-                <span className="text-xs font-medium">PO Number</span>
+                <span className="text-xs font-medium">{t("PO Number")}</span>
               </div>
               <p className="text-lg font-semibold text-slate-900">
                 PO-{order.id}
@@ -94,7 +97,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
               <div className="flex items-center gap-2 text-slate-500 mb-2">
                 <User className="h-4 w-4" />
-                <span className="text-xs font-medium">Supplier ID</span>
+                <span className="text-xs font-medium">{t("Supplier ID")}</span>
               </div>
               <p className="text-lg font-semibold text-slate-900">
                 {order.supplier_id}
@@ -104,7 +107,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
               <div className="flex items-center gap-2 text-slate-500 mb-2">
                 <Calendar className="h-4 w-4" />
-                <span className="text-xs font-medium">Order Date</span>
+                <span className="text-xs font-medium">{t("Order Date")}</span>
               </div>
               <p className="text-sm font-medium text-slate-900">
                 {formatDate(order.order_date)}
@@ -114,7 +117,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
               <div className="flex items-center gap-2 text-slate-500 mb-2">
                 <DollarSign className="h-4 w-4" />
-                <span className="text-xs font-medium">Total Cost</span>
+                <span className="text-xs font-medium">{t("Total Cost")}</span>
               </div>
               <p className="text-lg font-semibold text-slate-900">
                 {formatCurrency(order.total_cost)}
@@ -125,24 +128,24 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
           <div className="rounded-2xl border border-slate-200 overflow-hidden">
             <div className="bg-slate-50 px-6 py-3 border-b border-slate-200">
               <h3 className="text-sm font-semibold text-slate-900">
-                Order Details
+                {t("Order Details")}
               </h3>
             </div>
             <div className="p-6 space-y-4">
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">
-                  Status
+                  {t("Status")}
                 </p>
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${getStatusBadge(order.status)}`}
                 >
-                  {order.status}
+                  {t(order.status)}
                 </span>
               </div>
 
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">
-                  Ordering Cost
+                  {t("Ordering Cost")}
                 </p>
                 <p className="text-sm text-slate-900">
                   {formatCurrency(order.ordering_cost)}
@@ -152,7 +155,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
               {order.notes && (
                 <div>
                   <p className="text-xs font-medium text-slate-500 mb-1">
-                    Notes
+                    {t("Notes")}
                   </p>
                   <p className="text-sm text-slate-700 bg-slate-50 rounded-xl p-3">
                     {order.notes}
@@ -165,7 +168,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
           <div className="rounded-2xl border border-slate-200 overflow-hidden">
             <div className="bg-slate-50 px-6 py-3 border-b border-slate-200">
               <h3 className="text-sm font-semibold text-slate-900">
-                Order Items
+                {t("Order Items")}
               </h3>
             </div>
             <div className="overflow-x-auto">
@@ -173,20 +176,20 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
                 <thead className="bg-slate-50/50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500">
-                      Product ID
+                      {t("Product ID")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500">
-                      Product Name
+                      {t("Product Name")}
                     </th>
 
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500">
-                      Quantity
+                      {t("Quantity")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500">
-                      Unit Cost
+                      {t("Unit Cost")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500">
-                      Total Cost
+                      {t("Total Cost")}
                     </th>
                   </tr>
                 </thead>
@@ -199,7 +202,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
                             {item.product_id}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-900">
-                            {item.product_name}
+                            <Tn v={item.product_name} />
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {item.quantity}
@@ -220,7 +223,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
                       colSpan={4}
                       className="px-6 py-4 text-right text-sm font-semibold text-slate-900"
                     >
-                      Subtotal:
+                      {t("Subtotal")}:
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-slate-900">
                       {formatCurrency(order.total_cost - order.ordering_cost)}
@@ -231,7 +234,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
                       colSpan={4}
                       className="px-6 py-4 text-right text-sm font-semibold text-slate-900"
                     >
-                      Ordering Cost:
+                      {t("Ordering Cost")}:
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-slate-900">
                       {formatCurrency(order.ordering_cost)}
@@ -242,7 +245,7 @@ export default function ViewPurchaseOrderModal({ closeModal, order }: Props) {
                       colSpan={4}
                       className="px-6 py-4 text-right text-base font-bold text-slate-900"
                     >
-                      Total:
+                      {t("Total")}:
                     </td>
                     <td className="px-6 py-4 text-base font-bold text-slate-900">
                       {formatCurrency(order.total_cost)}

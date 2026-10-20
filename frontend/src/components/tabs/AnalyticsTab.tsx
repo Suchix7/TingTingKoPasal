@@ -35,6 +35,14 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { pieColors } from "@/components/dashboard/body";
+import { useLang, tr } from "@/lib/i18n";
+import {
+  Skeleton,
+  StatCardsSkeleton,
+  ChartSkeleton,
+  ListSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 
 import {
   useAnalyticsOverview,
@@ -64,6 +72,7 @@ import {
   EmptyState,
 } from "../analytics/subcomponents";
 
+import Tn from "@/components/layout/Tn";
 const money = (value: number) =>
   new Intl.NumberFormat("en-NP", {
     style: "currency",
@@ -75,7 +84,7 @@ const formatNumber = (value: number) =>
   new Intl.NumberFormat("en-NP").format(value || 0);
 
 const formatDate = (date?: string) => {
-  if (!date) return "Unknown";
+  if (!date) return tr("Unknown");
 
   return new Date(date).toLocaleDateString("en-NP", {
     month: "short",
@@ -160,6 +169,7 @@ type TabType =
   | "single-abc-classification";
 
 export default function AnalyticsPage() {
+  const { t } = useLang();
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [preset, setPreset] = useState<AnalyticsPreset>("all");
   const [startDate, setStartDate] = useState(getFirstDayOfMonth());
@@ -200,6 +210,7 @@ export default function AnalyticsPage() {
   const {
     data: analyticsData,
     isLoading,
+    isFetching,
     isError,
     error,
   } = useAnalyticsOverview({
@@ -211,12 +222,20 @@ export default function AnalyticsPage() {
     chartMonths: 6,
   });
 
-  const { data: fpGrowthData, isLoading: fpGrowthLoading } =
+  const {
+    data: fpGrowthData,
+    isLoading: fpGrowthLoading,
+    isFetching: fpGrowthFetching,
+  } =
     useFPGrowthAnalysis({
       minSupport,
     });
 
-  const { data: abcData, isLoading: abcLoading } = useABCClassification({
+  const {
+    data: abcData,
+    isLoading: abcLoading,
+    isFetching: abcFetching,
+  } = useABCClassification({
     page: abcPage,
     limit: abcLimit,
     search: abcSearch,
@@ -230,7 +249,11 @@ export default function AnalyticsPage() {
     turnoverWeight: abcTurnoverWeight,
   });
 
-  const { data: singleAbcData, isLoading: singleAbcLoading } =
+  const {
+    data: singleAbcData,
+    isLoading: singleAbcLoading,
+    isFetching: singleAbcFetching,
+  } =
     useSingleABCClassification({
       page: singleAbcPage,
       limit: singleAbcLimit,
@@ -278,30 +301,16 @@ export default function AnalyticsPage() {
     0,
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900" />
-
-          <p className="mt-4 text-sm font-medium text-neutral-500">
-            Loading analytics...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (isError) {
     return (
       <div className="flex h-dvh items-center justify-center bg-neutral-50 px-4">
         <div className="max-w-md rounded-md bg-white p-6 text-center shadow-sm ring-1 ring-neutral-100">
           <h2 className="text-lg font-bold text-neutral-900">
-            Failed to load analytics
+            {t("Failed to load analytics")}
           </h2>
 
           <p className="mt-2 text-sm text-neutral-500">
-            {error?.message || "Something went wrong while fetching analytics."}
+            {error?.message || t("Something went wrong while fetching analytics.")}
           </p>
         </div>
       </div>
@@ -319,10 +328,48 @@ export default function AnalyticsPage() {
         setEndDate={setEndDate}
       />
 
+      {isLoading ? (
+        <div className="mt-4 space-y-4" aria-busy>
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <Skeleton className="mb-5 h-5 w-48" />
+            <ChartSkeleton className="h-[285px]" />
+          </div>
+          <StatCardsSkeleton
+            count={5}
+            className="grid grid-cols-2 gap-4 md:grid-cols-5"
+          />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <Skeleton className="mb-5 h-5 w-40" />
+              <ChartSkeleton className="h-[250px]" />
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <Skeleton className="mb-5 h-5 w-40" />
+              <ChartSkeleton className="h-[285px]" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-gray-200 bg-white p-6"
+              >
+                <Skeleton className="mb-5 h-5 w-40" />
+                <ListSkeleton rows={4} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+      <div
+        className={`transition-opacity ${
+          isFetching ? "pointer-events-none opacity-60" : ""
+        }`}
+      >
       <section className="mt-4">
         <ChartCard
-          title="Selected Range Daily Sales"
-          action={<Badge label={presetLabels[preset]} />}
+          title={t("Selected Range Daily Sales")}
+          action={<Badge label={t(presetLabels[preset])} />}
         >
           <ResponsiveContainer width="100%" height={285}>
             <LineChart data={salesByDay}>
@@ -351,7 +398,7 @@ export default function AnalyticsPage() {
               <Line
                 type="monotone"
                 dataKey="sales"
-                name="Sales"
+                name={t("Sales")}
                 stroke="#111827"
                 strokeWidth={2.5}
                 dot={{ fill: "#111827", strokeWidth: 2, r: 4 }}
@@ -361,7 +408,7 @@ export default function AnalyticsPage() {
               <Line
                 type="monotone"
                 dataKey="profit"
-                name="Profit"
+                name={t("Profit")}
                 stroke="#059669"
                 strokeWidth={2.5}
                 dot={{ fill: "#059669", strokeWidth: 2, r: 4 }}
@@ -374,36 +421,36 @@ export default function AnalyticsPage() {
 
       <section className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-5">
         <MiniStat
-          label="Selected Range Sales"
+          label={t("Selected Range Sales")}
           value={money(summary?.rangeSales || 0)}
         />
 
         <MiniStat
-          label="Selected Range Profit"
+          label={t("Selected Range Profit")}
           value={money(summary?.rangeProfit || 0)}
         />
 
         <MiniStat
-          label="Total Expenses"
+          label={t("Total Expenses")}
           value={money(summary?.totalExpenses || 0)}
         />
 
         <MiniStat
-          label="Net Profit"
+          label={t("Net Profit")}
           value={money(summary?.netProfitAfterExpenses || 0)}
         />
 
         <MiniStat
-          label="Low Stock"
+          label={t("Low Stock")}
           value={formatNumber(summary?.lowStockCount || 0)}
         />
       </section>
 
       <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ListCard
-          title="Payment Methods"
+          title={t("Payment Methods")}
           icon={<CreditCard className="h-4 w-4" />}
-          actionLabel={presetLabels[preset]}
+          actionLabel={t(presetLabels[preset])}
         >
           <div className="mb-4">
             {pieData.length > 0 ? (
@@ -438,7 +485,7 @@ export default function AnalyticsPage() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState message="No payment data available" />
+              <EmptyState message={t("No payment data available")} />
             )}
           </div>
 
@@ -471,7 +518,7 @@ export default function AnalyticsPage() {
                       </p>
 
                       <p className="text-xs text-neutral-400">
-                        {method.type} • {method.count} transactions
+                        <Tn v={method.type} /> • {method.count} {t("transactions")}
                       </p>
                     </div>
                   </div>
@@ -491,8 +538,8 @@ export default function AnalyticsPage() {
 
         <div className="flex flex-col gap-2">
           <ChartCard
-            title="Monthly Performance"
-            action={<Badge label={`Last ${salesByMonth.length || 6} months`} />}
+            title={t("Monthly Performance")}
+            action={<Badge label={`${t("Last")} ${salesByMonth.length || 6} ${t("months")}`} />}
           >
             <ResponsiveContainer width="100%" height={285}>
               <BarChart data={salesByMonth} barGap={8}>
@@ -520,7 +567,7 @@ export default function AnalyticsPage() {
 
                 <Bar
                   dataKey="sales"
-                  name="Sales"
+                  name={t("Sales")}
                   fill="#111827"
                   radius={[8, 8, 0, 0]}
                   maxBarSize={38}
@@ -528,7 +575,7 @@ export default function AnalyticsPage() {
 
                 <Bar
                   dataKey="profit"
-                  name="Profit"
+                  name={t("Profit")}
                   fill="#059669"
                   radius={[8, 8, 0, 0]}
                   maxBarSize={38}
@@ -538,14 +585,14 @@ export default function AnalyticsPage() {
           </ChartCard>
 
           <ListCard
-            title="Expense Summary"
+            title={t("Expense Summary")}
             icon={<ReceiptText className="h-4 w-4" />}
-            actionLabel={presetLabels[preset]}
+            actionLabel={t(presetLabels[preset])}
           >
             <div className="space-y-3">
               <div className="rounded-xl bg-neutral-50 p-4">
                 <p className="text-xs font-semibold text-neutral-400">
-                  Total Expenses
+                  {t("Total Expenses")}
                 </p>
 
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
@@ -553,14 +600,14 @@ export default function AnalyticsPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-neutral-400">
-                  {formatNumber(summary?.totalExpenseRecords || 0)} expense
-                  records
+                  {formatNumber(summary?.totalExpenseRecords || 0)}{" "}
+                  {t("expense records")}
                 </p>
               </div>
 
               <div className="rounded-xl bg-neutral-50 p-4">
                 <p className="text-xs font-semibold text-neutral-400">
-                  Net Profit After Expenses
+                  {t("Net Profit After Expenses")}
                 </p>
 
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
@@ -568,7 +615,7 @@ export default function AnalyticsPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-neutral-400">
-                  Sales profit minus expenses
+                  {t("Sales profit minus expenses")}
                 </p>
               </div>
             </div>
@@ -578,31 +625,31 @@ export default function AnalyticsPage() {
 
       <section className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
         <MiniStat
-          label="Selected Range Sales"
+          label={t("Selected Range Sales")}
           value={money(summary?.rangeSales || 0)}
         />
 
         <MiniStat
-          label="Selected Range Profit"
+          label={t("Selected Range Profit")}
           value={money(summary?.rangeProfit || 0)}
         />
 
         <MiniStat
-          label="Low Stock"
+          label={t("Low Stock")}
           value={formatNumber(summary?.lowStockCount || 0)}
         />
 
         <MiniStat
-          label="Out of Stock"
+          label={t("Out of Stock")}
           value={formatNumber(summary?.outOfStockCount || 0)}
         />
       </section>
 
       <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ListCard
-          title="Low Stock Items"
+          title={t("Low Stock Items")}
           icon={<AlertTriangle className="h-4 w-4" />}
-          actionLabel={`${formatNumber(lowStockItems.length)} alerts`}
+          actionLabel={`${formatNumber(lowStockItems.length)} ${t("alerts")}`}
         >
           <div className="space-y-2">
             {lowStockItems.length > 0 ? (
@@ -613,29 +660,29 @@ export default function AnalyticsPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-neutral-900">
-                      {item.product_name}
+                      <Tn v={item.product_name} />
                     </p>
 
                     <p className="text-xs text-neutral-400">
-                      Reorder level: {formatNumber(item.reorder_level)}
+                      {t("Reorder level")}: {formatNumber(item.reorder_level)}
                     </p>
                   </div>
 
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-red-600 ring-1 ring-red-100">
-                    {formatNumber(item.current_stock)} left
+                    {formatNumber(item.current_stock)} {t("left")}
                   </span>
                 </div>
               ))
             ) : (
-              <EmptyState message="All items are well stocked" />
+              <EmptyState message={t("All items are well stocked")} />
             )}
           </div>
         </ListCard>
 
         <ListCard
-          title="Recent Transactions"
+          title={t("Recent Transactions")}
           icon={<ShoppingCart className="h-4 w-4" />}
-          actionLabel="Latest"
+          actionLabel={t("Latest")}
         >
           <div className="space-y-1">
             {recentSales.length > 0 ? (
@@ -650,7 +697,7 @@ export default function AnalyticsPage() {
                     </p>
 
                     <p className="text-xs text-neutral-400">
-                      {sale.customer_name || "Walk-in"} •{" "}
+                      {sale.customer_name || t("Walk-in")} •{" "}
                       {formatDate(sale.created_at)}
                     </p>
                   </div>
@@ -667,15 +714,15 @@ export default function AnalyticsPage() {
                 </div>
               ))
             ) : (
-              <EmptyState message="No recent transactions" />
+              <EmptyState message={t("No recent transactions")} />
             )}
           </div>
         </ListCard>
 
         <ListCard
-          title="Top Customers"
+          title={t("Top Customers")}
           icon={<Users className="h-4 w-4" />}
-          actionLabel={presetLabels[preset]}
+          actionLabel={t(presetLabels[preset])}
         >
           <div className="space-y-2">
             {topCustomers.length > 0 ? (
@@ -686,11 +733,11 @@ export default function AnalyticsPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-neutral-900">
-                      {customer.name || "Unknown Customer"}
+                      {customer.name || t("Unknown Customer")}
                     </p>
 
                     <p className="text-xs text-neutral-400">
-                      {formatNumber(customer.orders)} orders • Credit{" "}
+                      {formatNumber(customer.orders)} {t("orders")} • {t("Credit")}{" "}
                       {money(customer.credit)}
                     </p>
                   </div>
@@ -707,11 +754,13 @@ export default function AnalyticsPage() {
                 </div>
               ))
             ) : (
-              <EmptyState message="No customer data available" />
+              <EmptyState message={t("No customer data available")} />
             )}
           </div>
         </ListCard>
       </section>
+      </div>
+      )}
     </>
   );
 
@@ -723,17 +772,17 @@ export default function AnalyticsPage() {
             <div className="flex items-center gap-2">
               <PackageSearch className="h-5 w-5 text-neutral-700" />
               <h2 className="text-lg font-bold text-neutral-900">
-                Product Bundle Analysis
+                {t("Product Bundle Analysis")}
               </h2>
             </div>
             <p className="mt-1 text-sm text-neutral-400">
-              Find products that customers often buy together.
+              {t("Find products that customers often buy together.")}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-neutral-500">
-              Minimum Support:
+              {t("Minimum Support:")}
             </label>
             <select
               value={minSupport}
@@ -751,21 +800,24 @@ export default function AnalyticsPage() {
         </div>
 
         {fpGrowthLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900" />
-              <p className="mt-3 text-sm font-medium text-neutral-500">
-                Analyzing purchase patterns...
-              </p>
-            </div>
+          <div aria-busy>
+            <StatCardsSkeleton
+              count={3}
+              className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3"
+            />
+            <ListSkeleton rows={4} />
           </div>
         ) : fpGrowthResult ? (
-          <>
+          <div
+            className={`transition-opacity ${
+              fpGrowthFetching ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl bg-neutral-50 p-4 text-center">
                 <div className="flex items-center justify-center gap-2 text-neutral-500">
                   <BarChart3 className="h-4 w-4" />
-                  <p className="text-xs font-semibold">Total Transactions</p>
+                  <p className="text-xs font-semibold">{t("Total Transactions")}</p>
                 </div>
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
                   {formatNumber(fpGrowthResult.totalTransactions)}
@@ -775,13 +827,13 @@ export default function AnalyticsPage() {
               <div className="rounded-xl bg-neutral-50 p-4 text-center">
                 <div className="flex items-center justify-center gap-2 text-neutral-500">
                   <ShoppingCart className="h-4 w-4" />
-                  <p className="text-xs font-semibold">Minimum Sales Count</p>
+                  <p className="text-xs font-semibold">{t("Minimum Sales Count")}</p>
                 </div>
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
                   {formatNumber(fpGrowthResult.minSupportCount)}
                 </p>
                 <p className="mt-1 text-xs text-neutral-400">
-                  ({fpGrowthResult.minSupport * 100}% support threshold)
+                  ({fpGrowthResult.minSupport * 100}% {t("support threshold")})
                 </p>
               </div>
 
@@ -789,7 +841,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center justify-center gap-2 text-neutral-500">
                   <Lightbulb className="h-4 w-4" />
                   <p className="text-xs font-semibold">
-                    Bundle Suggestions Found
+                    {t("Bundle Suggestions Found")}
                   </p>
                 </div>
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
@@ -813,12 +865,12 @@ export default function AnalyticsPage() {
                         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-500">
                           <span className="inline-flex items-center gap-1">
                             <ShoppingCart className="h-3.5 w-3.5" />
-                            Appeared in {formatNumber(bundle.supportCount)}{" "}
-                            sales
+                            {t("Appeared in")} {formatNumber(bundle.supportCount)}{" "}
+                            {t("sales")}
                           </span>
                           <span className="inline-flex items-center gap-1">
                             <BarChart3 className="h-3.5 w-3.5" />
-                            Support: {bundle.supportPercentage.toFixed(1)}%
+                            {t("Support")}: {bundle.supportPercentage.toFixed(1)}%
                           </span>
                         </div>
                       </div>
@@ -837,22 +889,21 @@ export default function AnalyticsPage() {
                 <div className="text-center">
                   <PackageSearch className="mx-auto h-10 w-10 text-neutral-300" />
                   <p className="mt-3 text-sm font-medium text-neutral-400">
-                    No bundle suggestions found for the current support
-                    threshold.
+                    {t("No bundle suggestions found for the current support threshold.")}
                   </p>
                   <p className="mt-1 text-xs text-neutral-400">
-                    Try lowering the minimum support to discover more patterns.
+                    {t("Try lowering the minimum support to discover more patterns.")}
                   </p>
                 </div>
               </div>
             )}
-          </>
+          </div>
         ) : (
           <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-neutral-50">
             <div className="text-center">
               <PackageSearch className="mx-auto h-10 w-10 text-neutral-300" />
               <p className="mt-3 text-sm font-medium text-neutral-400">
-                Unable to load bundle analysis.
+                {t("Unable to load bundle analysis.")}
               </p>
             </div>
           </div>
@@ -869,12 +920,11 @@ export default function AnalyticsPage() {
             <div className="flex items-center gap-2">
               <Layers className="h-5 w-5 text-neutral-700" />
               <h2 className="text-lg font-bold text-neutral-900">
-                Multi-Criteria ABC Classification
+                {t("Multi-Criteria ABC Classification")}
               </h2>
             </div>
             <p className="mt-1 text-sm text-neutral-400">
-              Prioritize inventory based on multiple weighted criteria (Revenue,
-              Profit, Frequency, Turnover).
+              {t("Prioritize inventory based on multiple weighted criteria (Revenue, Profit, Frequency, Turnover).")}
             </p>
           </div>
 
@@ -883,35 +933,35 @@ export default function AnalyticsPage() {
             className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition"
           >
             <Layers className="h-4 w-4" />
-            {showAbcConfig ? "Hide Configuration" : "Configure Weights"}
+            {showAbcConfig ? t("Hide Configuration") : t("Configure Weights")}
           </button>
         </div>
 
         {showAbcConfig && (
           <div className="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 p-5">
             <h3 className="text-sm font-semibold text-neutral-700 mb-4">
-              Classification Parameters
+              {t("Classification Parameters")}
             </h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Period (Days)
+                  {t("Period (Days)")}
                 </label>
                 <select
                   value={abcPeriodDays}
                   onChange={(e) => setAbcPeriodDays(Number(e.target.value))}
                   className="w-full h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-neutral-900"
                 >
-                  <option value={30}>30 Days</option>
-                  <option value={90}>90 Days</option>
-                  <option value={180}>180 Days</option>
-                  <option value={365}>1 Year</option>
+                  <option value={30}>30 {t("Days")}</option>
+                  <option value={90}>90 {t("Days")}</option>
+                  <option value={180}>180 {t("Days")}</option>
+                  <option value={365}>{t("1 Year")}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Revenue Weight (%)
+                  {t("Revenue Weight (%)")}
                 </label>
                 <input
                   type="number"
@@ -925,7 +975,7 @@ export default function AnalyticsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Profit Weight (%)
+                  {t("Profit Weight (%)")}
                 </label>
                 <input
                   type="number"
@@ -939,7 +989,7 @@ export default function AnalyticsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Frequency Weight (%)
+                  {t("Frequency Weight (%)")}
                 </label>
                 <input
                   type="number"
@@ -955,7 +1005,7 @@ export default function AnalyticsPage() {
 
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Turnover Weight (%)
+                  {t("Turnover Weight (%)")}
                 </label>
                 <input
                   type="number"
@@ -971,12 +1021,18 @@ export default function AnalyticsPage() {
         )}
 
         {abcLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900" />
-              <p className="mt-3 text-sm font-medium text-neutral-500">
-                Loading ABC classification...
-              </p>
+          <div aria-busy>
+            <StatCardsSkeleton
+              count={4}
+              className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4"
+            />
+            <Skeleton className="mb-6 h-10 w-full" />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left">
+                <tbody>
+                  <TableRowsSkeleton rows={8} cols={7} />
+                </tbody>
+              </table>
             </div>
           </div>
         ) : abcStats ? (
@@ -984,7 +1040,7 @@ export default function AnalyticsPage() {
             <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div className="rounded-xl bg-emerald-50 p-4 text-center">
                 <p className="text-xs font-semibold text-emerald-600">
-                  Class A Products
+                  {t("Class A Products")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-emerald-900">
                   {abcStats.classAProducts}
@@ -993,7 +1049,7 @@ export default function AnalyticsPage() {
 
               <div className="rounded-xl bg-amber-50 p-4 text-center">
                 <p className="text-xs font-semibold text-amber-600">
-                  Class B Products
+                  {t("Class B Products")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-amber-900">
                   {abcStats.classBProducts}
@@ -1002,7 +1058,7 @@ export default function AnalyticsPage() {
 
               <div className="rounded-xl bg-red-50 p-4 text-center">
                 <p className="text-xs font-semibold text-red-600">
-                  Class C Products
+                  {t("Class C Products")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-red-900">
                   {abcStats.classCProducts}
@@ -1011,7 +1067,7 @@ export default function AnalyticsPage() {
 
               <div className="rounded-xl bg-neutral-50 p-4 text-center">
                 <p className="text-xs font-semibold text-neutral-500">
-                  Avg Turnover
+                  {t("Avg Turnover")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
                   {abcStats.averageInventoryTurnover.toFixed(1)}x
@@ -1023,7 +1079,7 @@ export default function AnalyticsPage() {
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t("Search products...")}
                   value={abcSearch}
                   onChange={(e) => {
                     setAbcSearch(e.target.value);
@@ -1044,10 +1100,10 @@ export default function AnalyticsPage() {
                 }}
                 className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
               >
-                <option value="ALL">All Classes</option>
-                <option value="A">Class A</option>
-                <option value="B">Class B</option>
-                <option value="C">Class C</option>
+                <option value="ALL">{t("All Classes")}</option>
+                <option value="A">{t("Class A")}</option>
+                <option value="B">{t("Class B")}</option>
+                <option value="C">{t("Class C")}</option>
               </select>
 
               <select
@@ -1063,17 +1119,17 @@ export default function AnalyticsPage() {
                 }}
                 className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
               >
-                <option value="final_score-desc">Highest Score</option>
-                <option value="final_score-asc">Lowest Score</option>
-                <option value="revenue-desc">Highest Revenue</option>
-                <option value="revenue-asc">Lowest Revenue</option>
-                <option value="profit-desc">Highest Profit</option>
-                <option value="profit-asc">Lowest Profit</option>
-                <option value="sales_frequency-desc">Most Frequent</option>
+                <option value="final_score-desc">{t("Highest Score")}</option>
+                <option value="final_score-asc">{t("Lowest Score")}</option>
+                <option value="revenue-desc">{t("Highest Revenue")}</option>
+                <option value="revenue-asc">{t("Lowest Revenue")}</option>
+                <option value="profit-desc">{t("Highest Profit")}</option>
+                <option value="profit-asc">{t("Lowest Profit")}</option>
+                <option value="sales_frequency-desc">{t("Most Frequent")}</option>
                 <option value="inventory_turnover-desc">
-                  Highest Turnover
+                  {t("Highest Turnover")}
                 </option>
-                <option value="product_name-asc">Name A-Z</option>
+                <option value="product_name-asc">{t("Name A-Z")}</option>
               </select>
 
               <select
@@ -1084,23 +1140,27 @@ export default function AnalyticsPage() {
                 }}
                 className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
               >
-                <option value={10}>10 per page</option>
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
+                <option value={10}>10 {t("per page")}</option>
+                <option value={25}>25 {t("per page")}</option>
+                <option value={50}>50 {t("per page")}</option>
               </select>
             </div>
 
-            <div className="overflow-x-auto">
+            <div
+              className={`overflow-x-auto transition-opacity ${
+                abcFetching ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               <table className="w-full min-w-[900px] text-left">
                 <thead>
                   <tr className="border-b border-neutral-100 text-xs text-neutral-400">
-                    <th className="pb-3 font-medium">Product</th>
-                    <th className="pb-3 font-medium">Class</th>
-                    <th className="pb-3 font-medium">Score</th>
-                    <th className="pb-3 text-right font-medium">Revenue</th>
-                    <th className="pb-3 text-right font-medium">Profit</th>
-                    <th className="pb-3 text-right font-medium">Frequency</th>
-                    <th className="pb-3 text-right font-medium">Turnover</th>
+                    <th className="pb-3 font-medium">{t("Product")}</th>
+                    <th className="pb-3 font-medium">{t("Class")}</th>
+                    <th className="pb-3 font-medium">{t("Score")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Revenue")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Profit")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Frequency")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Turnover")}</th>
                   </tr>
                 </thead>
 
@@ -1118,7 +1178,7 @@ export default function AnalyticsPage() {
                             </div>
                             <div>
                               <p className="max-w-[200px] truncate text-sm font-semibold text-neutral-900">
-                                {product.product_name}
+                                <Tn v={product.product_name} />
                               </p>
                             </div>
                           </div>
@@ -1158,7 +1218,7 @@ export default function AnalyticsPage() {
                   ) : (
                     <tr>
                       <td colSpan={8}>
-                        <EmptyState message="No products found for the selected criteria" />
+                        <EmptyState message={t("No products found for the selected criteria")} />
                       </td>
                     </tr>
                   )}
@@ -1169,9 +1229,9 @@ export default function AnalyticsPage() {
             {abcTotalPages > 1 && (
               <div className="mt-6 flex items-center justify-between">
                 <p className="text-sm text-neutral-500">
-                  Showing {(abcPage - 1) * abcLimit + 1} to{" "}
-                  {Math.min(abcPage * abcLimit, abcResult?.totalCount || 0)} of{" "}
-                  {formatNumber(abcResult?.totalCount || 0)} products
+                  {t("Showing")} {(abcPage - 1) * abcLimit + 1} {t("to")}{" "}
+                  {Math.min(abcPage * abcLimit, abcResult?.totalCount || 0)} {t("of")}{" "}
+                  {formatNumber(abcResult?.totalCount || 0)} {t("products")}
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -1180,11 +1240,11 @@ export default function AnalyticsPage() {
                     disabled={abcPage === 1}
                     className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Previous
+                    {t("Previous")}
                   </button>
 
                   <span className="text-sm text-neutral-500">
-                    Page {abcPage} of {abcTotalPages}
+                    {t("Page")} {abcPage} / {abcTotalPages}
                   </span>
 
                   <button
@@ -1194,7 +1254,7 @@ export default function AnalyticsPage() {
                     disabled={abcPage === abcTotalPages}
                     className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Next
+                    {t("Next")}
                   </button>
                 </div>
               </div>
@@ -1205,7 +1265,7 @@ export default function AnalyticsPage() {
             <div className="text-center">
               <Layers className="mx-auto h-10 w-10 text-neutral-300" />
               <p className="mt-3 text-sm font-medium text-neutral-400">
-                Unable to load ABC classification data.
+                {t("Unable to load ABC classification data.")}
               </p>
             </div>
           </div>
@@ -1222,18 +1282,17 @@ export default function AnalyticsPage() {
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-neutral-700" />
               <h2 className="text-lg font-bold text-neutral-900">
-                Single-Criteria ABC Classification
+                {t("Single-Criteria ABC Classification")}
               </h2>
             </div>
             <p className="mt-1 text-sm text-neutral-400">
-              Classify products based on a single criterion (Revenue, Profit,
-              Frequency, or Turnover).
+              {t("Classify products based on a single criterion (Revenue, Profit, Frequency, or Turnover).")}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-neutral-500">
-              Period:
+              {t("Period:")}
             </label>
             <select
               value={singleAbcPeriodDays}
@@ -1243,21 +1302,27 @@ export default function AnalyticsPage() {
               }}
               className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
             >
-              <option value={30}>30 Days</option>
-              <option value={90}>90 Days</option>
-              <option value={180}>180 Days</option>
-              <option value={365}>1 Year</option>
+              <option value={30}>30 {t("Days")}</option>
+              <option value={90}>90 {t("Days")}</option>
+              <option value={180}>180 {t("Days")}</option>
+              <option value={365}>{t("1 Year")}</option>
             </select>
           </div>
         </div>
 
         {singleAbcLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900" />
-              <p className="mt-3 text-sm font-medium text-neutral-500">
-                Loading single-criteria ABC classification...
-              </p>
+          <div aria-busy>
+            <StatCardsSkeleton
+              count={4}
+              className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4"
+            />
+            <Skeleton className="mb-6 h-10 w-full" />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left">
+                <tbody>
+                  <TableRowsSkeleton rows={8} cols={9} />
+                </tbody>
+              </table>
             </div>
           </div>
         ) : singleAbcStats ? (
@@ -1265,7 +1330,7 @@ export default function AnalyticsPage() {
             <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div className="rounded-xl bg-emerald-50 p-4 text-center">
                 <p className="text-xs font-semibold text-emerald-600">
-                  Class A Products
+                  {t("Class A Products")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-emerald-900">
                   {singleAbcStats.classAProducts}
@@ -1274,7 +1339,7 @@ export default function AnalyticsPage() {
 
               <div className="rounded-xl bg-amber-50 p-4 text-center">
                 <p className="text-xs font-semibold text-amber-600">
-                  Class B Products
+                  {t("Class B Products")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-amber-900">
                   {singleAbcStats.classBProducts}
@@ -1283,7 +1348,7 @@ export default function AnalyticsPage() {
 
               <div className="rounded-xl bg-red-50 p-4 text-center">
                 <p className="text-xs font-semibold text-red-600">
-                  Class C Products
+                  {t("Class C Products")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-red-900">
                   {singleAbcStats.classCProducts}
@@ -1292,7 +1357,7 @@ export default function AnalyticsPage() {
 
               <div className="rounded-xl bg-neutral-50 p-4 text-center">
                 <p className="text-xs font-semibold text-neutral-500">
-                  Total Revenue
+                  {t("Total Revenue")}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-neutral-900">
                   {money(singleAbcStats.totalRevenue)}
@@ -1304,7 +1369,7 @@ export default function AnalyticsPage() {
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t("Search products...")}
                   value={singleAbcSearch}
                   onChange={(e) => {
                     setSingleAbcSearch(e.target.value);
@@ -1325,10 +1390,10 @@ export default function AnalyticsPage() {
                 }}
                 className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
               >
-                <option value="ALL">All Classes</option>
-                <option value="A">Class A</option>
-                <option value="B">Class B</option>
-                <option value="C">Class C</option>
+                <option value="ALL">{t("All Classes")}</option>
+                <option value="A">{t("Class A")}</option>
+                <option value="B">{t("Class B")}</option>
+                <option value="C">{t("Class C")}</option>
               </select>
 
               <select
@@ -1344,20 +1409,20 @@ export default function AnalyticsPage() {
                 }}
                 className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
               >
-                <option value="revenue-desc">Highest Revenue</option>
-                <option value="revenue-asc">Lowest Revenue</option>
-                <option value="profit-desc">Highest Profit</option>
-                <option value="profit-asc">Lowest Profit</option>
-                <option value="sales_frequency-desc">Most Frequent</option>
-                <option value="sales_frequency-asc">Least Frequent</option>
+                <option value="revenue-desc">{t("Highest Revenue")}</option>
+                <option value="revenue-asc">{t("Lowest Revenue")}</option>
+                <option value="profit-desc">{t("Highest Profit")}</option>
+                <option value="profit-asc">{t("Lowest Profit")}</option>
+                <option value="sales_frequency-desc">{t("Most Frequent")}</option>
+                <option value="sales_frequency-asc">{t("Least Frequent")}</option>
                 <option value="inventory_turnover-desc">
-                  Highest Turnover
+                  {t("Highest Turnover")}
                 </option>
-                <option value="inventory_turnover-asc">Lowest Turnover</option>
-                <option value="product_name-asc">Name A-Z</option>
-                <option value="product_name-desc">Name Z-A</option>
-                <option value="rank-asc">Rank (Lowest)</option>
-                <option value="rank-desc">Rank (Highest)</option>
+                <option value="inventory_turnover-asc">{t("Lowest Turnover")}</option>
+                <option value="product_name-asc">{t("Name A-Z")}</option>
+                <option value="product_name-desc">{t("Name Z-A")}</option>
+                <option value="rank-asc">{t("Rank (Lowest)")}</option>
+                <option value="rank-desc">{t("Rank (Highest)")}</option>
               </select>
 
               <select
@@ -1368,27 +1433,31 @@ export default function AnalyticsPage() {
                 }}
                 className="h-10 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
               >
-                <option value={10}>10 per page</option>
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
+                <option value={10}>10 {t("per page")}</option>
+                <option value={25}>25 {t("per page")}</option>
+                <option value={50}>50 {t("per page")}</option>
               </select>
             </div>
 
-            <div className="overflow-x-auto">
+            <div
+              className={`overflow-x-auto transition-opacity ${
+                singleAbcFetching ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               <table className="w-full min-w-[1000px] text-left">
                 <thead>
                   <tr className="border-b border-neutral-100 text-xs text-neutral-400">
-                    <th className="pb-3 font-medium">Product</th>
-                    <th className="pb-3 font-medium">Class</th>
-                    <th className="pb-3 font-medium">Rank</th>
-                    <th className="pb-3 text-right font-medium">Revenue</th>
-                    <th className="pb-3 text-right font-medium">Revenue %</th>
+                    <th className="pb-3 font-medium">{t("Product")}</th>
+                    <th className="pb-3 font-medium">{t("Class")}</th>
+                    <th className="pb-3 font-medium">{t("Rank")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Revenue")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Revenue %")}</th>
                     <th className="pb-3 text-right font-medium">
-                      Cumulative %
+                      {t("Cumulative %")}
                     </th>
-                    <th className="pb-3 text-right font-medium">Profit</th>
-                    <th className="pb-3 text-right font-medium">Frequency</th>
-                    <th className="pb-3 text-right font-medium">Turnover</th>
+                    <th className="pb-3 text-right font-medium">{t("Profit")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Frequency")}</th>
+                    <th className="pb-3 text-right font-medium">{t("Turnover")}</th>
                   </tr>
                 </thead>
 
@@ -1406,7 +1475,7 @@ export default function AnalyticsPage() {
                             </div>
                             <div>
                               <p className="max-w-[200px] truncate text-sm font-semibold text-neutral-900">
-                                {product.product_name}
+                                <Tn v={product.product_name} />
                               </p>
                             </div>
                           </div>
@@ -1463,7 +1532,7 @@ export default function AnalyticsPage() {
                   ) : (
                     <tr>
                       <td colSpan={9}>
-                        <EmptyState message="No products found for the selected criteria" />
+                        <EmptyState message={t("No products found for the selected criteria")} />
                       </td>
                     </tr>
                   )}
@@ -1474,12 +1543,12 @@ export default function AnalyticsPage() {
             {singleAbcTotalPages > 1 && (
               <div className="mt-6 flex items-center justify-between">
                 <p className="text-sm text-neutral-500">
-                  Showing {(singleAbcPage - 1) * singleAbcLimit + 1} to{" "}
+                  {t("Showing")} {(singleAbcPage - 1) * singleAbcLimit + 1} {t("to")}{" "}
                   {Math.min(
                     singleAbcPage * singleAbcLimit,
                     singleAbcResult?.totalCount || 0,
                   )}{" "}
-                  of {formatNumber(singleAbcResult?.totalCount || 0)} products
+                  {t("of")} {formatNumber(singleAbcResult?.totalCount || 0)} {t("products")}
                 </p>
 
                 <div className="flex items-center gap-2">
@@ -1488,11 +1557,11 @@ export default function AnalyticsPage() {
                     disabled={singleAbcPage === 1}
                     className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Previous
+                    {t("Previous")}
                   </button>
 
                   <span className="text-sm text-neutral-500">
-                    Page {singleAbcPage} of {singleAbcTotalPages}
+                    {t("Page")} {singleAbcPage} / {singleAbcTotalPages}
                   </span>
 
                   <button
@@ -1504,7 +1573,7 @@ export default function AnalyticsPage() {
                     disabled={singleAbcPage === singleAbcTotalPages}
                     className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Next
+                    {t("Next")}
                   </button>
                 </div>
               </div>
@@ -1515,7 +1584,7 @@ export default function AnalyticsPage() {
             <div className="text-center">
               <Filter className="mx-auto h-10 w-10 text-neutral-300" />
               <p className="mt-3 text-sm font-medium text-neutral-400">
-                Unable to load single-criteria ABC classification data.
+                {t("Unable to load single-criteria ABC classification data.")}
               </p>
             </div>
           </div>
@@ -1536,7 +1605,7 @@ export default function AnalyticsPage() {
           }`}
         >
           <LayoutDashboard className="h-4 w-4" />
-          Overview
+          {t("Overview")}
         </button>
 
         <button
@@ -1548,7 +1617,7 @@ export default function AnalyticsPage() {
           }`}
         >
           <PackageSearch className="h-4 w-4" />
-          Bundle Analysis
+          {t("Bundle Analysis")}
         </button>
 
         <button
@@ -1560,7 +1629,7 @@ export default function AnalyticsPage() {
           }`}
         >
           <Layers className="h-4 w-4" />
-          Multi-Criteria ABC
+          {t("Multi-Criteria ABC")}
         </button>
 
         <button
@@ -1572,7 +1641,7 @@ export default function AnalyticsPage() {
           }`}
         >
           <Filter className="h-4 w-4" />
-          Single-Criteria ABC
+          {t("Single-Criteria ABC")}
         </button>
       </div>
 

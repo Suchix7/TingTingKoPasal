@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   Layers,
+  ImageIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -32,7 +33,12 @@ import ProductModal from "@/components/product/modal";
 import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
 import Link from "next/link";
+import PhotoLightbox from "@/components/layout/PhotoLightbox";
+import { coverImage } from "@/components/catalog/image";
 
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
+import { StatCardsSkeleton, Skeleton } from "@/components/layout/Skeleton";
 export type ProductVariantInput = { model: string; quantity: number };
 
 export type ProductFormData = {
@@ -83,14 +89,15 @@ function StatCard({
   subtitle?: string;
   trend?: { value: number; isPositive: boolean };
 }) {
+  const { t } = useLang();
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-sm font-medium text-gray-500">{t(title)}</p>
           <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
           {subtitle ? (
-            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+            <p className="mt-1 text-xs text-gray-500">{t(subtitle)}</p>
           ) : null}
           {trend && (
             <p
@@ -98,8 +105,7 @@ function StatCard({
                 trend.isPositive ? "text-green-600" : "text-red-600"
               }`}
             >
-              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}% from last
-              month
+              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}% {t("from last month")}
             </p>
           )}
         </div>
@@ -112,6 +118,7 @@ function StatCard({
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useLang();
   const styles = {
     Active: "bg-green-100 text-green-700 border-green-200",
     Inactive: "bg-gray-100 text-gray-700 border-gray-200",
@@ -126,12 +133,13 @@ function StatusBadge({ status }: { status: string }) {
     <span
       className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${className}`}
     >
-      {status}
+      {t(status)}
     </span>
   );
 }
 
 export default function ProductsPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -140,6 +148,7 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [open, setOpen] = useState(false);
+  const [zoom, setZoom] = useState<{ url: string; title: string } | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null);
@@ -156,7 +165,7 @@ export default function ProductsPage() {
     category: selectedCategory || undefined,
     status: selectedStatus || undefined,
   });
-  const { data: categoriesData } = useCategories(1, 100);
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories(1, 100);
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -226,10 +235,9 @@ export default function ProductsPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Products")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage inventory, pricing, stock, and product details from one
-            place.
+            {t("Manage inventory, pricing, stock, and product details from one place.")}
           </p>
         </div>
 
@@ -239,12 +247,15 @@ export default function ProductsPage() {
             className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
           >
             <Plus size={18} />
-            Add Product
+            {t("Add Product")}
           </button>
         </div>
       </div>
 
       {/* Statistics Cards */}
+      {isLoading && !stats ? (
+        <StatCardsSkeleton className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4" />
+      ) : (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Products"
@@ -272,6 +283,7 @@ export default function ProductsPage() {
           subtitle="Products with zero stock"
         />
       </div>
+      )}
 
       {/* Search and Filters */}
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
@@ -285,7 +297,7 @@ export default function ProductsPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by name, barcode, or description..."
+                placeholder={t("Search by name, barcode, or description...")}
                 className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
               />
             </div>
@@ -299,7 +311,7 @@ export default function ProductsPage() {
               }`}
             >
               <Filter size={16} />
-              Filters
+              {t("Filters")}
               {(selectedCategory || selectedStatus) && (
                 <span className="ml-1 rounded-full bg-gray-700 px-1.5 py-0.5 text-xs text-white">
                   {(selectedCategory ? 1 : 0) + (selectedStatus ? 1 : 0)}
@@ -313,7 +325,7 @@ export default function ProductsPage() {
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
                 <X size={16} />
-                Clear
+                {t("Clear")}
               </button>
             )}
           </div>
@@ -322,7 +334,7 @@ export default function ProductsPage() {
             <div className="grid gap-3 pt-3 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">
-                  Category
+                  {t("Category")}
                 </label>
                 <select
                   value={selectedCategory}
@@ -332,10 +344,13 @@ export default function ProductsPage() {
                   }}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t("All Categories")}</option>
+                  {categoriesLoading && (
+                    <option disabled>{t("Loading...")}</option>
+                  )}
                   {categories.map((category) => (
                     <option key={category.id} value={String(category.id)}>
-                      {category.category_name}
+                      <Tn v={category.category_name} />
                     </option>
                   ))}
                 </select>
@@ -343,7 +358,7 @@ export default function ProductsPage() {
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">
-                  Status
+                  {t("Status")}
                 </label>
                 <select
                   value={selectedStatus}
@@ -353,10 +368,10 @@ export default function ProductsPage() {
                   }}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
                 >
-                  <option value="">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Discontinued">Discontinued</option>
+                  <option value="">{t("All Status")}</option>
+                  <option value="Active">{t("Active")}</option>
+                  <option value="Inactive">{t("Inactive")}</option>
+                  <option value="Discontinued">{t("Discontinued")}</option>
                 </select>
               </div>
             </div>
@@ -368,8 +383,8 @@ export default function ProductsPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h2 className="font-bold text-gray-900">All Products</h2>
-            <p className="text-sm text-gray-500">{totalCount} total records</p>
+            <h2 className="font-bold text-gray-900">{t("All Products")}</h2>
+            <p className="text-sm text-gray-500">{totalCount} {t("total records")}</p>
           </div>
           {isFetching ? (
             <Loader2 className="animate-spin text-gray-400" size={20} />
@@ -381,41 +396,56 @@ export default function ProductsPage() {
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="w-10 px-5 py-3"></th>
-                <th className="px-5 py-3">S.N.</th>
-                <th className="px-5 py-3">Product</th>
-                <th className="px-5 py-3">Barcode</th>
-                <th className="px-5 py-3">Category</th>
-                <th className="px-5 py-3">Stock</th>
-                <th className="px-5 py-3">Models / Batches</th>
-                <th className="px-5 py-3">Cost Price</th>
-                <th className="px-5 py-3">Sale Price</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3">{t("S.N.")}</th>
+                <th className="px-5 py-3">{t("Product")}</th>
+                <th className="px-5 py-3">{t("Barcode")}</th>
+                <th className="px-5 py-3">{t("Category")}</th>
+                <th className="px-5 py-3">{t("Stock")}</th>
+                <th className="px-5 py-3">{t("Models / Batches")}</th>
+                <th className="px-5 py-3">{t("Cost Price")}</th>
+                <th className="px-5 py-3">{t("Sale Price")}</th>
+                <th className="px-5 py-3">{t("Status")}</th>
+                <th className="px-5 py-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody
+              className={`divide-y divide-gray-100 transition-opacity ${
+                isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={11}
-                    className="px-5 py-16 text-center text-gray-500"
-                  >
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
-                    Loading products...
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, r) => (
+                  <tr key={r} aria-hidden>
+                    <td className="px-5 py-4" />
+                    <td className="px-5 py-4"><Skeleton className="h-4 w-6" /></td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-16 w-16 shrink-0 rounded-xl" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    </td>
+                    {Array.from({ length: 8 }).map((_, c) => (
+                      <td key={c} className="px-5 py-4">
+                        <Skeleton className={`h-4 ${c % 2 ? "w-1/2" : "w-3/4"}`} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
               ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="px-5 py-16 text-center">
                     <Package className="mx-auto mb-3 text-gray-300" size={48} />
                     <h3 className="text-base font-semibold text-gray-900">
-                      No products found
+                      {t("No products found")}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
                       {search || selectedCategory || selectedStatus
-                        ? "Try adjusting your filters"
-                        : "Add your first product to start managing inventory"}
+                        ? t("Try adjusting your filters")
+                        : t("Add your first product to start managing inventory")}
                     </p>
                     {!search && !selectedCategory && !selectedStatus && (
                       <button
@@ -423,7 +453,7 @@ export default function ProductsPage() {
                         className="mt-4 cursor-pointer inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
                       >
                         <Plus size={16} />
-                        Add Product
+                        {t("Add Product")}
                       </button>
                     )}
                   </td>
@@ -434,7 +464,10 @@ export default function ProductsPage() {
                   // Stock held on phone models / batches counts toward the total
                   const totalStock =
                     Number(product.stock_quantity) +
-                    batches.reduce((sum, b) => sum + Number(b.quantity || 0), 0);
+                    batches.reduce(
+                      (sum, b) => sum + Number(b.quantity || 0),
+                      0,
+                    );
                   const isLowStock = totalStock <= 5;
                   const category = categories.find(
                     (c) => c.id === product.category_id,
@@ -464,15 +497,42 @@ export default function ProductsPage() {
                         </td>
 
                         <td className="px-5 py-4">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {product.product_name}
-                            </p>
-                            {product.description && (
-                              <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                                {product.description}
-                              </p>
+                          <div className="flex items-center gap-3">
+                            {product.photo_url ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setZoom({
+                                    url: product.photo_url!,
+                                    title: product.product_name,
+                                  })
+                                }
+                                className="h-16 w-16 shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-gray-100 ring-1 ring-gray-200"
+                                aria-label={t("View photo")}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={coverImage(product.photo_url, 200)}
+                                  alt={product.product_name}
+                                  loading="lazy"
+                                  className="h-full w-full object-cover"
+                                />
+                              </button>
+                            ) : (
+                              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-300">
+                                <ImageIcon size={22} />
+                              </div>
                             )}
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900">
+                                <Tn v={product.product_name} />
+                              </p>
+                              {product.description && (
+                                <p className="mt-1 line-clamp-1 text-xs text-gray-500">
+                                  {product.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </td>
 
@@ -484,7 +544,7 @@ export default function ProductsPage() {
 
                         <td className="px-5 py-4">
                           <span className="text-sm text-gray-600">
-                            {category?.category_name || "Uncategorized"}
+                            {category?.category_name ? <Tn v={category.category_name} /> : t("Uncategorized")}
                           </span>
                         </td>
 
@@ -498,13 +558,13 @@ export default function ProductsPage() {
                                   : "text-gray-900"
                             }`}
                           >
-                            {totalStock} {product.unit || "units"}
+                            {totalStock} {product.unit || t("units")}
                           </span>
                           {isLowStock && totalStock > 0 && (
-                            <p className="text-xs text-amber-600">Low stock</p>
+                            <p className="text-xs text-amber-600">{t("Low stock")}</p>
                           )}
                           {totalStock === 0 && (
-                            <p className="text-xs text-red-600">Out of stock</p>
+                            <p className="text-xs text-red-600">{t("Out of stock")}</p>
                           )}
                         </td>
 
@@ -513,12 +573,12 @@ export default function ProductsPage() {
                             <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
                               <Layers size={12} />
                               {batches.length}{" "}
-                              {batches.length === 1 ? "model / batch" : "models / batches"}
+                              {batches.length === 1
+                                ? t("model / batch")
+                                : t("models / batches")}
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-400">
-                              None
-                            </span>
+                            <span className="text-xs text-gray-400">{t("None")}</span>
                           )}
                         </td>
 
@@ -532,7 +592,7 @@ export default function ProductsPage() {
                           </p>
                           {product.cost_price && product.sale_price && (
                             <p className="text-xs text-green-600">
-                              Margin:{" "}
+                              {t("Margin")}:{" "}
                               {(
                                 ((product.sale_price - product.cost_price) /
                                   product.cost_price) *
@@ -552,14 +612,14 @@ export default function ProductsPage() {
                             <button
                               onClick={() => openEditModal(product)}
                               className="rounded-xl cursor-pointer p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
-                              aria-label="Edit product"
+                              aria-label={t("Edit product")}
                             >
                               <Edit size={18} />
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(product)}
                               className="rounded-xl cursor-pointer p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                              aria-label="Delete product"
+                              aria-label={t("Delete product")}
                             >
                               <Trash2 size={18} />
                             </button>
@@ -574,7 +634,7 @@ export default function ProductsPage() {
                             <div className="border-t border-gray-200 px-8 py-4">
                               <div className="mb-3 flex items-center justify-between">
                                 <h4 className="text-sm font-semibold text-gray-700">
-                                  Batch Details for {product.product_name}
+                                  {t("Batch Details for")} <Tn v={product.product_name} />
                                 </h4>
                               </div>
                               <div className="overflow-hidden rounded-lg border border-gray-200">
@@ -582,22 +642,22 @@ export default function ProductsPage() {
                                   <thead className="bg-white">
                                     <tr className="border-b border-gray-200 text-left text-gray-600">
                                       <th className="px-4 py-2 font-medium">
-                                        Batch Number
+                                        {t("Batch Number")}
                                       </th>
                                       <th className="px-4 py-2 font-medium">
-                                        Quantity
+                                        {t("Quantity")}
                                       </th>
                                       <th className="px-4 py-2 font-medium">
-                                        Cost Price
+                                        {t("Cost Price")}
                                       </th>
                                       <th className="px-4 py-2 font-medium">
-                                        Sale Price
+                                        {t("Sale Price")}
                                       </th>
                                       <th className="px-4 py-2 font-medium">
-                                        Total Value
+                                        {t("Total Value")}
                                       </th>
                                       <th className="px-4 py-2 font-medium">
-                                        Margin
+                                        {t("Margin")}
                                       </th>
                                     </tr>
                                   </thead>
@@ -662,11 +722,11 @@ export default function ProductsPage() {
                               {batches.length > 0 && (
                                 <div className="mt-3 flex gap-6 text-xs text-gray-500">
                                   <span>
-                                    Total Batches:{" "}
+                                    {t("Total Batches")}:{" "}
                                     <strong>{batches.length}</strong>
                                   </span>
                                   <span>
-                                    Total Quantity:{" "}
+                                    {t("Total Quantity")}:{" "}
                                     <strong>
                                       {batches.reduce(
                                         (sum, b) => sum + b.quantity,
@@ -675,7 +735,7 @@ export default function ProductsPage() {
                                     </strong>
                                   </span>
                                   <span>
-                                    Total Value:{" "}
+                                    {t("Total Value")}:{" "}
                                     <strong>
                                       {money(
                                         batches.reduce(
@@ -710,6 +770,14 @@ export default function ProductsPage() {
         )}
       </div>
 
+      {zoom && (
+        <PhotoLightbox
+          url={zoom.url}
+          title={zoom.title}
+          onClose={() => setZoom(null)}
+        />
+      )}
+
       {/* Product Modal */}
       {open && (
         <ProductModal
@@ -727,10 +795,10 @@ export default function ProductsPage() {
           onConfirm={async () => {
             try {
               await deleteProduct.mutateAsync(deleteConfirm.id);
-              toast.success("Product deleted successfully");
+              toast.success(t("Product deleted successfully"));
               setDeleteConfirm(null);
             } catch {
-              toast.error("Failed to delete product");
+              toast.error(t("Failed to delete product"));
             }
           }}
           onCancel={() => setDeleteConfirm(null)}

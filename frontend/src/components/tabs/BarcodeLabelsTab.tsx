@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Tag, Trash2, Loader2, Printer, Download } from "lucide-react";
 import toast from "react-hot-toast";
+import { useLang, tr } from "@/lib/i18n";
 import {
   useProducts,
   useMarkBarcodePrinted,
   type Product,
 } from "@/hooks/useProducts";
 import { useDebounced } from "@/hooks/useDebounced";
+import { ListSkeleton } from "@/components/layout/Skeleton";
 import LabelSheetPDFDocument, {
   type LabelItem,
 } from "@/components/barcode-labels/LabelSheetPDF";
@@ -17,6 +19,7 @@ import {
   type ReprintConflict,
 } from "@/components/barcode-labels/ReprintConfirmDialog";
 
+import Tn from "@/components/layout/Tn";
 // One printable sticker source: a plain product, or a single phone model
 // (batch) of a product - each model has its own barcode so a scan deducts
 // the right one.
@@ -87,9 +90,10 @@ function remainingUnprinted(product: LabelSource): number {
 }
 
 export default function BarcodeLabelsTab() {
+  const { t } = useLang();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounced(searchTerm, 300);
-  const { data, isLoading } = useProducts({
+  const { data, isLoading, isFetching } = useProducts({
     page: 1,
     limit: 20,
     search: debouncedSearch,
@@ -158,7 +162,7 @@ export default function BarcodeLabelsTab() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Failed to generate label sheet PDF:", error);
-      toast.error("Failed to generate the PDF. Please try again.");
+      toast.error(tr("Failed to generate the PDF. Please try again."));
     } finally {
       setIsDownloading(false);
     }
@@ -302,7 +306,7 @@ export default function BarcodeLabelsTab() {
           setLabels(built);
           if (failed.length > 0) {
             toast.error(
-              `Couldn't generate a barcode for: ${failed.join(", ")}. Their barcode value looks invalid.`,
+              `${tr("Couldn't generate a barcode for")}: ${failed.join(", ")}. ${tr("Their barcode value looks invalid.")}`,
             );
           }
         }
@@ -322,10 +326,9 @@ export default function BarcodeLabelsTab() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Barcode Labels</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("Barcode Labels")}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Select products, choose how many stickers to print for each, then
-          download an A4 sheet of scannable labels.
+          {t("Select products, choose how many stickers to print for each, then download an A4 sheet of scannable labels.")}
         </p>
       </div>
 
@@ -336,21 +339,23 @@ export default function BarcodeLabelsTab() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={t("Search products...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-gray-400"
             />
           </div>
 
-          <div className="max-h-[420px] space-y-2 overflow-y-auto">
+          <div
+            className={`max-h-[420px] space-y-2 overflow-y-auto transition-opacity ${
+              isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
             {isLoading ? (
-              <div className="flex items-center justify-center py-8 text-gray-400">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
+              <ListSkeleton rows={5} />
             ) : products.length === 0 ? (
               <p className="py-8 text-center text-sm text-gray-400">
-                No products found.
+                {t("No products found.")}
               </p>
             ) : (
               products.map((product) => {
@@ -370,15 +375,15 @@ export default function BarcodeLabelsTab() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {product.product_name}
+                          <Tn v={product.product_name} />
                         </p>
                         <p className="font-mono text-xs text-gray-500">
-                          {product.barcode || "No barcode yet"}
+                          {product.barcode || t("No barcode yet")}
                         </p>
                         {(product.barcode_last_printed_quantity || 0) > 0 && (
                           <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600">
                             <Printer size={10} />
-                            Printed {product.barcode_last_printed_quantity}
+                            {t("Printed")} {product.barcode_last_printed_quantity}
                             {product.barcode_last_printed_at &&
                               ` · ${new Date(
                                 product.barcode_last_printed_at,
@@ -403,12 +408,12 @@ export default function BarcodeLabelsTab() {
         {/* Selected products + quantities */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-sm font-semibold text-gray-900">
-            Selected for printing ({selectedList.length})
+            {t("Selected for printing")} ({selectedList.length})
           </h2>
 
           {selectedList.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-400">
-              Select products on the left to add them here.
+              {t("Select products on the left to add them here.")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -419,15 +424,14 @@ export default function BarcodeLabelsTab() {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-gray-900">
-                      {product.product_name}
+                      <Tn v={product.product_name} />
                     </p>
                     <p className="font-mono text-xs text-gray-500">
                       {product.barcode}
                     </p>
                     {(product.barcode_last_printed_quantity || 0) > 0 && (
                       <p className="text-xs text-blue-600">
-                        {product.barcode_last_printed_quantity} printed
-                        before
+                        {product.barcode_last_printed_quantity} {t("printed before")}
                       </p>
                     )}
                   </div>
@@ -454,17 +458,16 @@ export default function BarcodeLabelsTab() {
 
           <div className="mt-6 border-t border-gray-100 pt-4">
             <p className="mb-3 text-xs text-gray-500">
-              {labels.length} label{labels.length === 1 ? "" : "s"} total · 18
-              per A4 page
+              {labels.length} {labels.length === 1 ? t("label") : t("labels")} {t("total")} · {t("18 per A4 page")}
             </p>
             {isGenerating ? (
               <span className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-500">
                 <Loader2 size={16} className="animate-spin" />
-                Rendering barcodes...
+                {t("Rendering barcodes...")}
               </span>
             ) : labels.length === 0 ? (
               <span className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-400">
-                Select products to print
+                {t("Select products to print")}
               </span>
             ) : (
               <button
@@ -476,12 +479,12 @@ export default function BarcodeLabelsTab() {
                 {isDownloading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Preparing PDF...
+                    {t("Generating PDF...")}
                   </>
                 ) : (
                   <>
                     <Download size={16} />
-                    Download A4 Label Sheet
+                    {t("Download A4 Label Sheet")}
                   </>
                 )}
               </button>

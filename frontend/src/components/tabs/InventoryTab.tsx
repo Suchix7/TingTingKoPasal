@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  ListSkeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 import React, { useMemo, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -34,6 +39,9 @@ import BatchRestockModal from "@/components/inventory/BatchRestockModal";
 import BatchDeductModal from "@/components/inventory/BatchDeductModal";
 import BatchManageModal from "@/components/inventory/BatchManageModal";
 import Pagination from "@/components/layout/Pagination";
+
+import Tn from "@/components/layout/Tn";
+import { useLang, tr } from "@/lib/i18n";
 
 export type InventoryFormData = {
   product_id: number | "";
@@ -161,7 +169,7 @@ const getStockPercentage = (current: number, reorder: number) => {
 };
 
 const formatDate = (dateString?: string | null) => {
-  if (!dateString) return "N/A";
+  if (!dateString) return tr("N/A");
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -170,6 +178,7 @@ const formatDate = (dateString?: string | null) => {
 };
 
 export default function InventoryPage() {
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StockStatusKey | "ALL">(
     "ALL",
@@ -218,6 +227,7 @@ export default function InventoryPage() {
   const {
     data: inventoryData,
     isLoading,
+    isFetching,
     error,
   } = useInventory(page, limit, debouncedSearchValue, statusFilter, sortBy);
 
@@ -346,7 +356,7 @@ export default function InventoryPage() {
 
   const handleRestockSubmit = async () => {
     if (!selectedProductId || restockFormData.quantity <= 0) {
-      toast.error("Please enter a valid quantity");
+      toast.error(t("Please enter a valid quantity"));
       return;
     }
 
@@ -366,7 +376,7 @@ export default function InventoryPage() {
 
   const handleDeductSubmit = async () => {
     if (!selectedProductId || deductFormData.quantity <= 0) {
-      toast.error("Please enter a valid quantity");
+      toast.error(t("Please enter a valid quantity"));
       return;
     }
 
@@ -386,7 +396,7 @@ export default function InventoryPage() {
 
   const handleBatchRestockSubmit = async () => {
     if (!selectedBatch || batchRestockFormData.quantity <= 0) {
-      toast.error("Please enter a valid quantity");
+      toast.error(t("Please enter a valid quantity"));
       return;
     }
 
@@ -406,7 +416,7 @@ export default function InventoryPage() {
 
   const handleBatchDeductSubmit = async () => {
     if (!selectedBatch || batchDeductFormData.quantity <= 0) {
-      toast.error("Please enter a valid quantity");
+      toast.error(t("Please enter a valid quantity"));
       return;
     }
 
@@ -447,7 +457,7 @@ export default function InventoryPage() {
     if (!batches || batches.length === 0) {
       return (
         <div className="bg-slate-50 rounded-xl p-4 text-center">
-          <p className="text-sm text-slate-500">No batches available</p>
+          <p className="text-sm text-slate-500">{t("No batches available")}</p>
         </div>
       );
     }
@@ -456,7 +466,7 @@ export default function InventoryPage() {
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <Layers className="h-4 w-4" />
-          <span>Product Batches ({batches.length})</span>
+          <span>{t("Product Batches")} ({batches.length})</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -464,16 +474,16 @@ export default function InventoryPage() {
             <thead>
               <tr className="bg-slate-50">
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Batch Number
+                  {t("Batch Number")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Quantity
+                  {t("Quantity")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Created
+                  {t("Created")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Actions
+                  {t("Actions")}
                 </th>
               </tr>
             </thead>
@@ -503,7 +513,7 @@ export default function InventoryPage() {
                         className="inline-flex items-center gap-1.5 rounded-lg cursor-pointer border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <TrendingUp className="h-3.5 w-3.5" />
-                        Restock
+                        {t("Restock")}
                       </button>
                       <button
                         onClick={() => handleBatchDeduct(batch)}
@@ -511,7 +521,7 @@ export default function InventoryPage() {
                         className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <TrendingDown className="h-3.5 w-3.5" />
-                        Deduct
+                        {t("Deduct")}
                       </button>
                       <button
                         onClick={() => handleBatchManage(batch)}
@@ -519,7 +529,7 @@ export default function InventoryPage() {
                         className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Settings className="h-3.5 w-3.5" />
-                        Manage
+                        {t("Manage")}
                       </button>
                     </div>
                   </td>
@@ -541,12 +551,12 @@ export default function InventoryPage() {
                   {batch.batch_number}
                 </span>
                 <span className="text-sm font-semibold text-slate-900">
-                  Qty: {batch.quantity}
+                  {t("Qty")}: {batch.quantity}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>Created: {formatDate(batch.created_at)}</span>
+                <span>{t("Created")}: {formatDate(batch.created_at)}</span>
               </div>
               <div className="mt-4 flex gap-2">
                 <button
@@ -555,7 +565,7 @@ export default function InventoryPage() {
                   className="flex-1 inline-flex items-center cursor-pointer justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-50"
                 >
                   <TrendingUp className="h-3.5 w-3.5" />
-                  Restock
+                  {t("Restock")}
                 </button>
                 <button
                   onClick={() => handleBatchDeduct(batch)}
@@ -563,7 +573,7 @@ export default function InventoryPage() {
                   className="flex-1 inline-flex items-center cursor-pointer justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:opacity-50"
                 >
                   <TrendingDown className="h-3.5 w-3.5" />
-                  Deduct
+                  {t("Deduct")}
                 </button>
                 <button
                   onClick={() => handleBatchManage(batch)}
@@ -571,7 +581,7 @@ export default function InventoryPage() {
                   className="flex-1 inline-flex items-center justify-center cursor-pointer gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   <Settings className="h-3.5 w-3.5" />
-                  Manage
+                  {t("Manage")}
                 </button>
               </div>
             </div>
@@ -590,10 +600,10 @@ export default function InventoryPage() {
               <AlertTriangle className="h-10 w-10 text-rose-400" />
             </div>
             <h3 className="mt-6 text-xl font-semibold text-slate-900">
-              Failed to Load Inventory
+              {t("Failed to Load Inventory")}
             </h3>
             <p className="mt-3 text-sm text-slate-500">
-              Please check your connection and try again.
+              {t("Please check your connection and try again.")}
             </p>
           </div>
         </div>
@@ -612,10 +622,10 @@ export default function InventoryPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Inventory
+                  {t("Inventory")}
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                  Track stock levels and manage inventory movements
+                  {t("Track stock levels and manage inventory movements")}
                 </p>
               </div>
             </div>
@@ -625,7 +635,7 @@ export default function InventoryPage() {
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by name..."
+                  placeholder={t("Search by name...")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 sm:w-72"
@@ -640,11 +650,11 @@ export default function InventoryPage() {
                   }
                   className="w-full outline-none"
                 >
-                  <option value="ALL">All Status</option>
-                  <option value="HEALTHY">Healthy</option>
-                  <option value="LOW">Low Stock</option>
-                  <option value="CRITICAL">Critical</option>
-                  <option value="OUT_OF_STOCK">Out of Stock</option>
+                  <option value="ALL">{t("All Status")}</option>
+                  <option value="HEALTHY">{t("Healthy")}</option>
+                  <option value="LOW">{t("Low Stock")}</option>
+                  <option value="CRITICAL">{t("Critical")}</option>
+                  <option value="OUT_OF_STOCK">{t("Out of Stock")}</option>
                 </select>
               </div>
 
@@ -654,16 +664,22 @@ export default function InventoryPage() {
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="w-full outline-none"
                 >
-                  <option value="updated_desc">Last Updated</option>
-                  <option value="name_asc">Name A-Z</option>
-                  <option value="name_desc">Name Z-A</option>
-                  <option value="stock_asc">Stock Low-High</option>
-                  <option value="stock_desc">Stock High-Low</option>
+                  <option value="updated_desc">{t("Last Updated")}</option>
+                  <option value="name_asc">{t("Name A-Z")}</option>
+                  <option value="name_desc">{t("Name Z-A")}</option>
+                  <option value="stock_asc">{t("Stock Low-High")}</option>
+                  <option value="stock_desc">{t("Stock High-Low")}</option>
                 </select>
               </div>
             </div>
           </div>
 
+          {isLoading ? (
+            <StatCardsSkeleton
+              count={4}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            />
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md">
               <div className="flex items-center gap-3">
@@ -672,7 +688,7 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Total Products
+                    {t("Total Products")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {inventoryData?.stats?.total}
@@ -688,7 +704,7 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
-                    Healthy Stock
+                    {t("Healthy Stock")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-emerald-700">
                     {inventoryData?.stats?.healthy}
@@ -704,7 +720,7 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
-                    Low Stock
+                    {t("Low Stock")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-amber-700">
                     {(inventoryData?.stats?.lowStock || 0) +
@@ -721,7 +737,7 @@ export default function InventoryPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-rose-600">
-                    Out of Stock
+                    {t("Out of Stock")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-rose-700">
                     {inventoryData?.stats?.outOfStock}
@@ -730,29 +746,39 @@ export default function InventoryPage() {
               </div>
             </div>
           </div>
+          )}
 
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white">
+          <div
+            className={`overflow-hidden rounded-3xl border border-gray-200 bg-white transition-opacity ${
+              isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-20 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
-              </div>
+              <>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="min-w-full">
+                    
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={6} cols={5} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 lg:hidden">
+                  <ListSkeleton rows={4} />
+                </div>
+              </>
             ) : inventory.length === 0 ? (
               <div className="p-12 text-center">
                 <Package className="mx-auto h-12 w-12 text-slate-300" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">
                   {search || statusFilter !== "ALL"
-                    ? "No matching inventory found"
-                    : "No inventory data"}
+                    ? t("No matching inventory found")
+                    : t("No inventory data")}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   {search || statusFilter !== "ALL"
-                    ? "Try adjusting your search or filters."
-                    : "Inventory records will appear here once available."}
+                    ? t("Try adjusting your search or filters.")
+                    : t("Inventory records will appear here once available.")}
                 </p>
               </div>
             ) : (
@@ -762,19 +788,19 @@ export default function InventoryPage() {
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Product
+                          {t("Product")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Stock Level
+                          {t("Stock Level")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Batches
+                          {t("Batches")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Status
+                          {t("Status")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Actions
+                          {t("Actions")}
                         </th>
                       </tr>
                     </thead>
@@ -825,7 +851,7 @@ export default function InventoryPage() {
                                   </div>
                                   <div>
                                     <p className="font-medium text-slate-900">
-                                      {item.product_name}
+                                      <Tn v={item.product_name} />
                                     </p>
                                   </div>
                                 </div>
@@ -847,14 +873,14 @@ export default function InventoryPage() {
                                     />
                                   </div>
                                   <div className="flex gap-2 text-xs text-slate-400">
-                                    <span>Std: {item.standard_stock}</span>
+                                    <span>{t("Std")}: {item.standard_stock}</span>
                                   </div>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                                   <Layers className="h-3 w-3" />
-                                  {item.batches?.length || 0} batches
+                                  {item.batches?.length || 0} {t("batches")}
                                 </span>
                               </td>
                               <td className="px-6 py-4">
@@ -862,7 +888,7 @@ export default function InventoryPage() {
                                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${statusStyle.badge}`}
                                 >
                                   <StatusIcon className="h-3 w-3" />
-                                  {STOCK_STATUS[stockStatus].label}
+                                  {t(STOCK_STATUS[stockStatus].label)}
                                 </span>
                               </td>
                               <td className="px-6 py-4">
@@ -876,7 +902,7 @@ export default function InventoryPage() {
                                     className="inline-flex items-center cursor-pointer gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     <TrendingUp className="h-3.5 w-3.5" />
-                                    Restock
+                                    {t("Restock")}
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -887,7 +913,7 @@ export default function InventoryPage() {
                                     className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                                   >
                                     <TrendingDown className="h-3.5 w-3.5" />
-                                    Deduct
+                                    {t("Deduct")}
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -897,7 +923,7 @@ export default function InventoryPage() {
                                     disabled={isSubmitting}
                                     className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                                   >
-                                    Manage
+                                    {t("Manage")}
                                   </button>
                                 </div>
                               </td>
@@ -952,7 +978,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="text-left">
                               <h3 className="font-semibold text-slate-900">
-                                {item.product_name}
+                                <Tn v={item.product_name} />
                               </h3>
                             </div>
                           </div>
@@ -961,7 +987,7 @@ export default function InventoryPage() {
                               className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle.badge}`}
                             >
                               <StatusIcon className="h-3 w-3" />
-                              {STOCK_STATUS[stockStatus].label}
+                              {t(STOCK_STATUS[stockStatus].label)}
                             </span>
                             {isExpanded ? (
                               <ChevronDown className="h-5 w-5 text-slate-400" />
@@ -975,7 +1001,7 @@ export default function InventoryPage() {
                           <div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-slate-500">
-                                Stock Level
+                                {t("Stock Level")}
                               </span>
                               <span className="font-semibold text-slate-900">
                                 {item.total_stock} {item.unit}
@@ -988,19 +1014,19 @@ export default function InventoryPage() {
                               />
                             </div>
                             <div className="mt-2 flex gap-2 text-xs text-slate-400">
-                              <span>Std: {item.standard_stock}</span>
-                              <span>Batch: {item.batch_stock}</span>
+                              <span>{t("Std")}: {item.standard_stock}</span>
+                              <span>{t("Batch")}: {item.batch_stock}</span>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                              <p className="text-slate-500">Batches</p>
+                              <p className="text-slate-500">{t("Batches")}</p>
                               <p className="font-medium text-slate-900">
                                 {item.batches?.length || 0}
                               </p>
                             </div>
                             <div>
-                              <p className="text-slate-500">Last Updated</p>
+                              <p className="text-slate-500">{t("Last Updated")}</p>
                               <p className="font-medium text-slate-900">
                                 {formatDate(item.updated_at)}
                               </p>
@@ -1021,7 +1047,7 @@ export default function InventoryPage() {
                             className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-50"
                           >
                             <TrendingUp className="h-4 w-4" />
-                            Restock
+                            {t("Restock")}
                           </button>
                           <button
                             onClick={() => handleDeduct(item.product_id)}
@@ -1029,14 +1055,14 @@ export default function InventoryPage() {
                             className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:opacity-50"
                           >
                             <TrendingDown className="h-4 w-4" />
-                            Deduct
+                            {t("Deduct")}
                           </button>
                           <button
                             onClick={() => handleUpdateInventory(item)}
                             disabled={isSubmitting}
                             className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
                           >
-                            Manage
+                            {t("Manage")}
                           </button>
                         </div>
                       </div>

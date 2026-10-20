@@ -30,6 +30,9 @@ import BatchModal from "@/components/product-batch/modal";
 import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
 
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
+import { StatCardsSkeleton, TableRowsSkeleton } from "@/components/layout/Skeleton";
 export type BatchFormData = {
   product_id: string | "";
   batch_number: string;
@@ -68,14 +71,15 @@ function StatCard({
   subtitle?: string;
   trend?: { value: number; isPositive: boolean };
 }) {
+  const { t } = useLang();
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-sm font-medium text-gray-500">{t(title)}</p>
           <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
           {subtitle ? (
-            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+            <p className="mt-1 text-xs text-gray-500">{t(subtitle)}</p>
           ) : null}
           {trend && (
             <p
@@ -83,8 +87,7 @@ function StatCard({
                 trend.isPositive ? "text-green-600" : "text-red-600"
               }`}
             >
-              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}% from last
-              month
+              {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}% {t("from last month")}
             </p>
           )}
         </div>
@@ -97,6 +100,7 @@ function StatCard({
 }
 
 export default function ProductBatchesPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -113,7 +117,7 @@ export default function ProductBatchesPage() {
     LIMIT,
     debouncedSearch,
   );
-  const { data: productsData } = useProducts({
+  const { data: productsData, isLoading: productsLoading } = useProducts({
     page: 1,
     limit: 100,
   });
@@ -191,10 +195,9 @@ export default function ProductBatchesPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Product Batches</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Product Batches")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Track phone models and batches, with their own quantities and pricing, for better inventory
-            management.
+            {t("Track phone models and batches, with their own quantities and pricing, for better inventory management.")}
           </p>
         </div>
 
@@ -203,17 +206,20 @@ export default function ProductBatchesPage() {
           className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
         >
           <Plus size={18} />
-          Add Batch
+          {t("Add Batch")}
         </button>
       </div>
 
       {/* Statistics Cards */}
+      {isLoading && !data ? (
+        <StatCardsSkeleton className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4" />
+      ) : (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Batches"
           value={stats.totalBatches}
           icon={Layers}
-          subtitle={`Across ${stats.uniqueProducts} products`}
+          subtitle={`${t("Across")} ${stats.uniqueProducts} ${t("products")}`}
         />
         <StatCard
           title="Total Quantity"
@@ -231,10 +237,11 @@ export default function ProductBatchesPage() {
           title="Low Quantity"
           value={stats.lowQuantityBatches + stats.zeroQuantityBatches}
           icon={Package}
-          subtitle={`${stats.lowQuantityBatches} low (≤5), ${stats.zeroQuantityBatches} zero`}
+          subtitle={`${stats.lowQuantityBatches} ${t("low (≤5)")}, ${stats.zeroQuantityBatches} ${t("zero")}`}
           trend={{ value: 12, isPositive: false }}
         />
       </div>
+      )}
 
       {/* Search and Filters */}
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
@@ -248,7 +255,7 @@ export default function ProductBatchesPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by batch number or product name..."
+                placeholder={t("Search by batch number or product name...")}
                 className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
               />
             </div>
@@ -262,7 +269,7 @@ export default function ProductBatchesPage() {
               }`}
             >
               <Filter size={16} />
-              Filters
+              {t("Filters")}
               {selectedProduct && (
                 <span className="ml-1 rounded-full bg-gray-700 px-1.5 py-0.5 text-xs text-white">
                   1
@@ -276,7 +283,7 @@ export default function ProductBatchesPage() {
                 className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
                 <X size={16} />
-                Clear
+                {t("Clear")}
               </button>
             )}
           </div>
@@ -285,7 +292,7 @@ export default function ProductBatchesPage() {
             <div className="grid gap-3 pt-3 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">
-                  Product
+                  {t("Product")}
                 </label>
                 <select
                   value={selectedProduct}
@@ -295,10 +302,13 @@ export default function ProductBatchesPage() {
                   }}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
                 >
-                  <option value="">All Products</option>
+                  <option value="">{t("All Products")}</option>
+                  {productsLoading && (
+                    <option disabled>{t("Loading...")}</option>
+                  )}
                   {products.map((product) => (
                     <option key={product.id} value={String(product.id)}>
-                      {product.product_name}
+                      <Tn v={product.product_name} />
                     </option>
                   ))}
                 </select>
@@ -312,11 +322,11 @@ export default function ProductBatchesPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h2 className="font-bold text-gray-900">All Batches</h2>
+            <h2 className="font-bold text-gray-900">{t("All Batches")}</h2>
             <p className="text-sm text-gray-500">
               {selectedProduct
-                ? `${filteredBatches.length} of ${totalCount} records filtered`
-                : `${totalCount} total records`}
+                ? `${filteredBatches.length} ${t("of")} ${totalCount} ${t("records filtered")}`
+                : `${totalCount} ${t("total records")}`}
             </p>
           </div>
           {isFetching ? (
@@ -328,39 +338,35 @@ export default function ProductBatchesPage() {
           <table className="w-full min-w-[1000px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-5 py-3">S.N.</th>
-                <th className="px-5 py-3">Model / Batch</th>
-                <th className="px-5 py-3">Product</th>
-                <th className="px-5 py-3">Quantity</th>
-                <th className="px-5 py-3">Cost Price</th>
-                <th className="px-5 py-3">Sale Price</th>
-                <th className="px-5 py-3">Total Value</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3">{t("S.N.")}</th>
+                <th className="px-5 py-3">{t("Model / Batch")}</th>
+                <th className="px-5 py-3">{t("Product")}</th>
+                <th className="px-5 py-3">{t("Quantity")}</th>
+                <th className="px-5 py-3">{t("Cost Price")}</th>
+                <th className="px-5 py-3">{t("Sale Price")}</th>
+                <th className="px-5 py-3">{t("Total Value")}</th>
+                <th className="px-5 py-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody
+              className={`divide-y divide-gray-100 transition-opacity ${
+                isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-5 py-16 text-center text-gray-500"
-                  >
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
-                    Loading batches...
-                  </td>
-                </tr>
+                <TableRowsSkeleton rows={6} cols={8} />
               ) : filteredBatches.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-5 py-16 text-center">
                     <Package className="mx-auto mb-3 text-gray-300" size={48} />
                     <h3 className="text-base font-semibold text-gray-900">
-                      No batches found
+                      {t("No batches found")}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
                       {search || selectedProduct
-                        ? "Try adjusting your filters"
-                        : "Add your first batch to start tracking inventory"}
+                        ? t("Try adjusting your filters")
+                        : t("Add your first batch to start tracking inventory")}
                     </p>
                     {!search && !selectedProduct && (
                       <button
@@ -368,7 +374,7 @@ export default function ProductBatchesPage() {
                         className="mt-4 cursor-pointer inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
                       >
                         <Plus size={16} />
-                        Add Batch
+                        {t("Add Batch")}
                       </button>
                     )}
                   </td>
@@ -400,7 +406,7 @@ export default function ProductBatchesPage() {
                         <div>
                           <p className="font-medium text-gray-900">
                             {batch.product_name ||
-                              `Product #${batch.product_id}`}
+                              `${t("Product")} #${batch.product_id}`}
                           </p>
                           {batch.barcode && (
                             <p className="mt-0.5 text-xs text-gray-400">
@@ -423,10 +429,10 @@ export default function ProductBatchesPage() {
                           {batch.quantity}
                         </span>
                         {isLowQuantity && batch.quantity > 0 && (
-                          <p className="text-xs text-amber-600">Low stock</p>
+                          <p className="text-xs text-amber-600">{t("Low stock")}</p>
                         )}
                         {batch.quantity === 0 && (
-                          <p className="text-xs text-red-600">Out of stock</p>
+                          <p className="text-xs text-red-600">{t("Out of stock")}</p>
                         )}
                       </td>
 
@@ -440,7 +446,7 @@ export default function ProductBatchesPage() {
                         </p>
                         {batch.cost_price > 0 && (
                           <p className="text-xs text-green-600">
-                            Margin: {margin.toFixed(2)}%
+                            {t("Margin")}: {margin.toFixed(2)}%
                           </p>
                         )}
                       </td>
@@ -454,14 +460,14 @@ export default function ProductBatchesPage() {
                           <button
                             onClick={() => openEditModal(batch)}
                             className="rounded-xl cursor-pointer p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
-                            aria-label="Edit batch"
+                            aria-label={t("Edit batch")}
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(batch)}
                             className="rounded-xl cursor-pointer p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                            aria-label="Delete batch"
+                            aria-label={t("Delete batch")}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -499,11 +505,11 @@ export default function ProductBatchesPage() {
           onConfirm={async () => {
             try {
               await deleteProductBatch.mutateAsync(deleteConfirm.id);
-              toast.success("Batch deleted successfully");
+              toast.success(t("Batch deleted successfully"));
               setDeleteConfirm(null);
             } catch (error: any) {
               console.error(error);
-              toast.error(error.message || "Failed to delete batch");
+              toast.error(error.message || t("Failed to delete batch"));
             }
           }}
           onCancel={() => setDeleteConfirm(null)}

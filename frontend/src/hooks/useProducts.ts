@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useQuery,
   keepPreviousData,
@@ -23,6 +24,7 @@ export type ProductBatch = {
 export type Product = {
   id: string;
   product_name: string;
+  product_name_zh?: string | null;
   sku: string;
   category_id: string | "";
   cost_price: number;
@@ -96,11 +98,11 @@ const fetchProducts = async ({
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       throw new Error(
-        error.response?.data?.message || "Failed to fetch products",
+        error.response?.data?.message || tr("Failed to fetch products"),
       );
     }
 
-    throw new Error("Failed to fetch products");
+    throw new Error(tr("Failed to fetch products"));
   }
 };
 
@@ -135,14 +137,14 @@ export const useCreateProduct = () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      toast.success("Product created successfully.");
+      toast.success(tr("Product created successfully."));
     },
 
     onError: (error: any) => {
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Failed to create product.",
+          tr("Failed to create product."),
       );
     },
   });
@@ -161,11 +163,11 @@ export const useUpdateProduct = () => {
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
           throw new Error(
-            error.response?.data?.message || "Failed to update product",
+            error.response?.data?.message || tr("Failed to update product"),
           );
         }
 
-        throw new Error("Failed to update product");
+        throw new Error(tr("Failed to update product"));
       }
     },
 
@@ -175,14 +177,14 @@ export const useUpdateProduct = () => {
       queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      toast.success("Product updated successfully.");
+      toast.success(tr("Product updated successfully."));
     },
 
     onError: (error: any) => {
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Failed to update product.",
+          tr("Failed to update product."),
       );
     },
   });
@@ -198,9 +200,9 @@ export const useDeleteProduct = () => {
       } catch (error: any) {
         console.error("Failed to delete product:", error);
         toast.error(
-          error.response?.data?.message || "Failed to delete product.",
+          error.response?.data?.message || tr("Failed to delete product."),
         );
-        throw new Error("Failed to delete product");
+        throw new Error(tr("Failed to delete product"));
       } finally {
         queryClient.invalidateQueries({ queryKey: ["products"] });
         queryClient.invalidateQueries({ queryKey: ["inventory"] });
@@ -221,7 +223,7 @@ export const useProductById = (id: string) => {
         return res.data;
       } catch (error) {
         console.error("Failed to fetch product:", error);
-        throw new Error("Failed to fetch product");
+        throw new Error(tr("Failed to fetch product"));
       }
     },
   });
@@ -241,11 +243,11 @@ export const useProductByBarcode = (barcode: string) => {
         if (axios.isAxiosError(error)) {
           throw new Error(
             error.response?.data?.message ||
-              "Failed to fetch product by barcode",
+              tr("Failed to fetch product by barcode"),
           );
         }
 
-        throw new Error("Failed to fetch product by barcode");
+        throw new Error(tr("Failed to fetch product by barcode"));
       }
     },
     enabled: Boolean(barcode?.trim()),
@@ -267,13 +269,13 @@ export const useUploadProductPhoto = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Product photo updated.");
+      toast.success(tr("Product photo updated."));
     },
     onError: (error: any) => {
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Failed to upload product photo.",
+          tr("Failed to upload product photo."),
       );
     },
   });
@@ -289,7 +291,7 @@ export const useReprintBarcode = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to reprint barcode.",
+        error.response?.data?.message || tr("Failed to reprint barcode."),
       );
     },
   });
@@ -307,11 +309,11 @@ export const useRegenerateBarcode = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("New barcode generated. Please reprint the label.");
+      toast.success(tr("New barcode generated. Please reprint the label."));
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to regenerate barcode.",
+        error.response?.data?.message || tr("Failed to regenerate barcode."),
       );
     },
   });

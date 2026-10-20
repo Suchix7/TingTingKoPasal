@@ -29,10 +29,18 @@ export type CatalogFilters = {
 
 const PAGE_SIZE = 24;
 
+// The free host sleeps when idle and takes up to a minute to wake: keep
+// retrying quietly instead of showing an error straight away.
+const wakeRetry = {
+  retry: 8,
+  retryDelay: (attempt: number) => Math.min(1500 * (attempt + 1), 8000),
+};
+
 export function useCovers(filters: CatalogFilters, enabled = true) {
   return useInfiniteQuery({
     enabled,
     queryKey: ["catalog-covers", filters],
+    ...wakeRetry,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       const res = await axiosInstance.get("/catalog/covers", {
@@ -59,6 +67,7 @@ export function useCovers(filters: CatalogFilters, enabled = true) {
 
 export function useCatalogModels(category = "") {
   return useQuery({
+    ...wakeRetry,
     queryKey: ["catalog-models", category],
     queryFn: async () =>
       (
@@ -70,8 +79,21 @@ export function useCatalogModels(category = "") {
   });
 }
 
+export type CatalogStore = { name: string; address: string; phone: string };
+
+export function useCatalogStore() {
+  return useQuery({
+    queryKey: ["catalog-store"],
+    ...wakeRetry,
+    queryFn: async () =>
+      (await axiosInstance.get("/catalog/store")).data.data as CatalogStore,
+    staleTime: 10 * 60_000,
+  });
+}
+
 export function useCatalogCategories() {
   return useQuery({
+    ...wakeRetry,
     queryKey: ["catalog-categories"],
     queryFn: async () =>
       (await axiosInstance.get("/catalog/categories")).data

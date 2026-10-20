@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useMutation,
   useQuery,
@@ -186,7 +187,7 @@ export const useCreateProductBatch = () => {
         throw new Error(
           error?.response?.data?.message ||
             error?.message ||
-            "Failed to create product batch",
+            tr("Failed to create product batch"),
         );
       }
     },
@@ -236,7 +237,7 @@ export const useUpdateProductBatch = () => {
         console.log("Error while updating product batch:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to update product batch",
+          error?.response?.data?.message || tr("Failed to update product batch"),
         );
       }
     },
@@ -296,7 +297,7 @@ export const useDeleteProductBatch = () => {
         console.log("Error while deleting product batch:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to delete product batch",
+          error?.response?.data?.message || tr("Failed to delete product batch"),
         );
       }
     },

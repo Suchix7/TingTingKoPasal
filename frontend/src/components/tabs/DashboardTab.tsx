@@ -39,6 +39,14 @@ import {
 } from "@/hooks/useDashboard";
 import { useAuthStore } from "@/store/auth.store";
 
+import Tn from "@/components/layout/Tn";
+import {
+  ChartSkeleton,
+  ListSkeleton,
+  Skeleton,
+  StatCardsSkeleton,
+} from "@/components/layout/Skeleton";
+import { useLang } from "@/lib/i18n";
 export const pieColors = [
   "#064E3B",
   "#047857",
@@ -81,6 +89,7 @@ const formatDate = (date?: string) => {
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
+  const { t } = useLang();
   if (!active || !payload || !payload.length) return null;
 
   return (
@@ -98,7 +107,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               style={{ backgroundColor: item.color }}
             />
 
-            <span className="text-neutral-500">{item.name}:</span>
+            <span className="text-neutral-500">{t(item.name)}:</span>
 
             <span className="font-semibold text-neutral-900">
               {money(Number(item.value || 0))}
@@ -111,6 +120,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
+  const { t } = useLang();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -191,17 +201,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900" />
-
-          <p className="mt-4 text-sm font-medium text-neutral-500">
-            Loading dashboard...
-          </p>
-        </div>
-      </div>
-    );
+    return <DashboardLoading lastGrid="xl:grid-cols-4" />;
   }
 
   if (isError) {
@@ -209,12 +209,12 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
       <div className="flex h-dvh items-center justify-center bg-neutral-50 px-4">
         <div className="max-w-md rounded-md bg-white p-6 text-center shadow-sm ring-1 ring-neutral-100">
           <h2 className="text-lg font-bold text-neutral-900">
-            Failed to load dashboard
+            {t("Failed to load dashboard")}
           </h2>
 
           <p className="mt-2 text-sm text-neutral-500">
             {error?.message ||
-              "Something went wrong while fetching dashboard data."}
+              t("Something went wrong while fetching dashboard data.")}
           </p>
         </div>
       </div>
@@ -239,28 +239,28 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
             title="Today Sales"
             value={money(summary?.todaySales || 0)}
             icon={<DollarSign className="h-4 w-4" />}
-            description={`${formatNumber(summary?.todayOrders || 0)} orders today`}
+            description={`${formatNumber(summary?.todayOrders || 0)} ${t("orders today")}`}
           />
 
           <StatCard
             title="Today Profit"
             value={money(summary?.todayProfit || 0)}
             icon={<TrendingUp className="h-4 w-4" />}
-            description={`${summary?.todayProfitMargin || 0}% profit margin`}
+            description={`${summary?.todayProfitMargin || 0}% ${t("profit margin")}`}
           />
 
           <StatCard
             title="Monthly Sales"
             value={money(summary?.monthlySales || 0)}
             icon={<ShoppingCart className="h-4 w-4" />}
-            description={`${formatNumber(summary?.monthlyOrders || 0)} orders this month`}
+            description={`${formatNumber(summary?.monthlyOrders || 0)} ${t("orders this month")}`}
           />
 
           <StatCard
             title="Monthly Profit"
             value={money(summary?.monthlyProfit || 0)}
             icon={<TrendingUp className="h-4 w-4" />}
-            description={`${summary?.monthlyProfitMargin || 0}% profit margin`}
+            description={`${summary?.monthlyProfitMargin || 0}% ${t("profit margin")}`}
           />
         </section>
 
@@ -341,7 +341,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                 <Area
                   type="monotone"
                   dataKey="sales"
-                  name="Sales"
+                  name={t("Sales")}
                   stroke="#111827"
                   fill="url(#salesGradient)"
                   strokeWidth={2}
@@ -350,7 +350,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                 <Area
                   type="monotone"
                   dataKey="profit"
-                  name="Profit"
+                  name={t("Profit")}
                   stroke="#059669"
                   fill="url(#profitGradient)"
                   strokeWidth={2}
@@ -432,7 +432,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                         </p>
 
                         <p className="text-xs text-neutral-400">
-                          {method.type} • {method.count} transactions
+                          <Tn v={method.type} /> • {method.count} {t("transactions")}
                         </p>
                       </div>
                     </div>
@@ -523,7 +523,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                         </p>
 
                         <p className="text-xs text-neutral-400">
-                          Paid via {expense.payment_method}
+                          {t("Paid via")} <Tn v={expense.payment_method} />
                         </p>
                       </div>
                     </div>
@@ -557,11 +557,11 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-neutral-900">
-                        {customer.name || "Unknown Customer"}
+                        {customer.name || t("Unknown Customer")}
                       </p>
 
                       <p className="text-xs text-neutral-400">
-                        {formatNumber(customer.orders)} orders • Credit{" "}
+                        {formatNumber(customer.orders)} {t("orders")} • {t("Credit")}{" "}
                         {money(customer.credit)}
                       </p>
                     </div>
@@ -600,10 +600,10 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                       </span>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-neutral-900">
-                          {product.name || "Unknown Product"}
+                          {product.name ? <Tn v={product.name} /> : t("Unknown Product")}
                         </p>
                         <p className="text-xs text-neutral-400">
-                          {formatNumber(product.quantity)} sold
+                          {formatNumber(product.quantity)} {t("sold")}
                         </p>
                       </div>
                     </div>
@@ -621,7 +621,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
           <ListCard
             title="Low Stock Items"
             icon={<AlertTriangle className="h-4 w-4" />}
-            actionLabel={`${formatNumber(lowStockItems.length)} alerts`}
+            actionLabel={`${formatNumber(lowStockItems.length)} ${t("alerts")}`}
           >
             <div className="space-y-2">
               {lowStockItems.length > 0 ? (
@@ -632,16 +632,16 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-neutral-900">
-                        {item.product_name}
+                        <Tn v={item.product_name} />
                       </p>
 
                       <p className="text-xs text-neutral-400">
-                        Reorder level: {formatNumber(item.reorder_level)}
+                        {t("Reorder level")}: {formatNumber(item.reorder_level)}
                       </p>
                     </div>
 
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-red-600 ring-1 ring-red-100">
-                      {formatNumber(item.current_stock)} left
+                      {formatNumber(item.current_stock)} {t("left")}
                     </span>
                   </div>
                 ))
@@ -669,7 +669,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                       </p>
 
                       <p className="text-xs text-neutral-400">
-                        {sale.customer_name || "Walk-in"} •{" "}
+                        {sale.customer_name || t("Walk-in")} •{" "}
                         {formatDate(sale.created_at)}
                       </p>
                     </div>
@@ -699,7 +699,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
               title="Low Stock Batches"
               action={
                 <Badge
-                  label={`${formatNumber(lowStockBatches.length)} batches`}
+                  label={`${formatNumber(lowStockBatches.length)} ${t("batches")}`}
                 />
               }
             >
@@ -716,12 +716,12 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
 
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-neutral-900">
-                          {batch.product_name}
+                          <Tn v={batch.product_name} />
                         </p>
 
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-neutral-400">
-                            Batch: {batch.batch_number}
+                            {t("Batch")}: {batch.batch_number}
                           </span>
                         </div>
                       </div>
@@ -730,7 +730,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="text-sm font-bold text-neutral-900">
-                          {formatNumber(batch.quantity)} units
+                          {formatNumber(batch.quantity)} {t("units")}
                         </p>
                       </div>
 
@@ -741,7 +741,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
                             : "bg-amber-100 text-amber-700"
                         }`}
                       >
-                        {batch.quantity === 0 ? "Out of Stock" : "Low Stock"}
+                        {batch.quantity === 0 ? t("Out of Stock") : t("Low Stock")}
                       </span>
                     </div>
                   </div>
@@ -750,6 +750,73 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
             </ChartCard>
           </section>
         )}
+      </div>
+    </main>
+  );
+}
+
+function DashboardLoading({ lastGrid }: { lastGrid: string }) {
+  const { t } = useLang();
+  const lastCount = lastGrid.includes("xl:grid-cols-4") ? 4 : 3;
+  return (
+    <main
+      aria-busy
+      className="min-h-dvh bg-neutral-50 p-4 text-neutral-950 md:p-6"
+    >
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
+          {t("Dashboard")}
+        </h1>
+        <p className="mt-1 text-sm text-neutral-400">
+          {t("Quick overview of your shop performance")}
+        </p>
+      </header>
+
+      <StatCardsSkeleton
+        count={4}
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+      />
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center gap-2 rounded-md border border-gray-200 bg-white p-5"
+          >
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-md border border-gray-200 bg-white p-6">
+        <Skeleton className="mb-5 h-5 w-40" />
+        <ChartSkeleton className="h-[320px]" />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-md border border-gray-200 bg-white p-6"
+          >
+            <Skeleton className="mb-5 h-5 w-40" />
+            <ChartSkeleton className="mb-4 h-[220px]" />
+            <ListSkeleton rows={2} />
+          </div>
+        ))}
+      </div>
+
+      <div className={`mt-4 grid grid-cols-1 gap-4 ${lastGrid}`}>
+        {Array.from({ length: lastCount }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-md border border-gray-200 bg-white p-6"
+          >
+            <Skeleton className="mb-5 h-5 w-32" />
+            <ListSkeleton rows={4} />
+          </div>
+        ))}
       </div>
     </main>
   );
@@ -779,16 +846,17 @@ function DashboardHeader({
     year: "numeric",
   });
   const { logout } = useAuthStore();
+  const { t } = useLang();
 
   return (
     <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
-          Dashboard
+          {t("Dashboard")}
         </h1>
 
         <p className="mt-1 text-sm text-neutral-400">
-          Quick overview of your shop performance
+          {t("Quick overview of your shop performance")}
         </p>
       </div>
 
@@ -800,7 +868,7 @@ function DashboardHeader({
           <button
             className="relative cursor-pointer p-2 rounded-full hover:bg-neutral-100 transition-colors"
             onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-            aria-label="Notifications"
+            aria-label={t("Notifications")}
           >
             <Bell className="w-5 h-5" />
 
@@ -817,17 +885,17 @@ function DashboardHeader({
               <div className="sticky top-0 bg-white border-b border-neutral-200 p-4 flex items-center justify-between z-10">
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900">
-                    Stock Alerts
+                    {t("Stock Alerts")}
                   </h3>
                   <p className="text-xs text-neutral-400 mt-0.5">
-                    {outOfStockCount} item{outOfStockCount !== 1 ? "s" : ""}{" "}
-                    need{outOfStockCount === 1 ? "s" : ""} attention
+                    {outOfStockCount} {outOfStockCount !== 1 ? t("items") : t("item")}{" "}
+                    {t("need attention")}
                   </p>
                 </div>
                 <button
                   className="cursor-pointer p-1 rounded-full hover:bg-neutral-100 transition-colors"
                   onClick={() => setIsNotificationOpen(false)}
-                  aria-label="Close notifications"
+                  aria-label={t("Close notifications")}
                 >
                   <X className="w-4 h-4 text-neutral-400" />
                 </button>
@@ -839,7 +907,7 @@ function DashboardHeader({
                   {outOfStockItems.length > 0 && (
                     <div>
                       <h4 className="text-xs font-semibold text-neutral-500 uppercase mb-2 px-1">
-                        Products Out of Stock
+                        {t("Products Out of Stock")}
                       </h4>
                       <div className="space-y-2">
                         {outOfStockItems.map((item) => (
@@ -853,20 +921,20 @@ function DashboardHeader({
 
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-neutral-900 truncate">
-                                {item.product_name}
+                                <Tn v={item.product_name} />
                               </p>
 
 
                               <div className="flex items-center gap-2 mt-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-xs font-bold text-red-700">
-                                  Out of Stock
+                                  {t("Out of Stock")}
                                 </span>
 
                                 <span
                                   onClick={() => setActiveTab("eoq")}
                                   className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer font-medium"
                                 >
-                                  Check EOQ
+                                  {t("Check EOQ")}
                                 </span>
                               </div>
                             </div>
@@ -880,7 +948,7 @@ function DashboardHeader({
                   {outOfStockBatches.length > 0 && (
                     <div>
                       <h4 className="text-xs font-semibold text-neutral-500 uppercase mb-2 px-1">
-                        Batches Out of Stock
+                        {t("Batches Out of Stock")}
                       </h4>
                       <div className="space-y-2">
                         {outOfStockBatches.map((batch) => (
@@ -894,23 +962,23 @@ function DashboardHeader({
 
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-neutral-900 truncate">
-                                {batch.product_name}
+                                <Tn v={batch.product_name} />
                               </p>
 
                               <p className="text-xs text-neutral-500 mt-0.5">
-                                Batch: {batch.batch_number}
+                                {t("Batch")}: {batch.batch_number}
                               </p>
 
                               <div className="flex items-center gap-2 mt-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 text-xs font-bold text-orange-700">
-                                  Batch Out of Stock
+                                  {t("Batch Out of Stock")}
                                 </span>
 
                                 <span
                                   onClick={() => setActiveTab("eoq")}
                                   className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer font-medium"
                                 >
-                                  Check EOQ
+                                  {t("Check EOQ")}
                                 </span>
                               </div>
                             </div>
@@ -926,10 +994,10 @@ function DashboardHeader({
                     <PackageX className="w-6 h-6 text-emerald-500" />
                   </div>
                   <p className="mt-3 text-sm font-semibold text-neutral-900">
-                    All items in stock
+                    {t("All items in stock")}
                   </p>
                   <p className="mt-1 text-xs text-neutral-400">
-                    No stock alerts at the moment
+                    {t("No stock alerts at the moment")}
                   </p>
                 </div>
               )}
@@ -940,6 +1008,7 @@ function DashboardHeader({
         <button
           className="cursor-pointer p-2 rounded-full hover:bg-neutral-100 transition-colors"
           onClick={logout}
+          aria-label={t("Logout")}
         >
           <LogOut className="w-4 h-4" />
         </button>
@@ -959,10 +1028,11 @@ function StatCard({
   icon: ReactNode;
   description: string;
 }) {
+  const { t } = useLang();
   return (
     <div className="rounded-md bg-white p-6 border border-gray-200 transition hover:shadow-md">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-neutral-400">{title}</p>
+        <p className="text-sm font-medium text-neutral-400">{t(title)}</p>
 
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
           {icon}
@@ -991,10 +1061,11 @@ function ChartCard({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useLang();
   return (
     <div className="rounded-md bg-white p-6 border border-gray-200">
       <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-base font-bold text-neutral-900">{title}</h2>
+        <h2 className="text-base font-bold text-neutral-900">{t(title)}</h2>
         {action}
       </div>
 
@@ -1014,13 +1085,14 @@ function ListCard({
   actionLabel?: string;
   children: ReactNode;
 }) {
+  const { t } = useLang();
   return (
     <div className="h-full rounded-md bg-white p-6 border border-gray-200">
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon && <span className="text-neutral-500">{icon}</span>}
 
-          <h2 className="text-base font-bold text-neutral-900">{title}</h2>
+          <h2 className="text-base font-bold text-neutral-900">{t(title)}</h2>
         </div>
 
         {actionLabel && <Badge label={actionLabel} />}
@@ -1032,27 +1104,30 @@ function ListCard({
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
+  const { t } = useLang();
   return (
     <div className="rounded-md bg-white p-5 text-center border border-gray-200">
       <p className="text-xl font-bold text-neutral-900">{value}</p>
 
-      <p className="mt-1 text-xs font-medium text-neutral-400">{label}</p>
+      <p className="mt-1 text-xs font-medium text-neutral-400">{t(label)}</p>
     </div>
   );
 }
 
 function Badge({ label }: { label: string }) {
+  const { t } = useLang();
   return (
     <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-500">
-      {label}
+      {t(label)}
     </span>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
+  const { t } = useLang();
   return (
     <div className="flex min-h-[120px] items-center justify-center rounded-xl bg-neutral-50 text-center">
-      <p className="text-sm font-medium text-neutral-400">{message}</p>
+      <p className="text-sm font-medium text-neutral-400">{t(message)}</p>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 import type { DaybookResponse } from "@/hooks/useDaybook";
 import DaybookPDFDocument from "./DaybookPDF";
 
@@ -29,6 +30,7 @@ function DownloadIcon() {
 }
 
 function PDFDownloadButton({ data, className }: DaybookPDFDownloadButtonProps) {
+  const { t } = useLang();
   const { PDFDownloadLink } = require("@react-pdf/renderer");
 
   return (
@@ -41,16 +43,16 @@ function PDFDownloadButton({ data, className }: DaybookPDFDownloadButtonProps) {
         loading ? (
           <span className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-500">
             <Loader2 size={16} className="animate-spin" />
-            Preparing PDF...
+            {t("Generating PDF...")}
           </span>
         ) : error ? (
           <span className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600">
-            Failed to load
+            {t("Failed to load")}
           </span>
         ) : (
           <span className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-700">
             <DownloadIcon />
-            Download PDF
+            {t("Download PDF")}
           </span>
         )
       }
@@ -62,6 +64,7 @@ export default function DaybookPDFDownloadButton({
   data,
   className = "",
 }: DaybookPDFDownloadButtonProps) {
+  const { t } = useLang();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -72,7 +75,7 @@ export default function DaybookPDFDownloadButton({
     return (
       <span className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-500">
         <Loader2 size={16} className="animate-spin" />
-        Loading...
+        {t("Loading...")}
       </span>
     );
   }

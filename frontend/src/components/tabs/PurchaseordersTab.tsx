@@ -13,6 +13,7 @@ import {
   Clock,
   Package,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   usePurchaseOrders,
@@ -26,6 +27,12 @@ import CreatePurchaseOrderModal from "@/components/purchase-orders/CreatePurchas
 import ViewPurchaseOrderModal from "@/components/purchase-orders/ViewPurchaseOrderModal";
 import DeleteConfirmModal from "@/components/purchase-orders/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
+import { useLang } from "@/lib/i18n";
+import {
+  ListSkeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 
 const STATUS_CONFIG = {
   Pending: {
@@ -62,6 +69,7 @@ const getStatusConfig = (status: PurchaseOrderStatus) => {
 };
 
 export default function PurchaseOrdersPage() {
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | "ALL">(
     "ALL",
@@ -83,6 +91,7 @@ export default function PurchaseOrdersPage() {
   const {
     data: ordersData,
     isLoading,
+    isFetching,
     error,
   } = usePurchaseOrders(
     page,
@@ -173,10 +182,10 @@ export default function PurchaseOrdersPage() {
               <AlertCircle className="h-10 w-10 text-rose-400" />
             </div>
             <h3 className="mt-6 text-xl font-semibold text-slate-900">
-              Failed to Load Purchase Orders
+              {t("Failed to Load Purchase Orders")}
             </h3>
             <p className="mt-3 text-sm text-slate-500">
-              Please check your connection and try again.
+              {t("Please check your connection and try again.")}
             </p>
           </div>
         </div>
@@ -195,10 +204,10 @@ export default function PurchaseOrdersPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Purchase Orders
+                  {t("Purchase Orders")}
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                  Manage and track all purchase orders
+                  {t("Manage and track all purchase orders")}
                 </p>
               </div>
             </div>
@@ -208,10 +217,13 @@ export default function PurchaseOrdersPage() {
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
             >
               <Plus className="h-4 w-4" />
-              Create Order
+              {t("Create Order")}
             </button>
           </div>
 
+          {isLoading ? (
+            <StatCardsSkeleton className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" />
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md">
               <div className="flex items-center gap-3">
@@ -220,7 +232,7 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Total Orders
+                    {t("Total Orders")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {ordersData?.stats?.total}
@@ -236,7 +248,7 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-amber-600">
-                    Pending
+                    {t("Pending")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-amber-700">
                     {ordersData?.stats?.pending}
@@ -252,7 +264,7 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-emerald-600">
-                    Received
+                    {t("Received")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-emerald-700">
                     {ordersData?.stats?.received}
@@ -268,7 +280,7 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Total Value
+                    {t("Total Value")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {formatCurrency(ordersData?.stats?.totalValue || 0)}
@@ -277,6 +289,7 @@ export default function PurchaseOrdersPage() {
               </div>
             </div>
           </div>
+          )}
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 bg-slate-50/50 p-4 sm:p-6">
@@ -285,7 +298,7 @@ export default function PurchaseOrdersPage() {
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by supplier, PO number..."
+                    placeholder={t("Search by supplier, PO number...")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
@@ -303,10 +316,10 @@ export default function PurchaseOrdersPage() {
                       }
                       className="w-full outline-none"
                     >
-                      <option value="ALL">All Status</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Received">Received</option>
-                      <option value="Cancelled">Cancelled</option>
+                      <option value="ALL">{t("All Status")}</option>
+                      <option value="Pending">{t("Pending")}</option>
+                      <option value="Received">{t("Received")}</option>
+                      <option value="Cancelled">{t("Cancelled")}</option>
                     </select>
                   </div>
 
@@ -318,11 +331,11 @@ export default function PurchaseOrdersPage() {
                       }
                       className="w-full outline-none"
                     >
-                      <option value="date_desc">Newest First</option>
-                      <option value="date_asc">Oldest First</option>
-                      <option value="total_desc">Highest Value</option>
-                      <option value="total_asc">Lowest Value</option>
-                      <option value="supplier_asc">Supplier A-Z</option>
+                      <option value="date_desc">{t("Newest First")}</option>
+                      <option value="date_asc">{t("Oldest First")}</option>
+                      <option value="total_desc">{t("Highest Value")}</option>
+                      <option value="total_asc">{t("Lowest Value")}</option>
+                      <option value="supplier_asc">{t("Supplier A-Z")}</option>
                     </select>
                   </div>
                 </div>
@@ -330,26 +343,52 @@ export default function PurchaseOrdersPage() {
             </div>
 
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-24 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
-              </div>
+              <>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("PO Number")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Supplier")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Order Date")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Total Cost")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Status")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={6} cols={6} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 lg:hidden">
+                  <ListSkeleton rows={4} />
+                </div>
+              </>
             ) : purchaseOrders.length === 0 ? (
               <div className="p-12 text-center">
                 <ShoppingCart className="mx-auto h-12 w-12 text-slate-300" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">
                   {search || statusFilter !== "ALL"
-                    ? "No matching purchase orders found"
-                    : "No purchase orders yet"}
+                    ? t("No matching purchase orders found")
+                    : t("No purchase orders yet")}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   {search || statusFilter !== "ALL"
-                    ? "Try adjusting your search or filters."
-                    : "Create your first purchase order to get started."}
+                    ? t("Try adjusting your search or filters.")
+                    : t("Create your first purchase order to get started.")}
                 </p>
                 {!search && statusFilter === "ALL" && (
                   <button
@@ -357,33 +396,37 @@ export default function PurchaseOrdersPage() {
                     className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                   >
                     <Plus className="h-4 w-4" />
-                    Create Order
+                    {t("Create Order")}
                   </button>
                 )}
               </div>
             ) : (
               <>
-                <div className="hidden overflow-x-auto lg:block">
+                <div
+                  className={`hidden overflow-x-auto transition-opacity lg:block ${
+                    isFetching ? "pointer-events-none opacity-60" : ""
+                  }`}
+                >
                   <table className="min-w-full">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          PO Number
+                          {t("PO Number")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Supplier
+                          {t("Supplier")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Order Date
+                          {t("Order Date")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Total Cost
+                          {t("Total Cost")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Status
+                          {t("Status")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Actions
+                          {t("Actions")}
                         </th>
                       </tr>
                     </thead>
@@ -430,7 +473,7 @@ export default function PurchaseOrdersPage() {
                                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${statusConfig.bg} ${statusConfig.text} ring-1 ring-inset ${statusConfig.ring}`}
                               >
                                 <StatusIcon className="h-3 w-3" />
-                                {statusConfig.label}
+                                {t(statusConfig.label)}
                               </span>
                             </td>
                             <td className="px-6 py-4">
@@ -440,7 +483,7 @@ export default function PurchaseOrdersPage() {
                                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                                 >
                                   <Eye className="h-3.5 w-3.5" />
-                                  View
+                                  {t("View")}
                                 </button>
                                 {order.status === "Pending" && (
                                   <>
@@ -451,8 +494,12 @@ export default function PurchaseOrdersPage() {
                                       disabled={updateStatusMutation.isPending}
                                       className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
                                     >
-                                      <CheckCircle className="h-3.5 w-3.5" />
-                                      Receive
+{updateStatusMutation.isPending && updateStatusMutation.variables?.id === order.id && updateStatusMutation.variables?.status === "Received" ? (
+<Loader2 className="h-3.5 w-3.5 animate-spin" />
+) : (
+<CheckCircle className="h-3.5 w-3.5" />
+)}
+{t("Receive")}
                                     </button>
                                     <button
                                       onClick={() =>
@@ -464,8 +511,12 @@ export default function PurchaseOrdersPage() {
                                       disabled={updateStatusMutation.isPending}
                                       className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
                                     >
-                                      <XCircle className="h-3.5 w-3.5" />
-                                      Cancel
+{updateStatusMutation.isPending && updateStatusMutation.variables?.id === order.id && updateStatusMutation.variables?.status === "Cancelled" ? (
+<Loader2 className="h-3.5 w-3.5 animate-spin" />
+) : (
+<XCircle className="h-3.5 w-3.5" />
+)}
+{t("Cancel")}
                                     </button>
                                   </>
                                 )}
@@ -475,8 +526,12 @@ export default function PurchaseOrdersPage() {
                                     disabled={deleteOrderMutation.isPending}
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:opacity-50"
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                    Delete
+{deleteOrderMutation.isPending && deleteOrderMutation.variables === order.id ? (
+<Loader2 className="h-3.5 w-3.5 animate-spin" />
+) : (
+<Trash2 className="h-3.5 w-3.5" />
+)}
+{t("Delete")}
                                   </button>
                                 )}
                               </div>
@@ -494,7 +549,11 @@ export default function PurchaseOrdersPage() {
                   />
                 </div>
 
-                <div className="grid gap-4 p-4 lg:hidden">
+                <div
+                  className={`grid gap-4 p-4 transition-opacity lg:hidden ${
+                    isFetching ? "pointer-events-none opacity-60" : ""
+                  }`}
+                >
                   {purchaseOrders.map((order) => {
                     const statusConfig = getStatusConfig(order.status);
                     const StatusIcon = statusConfig.icon;
@@ -520,19 +579,19 @@ export default function PurchaseOrdersPage() {
                             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusConfig.bg} ${statusConfig.text} ring-1 ring-inset ${statusConfig.ring}`}
                           >
                             <StatusIcon className="h-3 w-3" />
-                            {statusConfig.label}
+                            {t(statusConfig.label)}
                           </span>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
                           <div>
-                            <p className="text-xs text-slate-500">Order Date</p>
+                            <p className="text-xs text-slate-500">{t("Order Date")}</p>
                             <p className="text-sm font-medium text-slate-900">
                               {formatDate(order.order_date)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-slate-500">Total Cost</p>
+                            <p className="text-xs text-slate-500">{t("Total Cost")}</p>
                             <p className="text-sm font-semibold text-slate-900">
                               {formatCurrency(order.total_cost)}
                             </p>
@@ -545,7 +604,7 @@ export default function PurchaseOrdersPage() {
                             className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                           >
                             <Eye className="h-4 w-4" />
-                            View
+                            {t("View")}
                           </button>
                           {order.status === "Pending" && (
                             <>
@@ -556,8 +615,12 @@ export default function PurchaseOrdersPage() {
                                 disabled={updateStatusMutation.isPending}
                                 className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
                               >
-                                <CheckCircle className="h-4 w-4" />
-                                Receive
+{updateStatusMutation.isPending && updateStatusMutation.variables?.id === order.id ? (
+<Loader2 className="h-4 w-4 animate-spin" />
+) : (
+<CheckCircle className="h-4 w-4" />
+)}
+{t("Receive")}
                               </button>
                             </>
                           )}
@@ -567,8 +630,12 @@ export default function PurchaseOrdersPage() {
                               disabled={deleteOrderMutation.isPending}
                               className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:opacity-50"
                             >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
+{deleteOrderMutation.isPending && deleteOrderMutation.variables === order.id ? (
+<Loader2 className="h-4 w-4 animate-spin" />
+) : (
+<Trash2 className="h-4 w-4" />
+)}
+{t("Delete")}
                             </button>
                           )}
                         </div>

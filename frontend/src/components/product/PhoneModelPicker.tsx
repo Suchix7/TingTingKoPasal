@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Minus, Plus, Search, X } from "lucide-react";
 
 import { IPHONE_MODELS } from "@/lib/phoneModels";
+import { useLang } from "@/lib/i18n";
 
 export type PhoneModelStock = { model: string; quantity: number };
 
@@ -19,6 +20,7 @@ const same = (a: string, b: string) =>
 // Search, tick a model, set its quantity. Used for mobile covers, where each
 // phone model is its own stock line.
 export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const [customModel, setCustomModel] = useState("");
 
@@ -94,7 +96,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
           <span className="truncate text-sm text-slate-800">{model}</span>
           {isCustom && (
             <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-              custom
+              {t("custom")}
             </span>
           )}
         </label>
@@ -106,7 +108,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
               disabled={disabled || (row?.quantity ?? 0) <= 0}
               onClick={() => setQuantity(model, (row?.quantity ?? 0) - 1)}
               className="rounded-md border border-slate-200 bg-white p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
-              aria-label={`Fewer ${model}`}
+              aria-label={`${t("Fewer")} ${model}`}
             >
               <Minus size={14} />
             </button>
@@ -123,14 +125,14 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
                 )
               }
               className="w-14 rounded-md border border-slate-200 bg-white px-1 py-1 text-center text-sm outline-none focus:border-slate-400"
-              aria-label={`Quantity for ${model}`}
+              aria-label={`${t("Quantity for")} ${model}`}
             />
             <button
               type="button"
               disabled={disabled}
               onClick={() => setQuantity(model, (row?.quantity ?? 0) + 1)}
               className="rounded-md border border-slate-200 bg-white p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
-              aria-label={`More ${model}`}
+              aria-label={`${t("More")} ${model}`}
             >
               <Plus size={14} />
             </button>
@@ -152,7 +154,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           disabled={disabled}
-          placeholder="Search phone model (e.g. 14 pro)"
+          placeholder={t("Search phone model (e.g. 14 pro)")}
           className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-9 text-sm outline-none focus:border-slate-400"
         />
         {search && (
@@ -160,7 +162,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
             type="button"
             onClick={() => setSearch("")}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
-            aria-label="Clear search"
+            aria-label={t("Clear search")}
           >
             <X size={14} />
           </button>
@@ -169,7 +171,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
 
       <div className="flex items-center justify-between text-xs text-slate-500">
         <span>
-          {value.length} selected · total stock{" "}
+          {value.length} {t("selected")} · {t("total stock")}{" "}
           <span className="font-semibold text-slate-700">{total}</span>
         </span>
         <span className="flex gap-3">
@@ -179,7 +181,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
             disabled={disabled || filtered.length === 0}
             className="font-medium text-blue-600 hover:underline disabled:opacity-40"
           >
-            Tick all shown
+            {t("Tick all shown")}
           </button>
           <button
             type="button"
@@ -187,7 +189,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
             disabled={disabled || value.length === 0}
             className="font-medium text-slate-500 hover:underline disabled:opacity-40"
           >
-            Clear
+            {t("Clear")}
           </button>
         </span>
       </div>
@@ -196,7 +198,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
         {customSelected.map((v) => renderRow(v.model, true))}
         {filtered.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-slate-500">
-            No matching model. Add it below.
+            {t("No matching model. Add it below.")}
           </p>
         ) : (
           filtered.map((model) => renderRow(model))
@@ -215,7 +217,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
             }
           }}
           disabled={disabled}
-          placeholder="Other model (e.g. Samsung S24)"
+          placeholder={t("Other model (e.g. Samsung S24)")}
           className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
         />
         <button
@@ -224,7 +226,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
           disabled={disabled || !customModel.trim()}
           className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
         >
-          Add
+          {t("Add")}
         </button>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   useUpdateCategory,
 } from "@/hooks/useCategories";
 import { ImagePlus, Loader2, X } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 import toast from "react-hot-toast";
 
 type CategoryForm = {
@@ -23,6 +24,9 @@ const initialForm: CategoryForm = {
 
 export default function CategoriesModal({ closeModal, editingCategory }: any) {
   const [formData, setFormData] = useState<CategoryForm>(initialForm);
+  const { t, lang, refreshNames } = useLang();
+  const [nameZh, setNameZh] = useState("");
+  useEffect(() => () => refreshNames(), [refreshNames]);
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -32,6 +36,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
   let isSubmitting = createCategory.isPending || updateCategory.isPending;
 
   useEffect(() => {
+    setNameZh(editingCategory?.category_name_zh ?? "");
     setFile(null);
     setRemoveThumb(false);
     setPreview(editingCategory?.thumbnail_url ?? null);
@@ -59,7 +64,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
     e.preventDefault();
 
     if (!formData.category_name.trim()) {
-      toast.error("Category name is required");
+      toast.error(t("Category name is required"));
       return;
     }
 
@@ -69,15 +74,17 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
         saved = await updateCategory.mutateAsync({
           ...editingCategory,
           category_name: formData.category_name,
+          category_name_zh: nameZh.trim(),
           description: formData.description,
         });
-        toast.success("Category updated successfully");
+        toast.success(t("Category updated successfully"));
       } else {
         saved = await createCategory.mutateAsync({
           category_name: formData.category_name,
+          category_name_zh: nameZh.trim(),
           description: formData.description,
         });
-        toast.success("Category created successfully");
+        toast.success(t("Category created successfully"));
       }
 
       closeModal();
@@ -85,13 +92,19 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
       // upload the thumbnail in the background so the popup closes right away
       const id = saved?.data?.id ?? editingCategory?.id;
       if (id && (file || removeThumb)) {
+        const toastId = toast.loading(t("Uploading photo..."));
         const job = file
           ? uploadCategoryThumbnail(id, file)
           : removeCategoryThumbnail(id);
         job
-          .then(() => queryClient.invalidateQueries({ queryKey: ["categories"] }))
+          .then(() => {
+            toast.success(t("Photo uploaded"), { id: toastId });
+            return queryClient.invalidateQueries({ queryKey: ["categories"] });
+          })
           .catch(() =>
-            toast.error("Category saved, but the thumbnail upload failed"),
+            toast.error(t("Category saved, but the thumbnail upload failed"), {
+              id: toastId,
+            }),
           );
       }
     } catch (error: any) {
@@ -99,14 +112,16 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
       console.log(message);
       toast.error(
         editingCategory
-          ? message || "Failed to update category"
-          : message || "Failed to create category",
+          ? message || t("Failed to update category")
+          : message || t("Failed to create category"),
       );
     }
   };
   return (
     <div
-      onClick={closeModal}
+      onClick={() => {
+        if (!isSubmitting) closeModal();
+      }}
       className="fixed h-dvh inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     >
       <div
@@ -115,19 +130,19 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
       >
         <div className="mb-5">
           <h2 className="text-xl font-bold text-gray-900">
-            {editingCategory ? "Edit Category" : "Add New Category"}
+            {editingCategory ? t("Edit Category") : t("Add New Category")}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
             {editingCategory
-              ? "Update the category details below."
-              : "Fill in the details to create a new category."}
+              ? t("Update the category details below.")
+              : t("Fill in the details to create a new category.")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Category Name <span className="text-red-500">*</span>
+              {t("Category Name")} <span className="text-red-500">*</span>
             </label>
             <input
               value={formData.category_name}
@@ -137,7 +152,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
                   category_name: e.target.value,
                 })
               }
-              placeholder="e.g., Electronics, Clothing, Furniture"
+              placeholder={t("e.g., Electronics, Clothing, Furniture")}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400"
               autoFocus
             />
@@ -145,7 +160,19 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Description
+              {lang === "zh" ? "中文名称" : "Chinese name (中文名称)"}
+            </label>
+            <input
+              value={nameZh}
+              onChange={(e) => setNameZh(e.target.value)}
+              placeholder="例如：手机壳"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              {t("Description")}
             </label>
             <textarea
               value={formData.description}
@@ -155,7 +182,9 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
                   description: e.target.value,
                 })
               }
-              placeholder="Enter a brief description of this category (optional)"
+              placeholder={t(
+                "Enter a brief description of this category (optional)",
+              )}
               rows={4}
               className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400"
             />
@@ -163,16 +192,20 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Thumbnail
+              {t("Thumbnail")}
             </label>
             <p className="mb-2 text-xs text-gray-500">
-              Shown on the customer site&apos;s category menu.
+              {t("Shown on the customer site's category menu.")}
             </p>
             <div className="flex items-center gap-3">
               <label className="flex h-24 w-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-400 transition hover:border-gray-400">
                 {preview && !removeThumb ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={preview} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={preview}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <ImagePlus size={24} />
                 )}
@@ -197,7 +230,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
                   }}
                   className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
                 >
-                  <X size={14} /> Remove
+                  <X size={14} /> {t("Remove")}
                 </button>
               )}
             </div>
@@ -207,9 +240,10 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
             <button
               type="button"
               onClick={closeModal}
-              className="rounded-xl cursor-pointer border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              disabled={isSubmitting}
+              className="rounded-xl cursor-pointer border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
 
             <button
@@ -219,10 +253,10 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
             >
               {isSubmitting && <Loader2 size={16} className="animate-spin" />}
               {isSubmitting
-                ? "Saving..."
+                ? t("Saving...")
                 : editingCategory
-                  ? "Update Category"
-                  : "Create Category"}
+                  ? t("Update Category")
+                  : t("Create Category")}
             </button>
           </div>
         </form>

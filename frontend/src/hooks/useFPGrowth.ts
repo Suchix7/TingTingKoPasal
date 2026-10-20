@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 
@@ -55,7 +56,7 @@ const fetchFPGrowthAnalysis = async (
     const message =
       error?.response?.data?.message ||
       error?.message ||
-      "Failed to fetch FP-Growth analysis";
+      tr("Failed to fetch FP-Growth analysis");
 
     throw new Error(message);
   }

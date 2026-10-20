@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import SidebarTabs, { MainTab } from "./SidebarTabs";
+import LanguageToggle from "./LanguageToggle";
+import ActivityBar from "@/components/layout/ActivityBar";
+import { useLang } from "@/lib/i18n";
 
 import DashboardTab from "@/components/tabs/DashboardTab";
 import SalesTab from "@/components/tabs/SalesTab";
@@ -19,10 +22,12 @@ import EoqTab from "@/components/tabs/EoqTab";
 import ProductBatchesPage from "../tabs/ProductBatchTab";
 import BarcodeLabelsTab from "../tabs/BarcodeLabelsTab";
 import ActivityLogTab from "../tabs/ActivityLogTab";
+import StoreInfoTab from "../tabs/StoreInfoTab";
 
 export default function MainShell() {
   const [activeTab, setActiveTabState] = useState<MainTab>("pos");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useLang();
 
   // Selecting a tab always dismisses the mobile drawer, otherwise the menu
   // would sit open over the page the user just navigated to.
@@ -33,6 +38,7 @@ export default function MainShell() {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-100">
+      <ActivityBar />
       <SidebarTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -41,18 +47,21 @@ export default function MainShell() {
       />
 
       <div className="flex h-full min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 md:hidden">
+        <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-            aria-label="Open menu"
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden"
+            aria-label={t("Open menu")}
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-sm font-semibold text-gray-900 md:hidden">
             Ting Ting ko pasal
           </span>
+          <div className="ml-auto">
+            <LanguageToggle />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">
@@ -76,6 +85,7 @@ export default function MainShell() {
           )}
 
           {activeTab === "payment-methods" && <PaymentMethodsTab />}
+          {activeTab === "store-info" && <StoreInfoTab />}
           {activeTab === "security" && <SecurityTab />}
         </main>
       </div>

@@ -6,7 +6,8 @@ import {
   useUpdatePaymentMethod,
 } from "@/hooks/usePaymentMethods";
 import toast from "react-hot-toast";
-import { Upload } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import { Upload, Loader2 } from "lucide-react";
 
 interface PaymentMethodModalProps {
   setOpen: (open: boolean) => void;
@@ -35,8 +36,10 @@ export default function PaymentMethodModal({
   closeModal,
   editing,
 }: PaymentMethodModalProps) {
+  const { t } = useLang();
   const [form, setForm] = useState<FormState>(initialForm);
   const [dragActive, setDragActive] = useState(false);
+  const [readingQr, setReadingQr] = useState(false);
 
   const createMutation = useCreatePaymentMethod();
   const updateMutation = useUpdatePaymentMethod();
@@ -69,21 +72,24 @@ export default function PaymentMethodModal({
     const maxSizeInMb = 2;
 
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Please upload a PNG, JPG, or WEBP image.");
+      toast.error(t("Please upload a PNG, JPG, or WEBP image."));
       return;
     }
 
     if (file.size > maxSizeInMb * 1024 * 1024) {
-      toast.error("Image must be smaller than 2MB.");
+      toast.error(t("Image must be smaller than 2MB."));
       return;
     }
 
+    setReadingQr(true);
     try {
       const base64 = await readFileAsBase64(file);
       setForm((prev) => ({ ...prev, qr_code: base64 }));
-      toast.success("QR image uploaded.");
+      toast.success(t("QR image uploaded."));
     } catch {
-      toast.error("Failed to read image.");
+      toast.error(t("Failed to read image."));
+    } finally {
+      setReadingQr(false);
     }
   };
 
@@ -95,12 +101,12 @@ export default function PaymentMethodModal({
 
   const validateForm = () => {
     if (!form.payment_method.trim()) {
-      toast.error("Payment method name is required.");
+      toast.error(t("Payment method name is required."));
       return false;
     }
 
     if (!form.type.trim()) {
-      toast.error("Payment type is required.");
+      toast.error(t("Payment type is required."));
       return false;
     }
 
@@ -108,6 +114,7 @@ export default function PaymentMethodModal({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting || readingQr) return;
     if (!validateForm()) return;
 
     const payload = {
@@ -126,12 +133,14 @@ export default function PaymentMethodModal({
 
     toast.promise(promise, {
       loading: editing
-        ? "Updating payment method..."
-        : "Creating payment method...",
-      success: editing ? "Payment method updated." : "Payment method created.",
+        ? t("Updating payment method...")
+        : t("Creating payment method..."),
+      success: editing
+        ? t("Payment method updated.")
+        : t("Payment method created."),
       error: editing
-        ? "Failed to update payment method."
-        : "Failed to create payment method.",
+        ? t("Failed to update payment method.")
+        : t("Failed to create payment method."),
     });
 
     try {
@@ -152,20 +161,20 @@ export default function PaymentMethodModal({
       <div className="w-full max-h-[85dvh] overflow-y-auto max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 shadow-2xl">
         <div className="mb-6">
           <h2 className="text-xl font-semibold tracking-tight text-neutral-900">
-            {editing ? "Edit payment method" : "New payment method"}
+            {editing ? t("Edit payment method") : t("New payment method")}
           </h2>
           <p className="mt-1 text-sm text-neutral-500">
-            Add a payment method with a clean, guided form.
+            {t("Add a payment method with a clean, guided form.")}
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-neutral-700">
-              Name
+              {t("Name")}
             </label>
             <input
-              placeholder="e.g. eSewa"
+              placeholder={t("e.g. eSewa")}
               value={form.payment_method}
               onChange={(e) =>
                 setForm({ ...form, payment_method: e.target.value })
@@ -177,7 +186,7 @@ export default function PaymentMethodModal({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-neutral-700">
-              Type
+              {t("Type")}
             </label>
 
             <select
@@ -187,16 +196,16 @@ export default function PaymentMethodModal({
               className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
             >
               <option value="" disabled>
-                Select type
+                {t("Select type")}
               </option>
-              <option value="Cash">Cash</option>
-              <option value="Online">Online</option>
+              <option value="Cash">{t("Cash")}</option>
+              <option value="Online">{t("Online")}</option>
             </select>
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-neutral-700">
-              QR code image
+              {t("QR code image")}
             </label>
 
             <label
@@ -209,7 +218,7 @@ export default function PaymentMethodModal({
               onDrop={async (e) => {
                 e.preventDefault();
                 setDragActive(false);
-                if (isSubmitting) return;
+                if (isSubmitting || readingQr) return;
                 const file = e.dataTransfer.files?.[0];
                 await handleQrFile(file);
               }}
@@ -217,32 +226,37 @@ export default function PaymentMethodModal({
                 dragActive
                   ? "border-neutral-900 bg-neutral-100"
                   : "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-neutral-100"
-              } ${isSubmitting ? "pointer-events-none opacity-60" : ""}`}
+              } ${isSubmitting || readingQr ? "pointer-events-none opacity-60" : ""}`}
             >
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/jpg,image/webp"
                 onChange={handleFileInputChange}
-                disabled={isSubmitting}
+                disabled={isSubmitting || readingQr}
                 className="hidden"
               />
 
-              {form.qr_code ? (
+              {readingQr ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-neutral-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("Uploading...")}
+                </div>
+              ) : form.qr_code ? (
                 <div className="flex items-center gap-4">
                   <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white">
                     <img
                       src={form.qr_code}
-                      alt="QR preview"
+                      alt={t("QR preview")}
                       className="h-full w-full object-cover"
                     />
                   </div>
 
                   <div className="flex-1">
                     <p className="text-sm font-medium text-neutral-900">
-                      QR image uploaded
+                      {t("QR image uploaded")}
                     </p>
                     <p className="mt-1 text-sm text-neutral-500">
-                      Click here to replace the current image.
+                      {t("Click here to replace the current image.")}
                     </p>
 
                     <button
@@ -250,11 +264,11 @@ export default function PaymentMethodModal({
                       onClick={(e) => {
                         e.preventDefault();
                         setForm((prev) => ({ ...prev, qr_code: "" }));
-                        toast.success("QR image removed.");
+                        toast.success(t("QR image removed."));
                       }}
                       className="mt-3 inline-flex text-sm font-medium text-red-600 hover:text-red-700"
                     >
-                      Remove image
+                      {t("Remove image")}
                     </button>
                   </div>
                 </div>
@@ -266,13 +280,13 @@ export default function PaymentMethodModal({
                     </span>
                   </div>
                   <p className="text-sm font-medium text-neutral-900">
-                    Upload QR image
+                    {t("Upload QR image")}
                   </p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Drag and drop or click to browse
+                    {t("Drag and drop or click to browse")}
                   </p>
                   <p className="mt-1 text-xs text-neutral-400">
-                    PNG, JPG, WEBP up to 2MB
+                    {t("PNG, JPG, WEBP up to 2MB")}
                   </p>
                 </div>
               )}
@@ -281,7 +295,7 @@ export default function PaymentMethodModal({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-neutral-700">
-              Status
+              {t("Status")}
             </label>
             <select
               value={form.status}
@@ -289,17 +303,17 @@ export default function PaymentMethodModal({
               disabled={isSubmitting}
               className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
             >
-              <option>Active</option>
-              <option>Inactive</option>
+              <option value="Active">{t("Active")}</option>
+              <option value="Inactive">{t("Inactive")}</option>
             </select>
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-neutral-700">
-              Notes
+              {t("Notes")}
             </label>
             <textarea
-              placeholder="Optional notes"
+              placeholder={t("Optional notes")}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={4}
@@ -315,23 +329,23 @@ export default function PaymentMethodModal({
             disabled={isSubmitting}
             className="inline-flex cursor-pointer h-11 items-center justify-center rounded-xl px-4 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
 
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || readingQr}
             className="inline-flex cursor-pointer min-w-[138px] items-center justify-center rounded-xl bg-neutral-900 px-5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Processing...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("Saving...")}
               </span>
             ) : editing ? (
-              "Save changes"
+              t("Save changes")
             ) : (
-              "Create method"
+              t("Create method")
             )}
           </button>
         </div>

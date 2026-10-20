@@ -2,6 +2,7 @@
 "use client";
 
 import { Package } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 import type { DaybookExpenseCategorySummary } from "@/hooks/useDaybook";
 
 interface DaybookExpenseCategoriesProps {
@@ -15,9 +16,10 @@ export default function DaybookExpenseCategories({
   totalExpenseAmount,
   money,
 }: DaybookExpenseCategoriesProps) {
+  const { t } = useLang();
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
-      <h3 className="font-bold text-gray-900 mb-4">Expense Categories</h3>
+      <h3 className="font-bold text-gray-900 mb-4">{t("Expense Categories")}</h3>
       <div className="space-y-3">
         {categories.map((category) => {
           const percentage =
@@ -31,7 +33,7 @@ export default function DaybookExpenseCategories({
                 <div className="flex items-center gap-2">
                   <Package size={16} className="text-gray-400" />
                   <span className="text-sm font-medium text-gray-700">
-                    {category.category}
+                    {t(category.category)}
                   </span>
                 </div>
                 <div className="text-right">
@@ -39,7 +41,7 @@ export default function DaybookExpenseCategories({
                     {money(category.total_amount)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {percentage.toFixed(1)}% · {category.expense_count} expenses
+                    {percentage.toFixed(1)}% · {category.expense_count} {t("expenses")}
                   </p>
                 </div>
               </div>

@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 import toast from "react-hot-toast";
@@ -19,15 +20,15 @@ export const useUpdatePasscode = () => {
         return response.data;
       } catch (error) {
         console.log("Error while updating passcode:", error);
-        throw new Error("Failed to update passcode");
+        throw new Error(tr("Failed to update passcode"));
       }
     },
     onSuccess: () => {
-      toast.success("Passcode updated successfully");
+      toast.success(tr("Passcode updated successfully"));
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update passcode",
+        error instanceof Error ? error.message : tr("Failed to update passcode"),
       );
     },
   });

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import { X, ArrowLeftRight, ArrowRight, Loader2 } from "lucide-react";
 
+import Tn from "@/components/layout/Tn";
 interface TransferFundsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,6 +43,7 @@ export default function TransferFundsModal({
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const { t } = useLang();
 
   const activeMethods = useMemo(
     () => paymentMethods.filter((m) => m.status === "Active"),
@@ -66,26 +69,27 @@ export default function TransferFundsModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError("");
 
     if (!fromMethodId || !toMethodId) {
-      setError("Please select both payment methods.");
+      setError(t("Please select both payment methods."));
       return;
     }
 
     if (fromMethodId === toMethodId) {
-      setError("Cannot transfer to the same payment method.");
+      setError(t("Cannot transfer to the same payment method."));
       return;
     }
 
     const numAmount = parseFloat(amount);
     if (!amount || isNaN(numAmount) || numAmount <= 0) {
-      setError("Please enter a valid amount greater than 0.");
+      setError(t("Please enter a valid amount greater than 0."));
       return;
     }
 
     if (fromMethod && numAmount > fromMethod.current_balance) {
-      setError("Insufficient balance in source payment method.");
+      setError(t("Insufficient balance in source payment method."));
       return;
     }
 
@@ -120,10 +124,10 @@ export default function TransferFundsModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-neutral-900">
-                Transfer Funds
+                {t("Transfer Funds")}
               </h2>
               <p className="text-sm text-neutral-500">
-                Move money between payment methods
+                {t("Move money between payment methods")}
               </p>
             </div>
           </div>
@@ -139,7 +143,7 @@ export default function TransferFundsModal({
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              From Payment Method *
+              {t("From Payment Method")} *
             </label>
             <select
               value={fromMethodId}
@@ -151,10 +155,10 @@ export default function TransferFundsModal({
               disabled={isSubmitting || !!preselectedFromMethod}
               className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="">Select source</option>
+              <option value="">{t("Select source")}</option>
               {activeMethods.map((method) => (
                 <option key={method.id} value={method.id}>
-                  {method.payment_method} (Balance:{" "}
+                  <Tn v={method.payment_method} /> ({t("Balance")}:{" "}
                   {formatCurrency(method.current_balance)})
                 </option>
               ))}
@@ -169,7 +173,7 @@ export default function TransferFundsModal({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              To Payment Method *
+              {t("To Payment Method")} *
             </label>
             <select
               value={toMethodId}
@@ -180,10 +184,10 @@ export default function TransferFundsModal({
               disabled={isSubmitting || !fromMethodId}
               className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="">Select destination</option>
+              <option value="">{t("Select destination")}</option>
               {filteredToMethods.map((method) => (
                 <option key={method.id} value={method.id}>
-                  {method.payment_method}
+                  <Tn v={method.payment_method} />
                 </option>
               ))}
             </select>
@@ -192,7 +196,7 @@ export default function TransferFundsModal({
           {fromMethod && (
             <div className="mb-4 rounded-xl bg-neutral-50 p-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-neutral-500">Available Balance</p>
+                <p className="text-sm text-neutral-500">{t("Available Balance")}</p>
                 <p className="text-lg font-semibold text-neutral-900">
                   {formatCurrency(fromMethod.current_balance)}
                 </p>
@@ -202,7 +206,7 @@ export default function TransferFundsModal({
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Amount *
+              {t("Amount")} *
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
@@ -215,7 +219,7 @@ export default function TransferFundsModal({
                   setAmount(e.target.value);
                   setError("");
                 }}
-                placeholder="Enter amount"
+                placeholder={t("Enter amount")}
                 step="0.01"
                 min="0.01"
                 max={fromMethod?.current_balance || undefined}
@@ -229,12 +233,12 @@ export default function TransferFundsModal({
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              Notes
+              {t("Notes")}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Reason for transfer..."
+              placeholder={t("Reason for transfer...")}
               rows={3}
               disabled={isSubmitting}
               className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
@@ -248,14 +252,15 @@ export default function TransferFundsModal({
               disabled={isSubmitting}
               className="flex-1 rounded-xl cursor-pointer border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 rounded-xl cursor-pointer bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl cursor-pointer bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? "Transferring..." : "Transfer Funds"}
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting ? t("Transferring...") : t("Transfer Funds")}
             </button>
           </div>
         </form>

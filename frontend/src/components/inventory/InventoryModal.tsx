@@ -1,7 +1,8 @@
 "use client";
 
-import { X, Package, Save } from "lucide-react";
+import { Loader2, X, Package, Save } from "lucide-react";
 import type { InventoryFormData } from "@/components/tabs/InventoryTab";
+import { useLang } from "@/lib/i18n";
 
 type InventoryModalProps = {
   closeModal: () => void;
@@ -20,6 +21,7 @@ export default function InventoryModal({
   isSubmitting,
   isEditMode,
 }: InventoryModalProps) {
+  const { t } = useLang();
   const handleChange = (
     field: keyof InventoryFormData,
     value: string | number,
@@ -47,12 +49,12 @@ export default function InventoryModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {isEditMode ? "Update Inventory" : "Add Inventory"}
+                {isEditMode ? t("Update Inventory") : t("Add Inventory")}
               </h2>
               <p className="text-sm text-slate-500">
                 {isEditMode
-                  ? "Modify stock levels and thresholds"
-                  : "Set up initial stock levels"}
+                  ? t("Modify stock levels and thresholds")
+                  : t("Set up initial stock levels")}
               </p>
             </div>
           </div>
@@ -68,7 +70,7 @@ export default function InventoryModal({
         <form onSubmit={handleSubmit} className="space-y-5 p-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Current Stock
+              {t("Current Stock")}
             </label>
             <input
               type="number"
@@ -82,13 +84,13 @@ export default function InventoryModal({
               required
             />
             <p className="text-xs text-slate-400">
-              Current available quantity in stock
+              {t("Current available quantity in stock")}
             </p>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Reorder Level
+              {t("Reorder Level")}
             </label>
             <input
               type="number"
@@ -102,13 +104,13 @@ export default function InventoryModal({
               required
             />
             <p className="text-xs text-slate-400">
-              Stock level that triggers reorder notification
+              {t("Stock level that triggers reorder notification")}
             </p>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">
-              Reorder Quantity
+              {t("Reorder Quantity")}
             </label>
             <input
               type="number"
@@ -122,7 +124,7 @@ export default function InventoryModal({
               required
             />
             <p className="text-xs text-slate-400">
-              Default quantity to order when restocking
+              {t("Default quantity to order when restocking")}
             </p>
           </div>
 
@@ -132,19 +134,19 @@ export default function InventoryModal({
                 <Package className="h-4 w-4 text-slate-600" />
               </div>
               <div className="text-sm text-slate-600">
-                <p className="font-medium text-slate-700">Stock Level Guide</p>
+                <p className="font-medium text-slate-700">{t("Stock Level Guide")}</p>
                 <ul className="mt-2 space-y-1 text-xs">
                   <li className="flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Above reorder level — Healthy
+                    {t("Above reorder level — Healthy")}
                   </li>
                   <li className="flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    At or below reorder level — Low Stock
+                    {t("At or below reorder level — Low Stock")}
                   </li>
                   <li className="flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                    Zero stock — Out of Stock
+                    {t("Zero stock — Out of Stock")}
                   </li>
                 </ul>
               </div>
@@ -158,19 +160,23 @@ export default function InventoryModal({
               disabled={isSubmitting}
               className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             >
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Save className="h-4 w-4" />
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
               {isSubmitting
-                ? "Saving..."
+                ? t("Saving...")
                 : isEditMode
-                  ? "Update Inventory"
-                  : "Save Inventory"}
+                  ? t("Update Inventory")
+                  : t("Save Inventory")}
             </button>
           </div>
         </form>

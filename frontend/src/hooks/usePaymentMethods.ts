@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useMutation,
   useQuery,
@@ -137,7 +138,7 @@ export const useCreatePaymentMethod = () => {
         return res.data;
       } catch (error) {
         console.log("Error while creating payment method:", error);
-        throw new Error("Failed to create payment method");
+        throw new Error(tr("Failed to create payment method"));
       }
     },
     onSuccess: () => {
@@ -182,7 +183,7 @@ export const useDeletePaymentMethod = () => {
         console.log("Error while deleting payment method:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to delete payment method",
+          error?.response?.data?.message || tr("Failed to delete payment method"),
         );
       }
     },
@@ -221,7 +222,7 @@ export const useAddPaymentMethodFunds = () => {
         console.log("Error while adding payment method funds:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to add funds",
+          error?.response?.data?.message || tr("Failed to add funds"),
         );
       }
     },
@@ -260,7 +261,7 @@ export const useWithdrawPaymentMethodFunds = () => {
         console.log("Error while withdrawing payment method funds:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to withdraw funds",
+          error?.response?.data?.message || tr("Failed to withdraw funds"),
         );
       }
     },
@@ -290,7 +291,7 @@ export const useTransferPaymentMethodFunds = () => {
         console.log("Error while transferring payment method funds:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to transfer funds",
+          error?.response?.data?.message || tr("Failed to transfer funds"),
         );
       }
     },

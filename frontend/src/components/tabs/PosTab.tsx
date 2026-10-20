@@ -31,6 +31,9 @@ import { useDebounced } from "@/hooks/useDebounced";
 import ReceiptPrinter, { ReceiptData } from "@/components/pos/ReceiptPrinter";
 import { prepareReceiptData } from "@/utils/receiptHelper";
 import { useStore } from "@/hooks/useStoreInfo";
+import Tn from "@/components/layout/Tn";
+import { useLang } from "@/lib/i18n";
+import { CardGridSkeleton, SlowNotice } from "@/components/layout/Skeleton";
 export type CartItem = {
   product_id: string;
   product_name: string;
@@ -78,6 +81,7 @@ const emptyCustomerForm: Omit<Customer, "id" | "created_at" | "updated_at"> = {
 };
 
 export default function PointOfSalesPage() {
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 300);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -104,7 +108,13 @@ export default function PointOfSalesPage() {
 
   const categories = categoriesData?.data ?? [];
 
-  const { data: productsData, isLoading } = useProducts({
+  const {
+    data: productsData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useProducts({
     search: debouncedSearch,
     status: "Active",
     page: 1,
@@ -115,7 +125,8 @@ export default function PointOfSalesPage() {
   const { data: storeData } = useStore();
   const store = storeData?.data || null;
 
-  const { data: paymentMethodsData } = usePaymentMethods(1, 100, "Active");
+  const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
+    usePaymentMethods(1, 100, "Active");
   const [payments, setPayments] = useState<SalePayment[]>([]);
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const uploadPaymentProof = useUploadSalePaymentProof();
@@ -370,7 +381,7 @@ export default function PointOfSalesPage() {
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      toast.error("Please add at least one product to the cart");
+      toast.error(t("Please add at least one product to the cart"));
       return;
     }
     const validPayments = payments.filter(
@@ -378,18 +389,18 @@ export default function PointOfSalesPage() {
     );
 
     if (validPayments.length === 0) {
-      toast.error("Please add at least one valid payment method");
+      toast.error(t("Please add at least one valid payment method"));
       return;
     }
 
     if (customerId === null && paidAmount < grandTotal) {
-      toast.error("Please select a customer or adjust the payment amount");
+      toast.error(t("Please select a customer or adjust the payment amount"));
       return;
     }
 
     if (changeAmount > 0) {
       toast.error(
-        "Change amount is greater than 0. Please adjust the payment amount.",
+        t("Change amount is greater than 0. Please adjust the payment amount."),
       );
       return;
     }
@@ -467,7 +478,7 @@ export default function PointOfSalesPage() {
           setDiscountAmount(0);
           setDiscountValue(0);
           setIsDiscountEnabled(false);
-          toast.success("Sale completed successfully");
+          toast.success(t("Sale completed successfully"));
         },
       },
     );
@@ -512,10 +523,10 @@ export default function PointOfSalesPage() {
           <div className="flex flex-col lg:flex-row items-left lg:items-center gap-4 justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Point of Sale
+                {t("Point of Sale")}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Select products to add to bill
+                {t("Select products to add to bill")}
               </p>
             </div>
 
@@ -524,7 +535,7 @@ export default function PointOfSalesPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products..."
+                placeholder={t("Search products...")}
                 className="w-full md:w-80 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all"
               />
             </div>
@@ -541,7 +552,7 @@ export default function PointOfSalesPage() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              All Products
+              {t("All Products")}
             </button>
 
             {categories.map((category) => (
@@ -554,22 +565,46 @@ export default function PointOfSalesPage() {
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {category.category_name}
+                <Tn v={category.category_name} />
               </button>
             ))}
           </div>
         </div>
 
         {isLoading ? (
-          <div className="min-h-[300px] flex-1 flex items-center justify-center">
-            <Package className="h-12 w-12 text-gray-300 animate-pulse" />
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6" aria-busy>
+            <CardGridSkeleton
+              count={8}
+              className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-4"
+            />
+            <div className="flex justify-center">
+              <SlowNotice loading={isLoading} />
+            </div>
+          </div>
+        ) : isError && products.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-gray-500">
+            <Package className="h-12 w-12 text-gray-300" />
+            <p className="text-sm">{t("Failed to load products")}</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            >
+              {t("Retry")}
+            </button>
           </div>
         ) : (
-          <ProductGrid
-            products={products}
-            cartItems={cartItems}
-            addToCart={addToCart}
-          />
+          <div
+            className={`flex flex-1 flex-col transition-opacity ${
+              isFetching ? "opacity-60" : ""
+            }`}
+          >
+            <ProductGrid
+              products={products}
+              cartItems={cartItems}
+              addToCart={addToCart}
+            />
+          </div>
         )}
       </div>
 
@@ -595,6 +630,7 @@ export default function PointOfSalesPage() {
             setIsModalOpen(true);
           }}
           paymentMethods={paymentMethods}
+          paymentMethodsLoading={paymentMethodsLoading}
           payments={payments}
           setPayments={setPayments}
           paymentProofFile={paymentProofFile}
@@ -629,13 +665,13 @@ export default function PointOfSalesPage() {
           <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
             <ShoppingCart className="h-4 w-4 shrink-0" />
             <span className="truncate">
-              {cartSummary.totalItems} item
-              {cartSummary.totalItems === 1 ? "" : "s"} · Rs.{" "}
+              {cartSummary.totalItems}{" "}
+              {cartSummary.totalItems === 1 ? t("item") : t("items")} · Rs.{" "}
               {cartSummary.grandTotal.toLocaleString()}
             </span>
           </span>
           <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-900">
-            View Bill
+            {t("View Bill")}
           </span>
         </button>
       )}
@@ -646,7 +682,7 @@ export default function PointOfSalesPage() {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {selectedPaymentMethod.payment_method}
+                <Tn v={selectedPaymentMethod.payment_method} />
               </h3>
               <button
                 onClick={() => setShowQrModal(false)}
@@ -665,14 +701,14 @@ export default function PointOfSalesPage() {
             </div>
 
             <p className="text-center text-gray-600 text-sm">
-              Scan QR code to pay Rs. {cartSummary.grandTotal}
+              {t("Scan QR code to pay")} Rs. {cartSummary.grandTotal}
             </p>
 
             <button
               onClick={() => setShowQrModal(false)}
               className="w-full mt-4 bg-gray-900 text-white py-3 rounded-xl hover:bg-gray-800 transition-colors"
             >
-              Close
+              {t("Close")}
             </button>
           </div>
         </div>

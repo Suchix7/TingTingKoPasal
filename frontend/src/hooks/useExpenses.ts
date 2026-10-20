@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import {
   useMutation,
   useQuery,
@@ -77,7 +78,7 @@ const fetchExpenses = async (
     return res.data;
   } catch (error) {
     console.log("Error while fetching expenses:", error);
-    throw new Error("Failed to fetch expenses");
+    throw new Error(tr("Failed to fetch expenses"));
   }
 };
 
@@ -105,7 +106,7 @@ const fetchExpenseById = async (id: number): Promise<ExpenseResponse> => {
     return res.data;
   } catch (error) {
     console.log("Error while fetching expense:", error);
-    throw new Error("Failed to fetch expense");
+    throw new Error(tr("Failed to fetch expense"));
   }
 };
 
@@ -131,7 +132,7 @@ export const useCreateExpense = () => {
         return res.data;
       } catch (error) {
         console.log("Error while creating expense:", error);
-        throw new Error("Failed to create expense");
+        throw new Error(tr("Failed to create expense"));
       }
     },
     onSuccess: () => {
@@ -162,7 +163,7 @@ export const useUpdateExpense = () => {
         return res.data;
       } catch (error) {
         console.log("Error while updating expense:", error);
-        throw new Error("Failed to update expense");
+        throw new Error(tr("Failed to update expense"));
       }
     },
     onSuccess: (_, variables) => {
@@ -191,7 +192,7 @@ export const useDeleteExpense = () => {
         return res.data;
       } catch (error) {
         console.log("Error while deleting expense:", error);
-        throw new Error("Failed to delete expense");
+        throw new Error(tr("Failed to delete expense"));
       }
     },
     onSuccess: () => {

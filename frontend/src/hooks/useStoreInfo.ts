@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 
@@ -82,7 +83,7 @@ export const useCreateStore = () => {
         console.error("Error while creating store:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to create store",
+          error?.response?.data?.message || tr("Failed to create store"),
         );
       }
     },
@@ -115,7 +116,7 @@ export const useUpdateStore = () => {
         console.error("Error while updating store:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to update store",
+          error?.response?.data?.message || tr("Failed to update store"),
         );
       }
     },
@@ -146,7 +147,7 @@ export const useDeleteStore = () => {
         console.error("Error while deleting store:", error);
 
         throw new Error(
-          error?.response?.data?.message || "Failed to delete store",
+          error?.response?.data?.message || tr("Failed to delete store"),
         );
       }
     },

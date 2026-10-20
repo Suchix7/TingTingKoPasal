@@ -14,8 +14,10 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useUpdatePasscode } from "@/hooks/useSecurity";
+import { useLang } from "@/lib/i18n";
 
 export default function SecurityPage() {
+  const { t } = useLang();
   const { mutateAsync: updatePasscode } = useUpdatePasscode();
 
   const [oldPasscode, setOldPasscode] = useState("");
@@ -30,30 +32,31 @@ export default function SecurityPage() {
 
   const validatePasscode = (passcode: string) => {
     if (passcode.length < 6) {
-      return "Passcode must be at least 6 characters";
+      return t("Passcode must be at least 6 characters");
     }
     if (passcode.length > 20) {
-      return "Passcode must be less than 20 characters";
+      return t("Passcode must be less than 20 characters");
     }
     if (!/^\d+$/.test(passcode)) {
-      return "Passcode must contain only numbers";
+      return t("Passcode must contain only numbers");
     }
     return "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError("");
     setSuccess("");
 
     // Validate inputs
     if (!oldPasscode || !newPasscode || !confirmPasscode) {
-      setError("All fields are required");
+      setError(t("All fields are required"));
       return;
     }
 
     if (oldPasscode === newPasscode) {
-      setError("New passcode must be different from current passcode");
+      setError(t("New passcode must be different from current passcode"));
       return;
     }
 
@@ -64,7 +67,7 @@ export default function SecurityPage() {
     }
 
     if (newPasscode !== confirmPasscode) {
-      setError("Passcodes do not match");
+      setError(t("Passcodes do not match"));
       return;
     }
 
@@ -72,12 +75,12 @@ export default function SecurityPage() {
     try {
       await updatePasscode({ oldPasscode, newPasscode });
 
-      setSuccess("Passcode updated successfully");
+      setSuccess(t("Passcode updated successfully"));
       setOldPasscode("");
       setNewPasscode("");
       setConfirmPasscode("");
     } catch (error) {
-      const message = "Failed to update passcode. Please try again.";
+      const message = t("Failed to update passcode. Please try again.");
       setError(message);
     } finally {
       setIsLoading(false);
@@ -87,18 +90,18 @@ export default function SecurityPage() {
   const getPasswordStrength = (passcode: string) => {
     if (!passcode) return { strength: 0, label: "", color: "" };
     if (passcode.length < 6) {
-      return { strength: 20, label: "Weak", color: "bg-red-500" };
+      return { strength: 20, label: t("Weak"), color: "bg-red-500" };
     }
     if (passcode.length >= 6 && passcode.length < 8) {
-      return { strength: 40, label: "Fair", color: "bg-yellow-500" };
+      return { strength: 40, label: t("Fair"), color: "bg-yellow-500" };
     }
     if (passcode.length >= 8 && /^\d+$/.test(passcode)) {
-      return { strength: 60, label: "Good", color: "bg-blue-500" };
+      return { strength: 60, label: t("Good"), color: "bg-blue-500" };
     }
     if (passcode.length >= 10) {
-      return { strength: 80, label: "Strong", color: "bg-green-500" };
+      return { strength: 80, label: t("Strong"), color: "bg-green-500" };
     }
-    return { strength: 100, label: "Very Strong", color: "bg-green-600" };
+    return { strength: 100, label: t("Very Strong"), color: "bg-green-600" };
   };
 
   const passwordStrength = getPasswordStrength(newPasscode);
@@ -109,9 +112,9 @@ export default function SecurityPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Security</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{t("Security")}</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Manage your system passcode and security settings
+              {t("Manage your system passcode and security settings")}
             </p>
           </div>
           <div className="rounded-xl bg-gray-100 p-3">
@@ -122,9 +125,9 @@ export default function SecurityPage() {
         {/* Update Passcode Form */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Update Passcode</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t("Update Passcode")}</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Enter your current passcode and set a new one
+              {t("Enter your current passcode and set a new one")}
             </p>
           </div>
 
@@ -147,7 +150,7 @@ export default function SecurityPage() {
             {/* Current Passcode */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Current Passcode
+                {t("Current Passcode")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -157,7 +160,7 @@ export default function SecurityPage() {
                   type={showOld ? "text" : "password"}
                   value={oldPasscode}
                   onChange={(e) => setOldPasscode(e.target.value)}
-                  placeholder="Enter current passcode"
+                  placeholder={t("Enter current passcode")}
                   className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-12 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
                   maxLength={20}
                 />
@@ -178,7 +181,7 @@ export default function SecurityPage() {
             {/* New Passcode */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                New Passcode
+                {t("New Passcode")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -188,7 +191,7 @@ export default function SecurityPage() {
                   type={showNew ? "text" : "password"}
                   value={newPasscode}
                   onChange={(e) => setNewPasscode(e.target.value)}
-                  placeholder="Enter new passcode"
+                  placeholder={t("Enter new passcode")}
                   className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-12 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
                   maxLength={20}
                 />
@@ -222,11 +225,11 @@ export default function SecurityPage() {
                   <div className="mt-2 flex gap-4 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <span className="inline-block h-1 w-1 rounded-full bg-gray-400"></span>
-                      Min 6 digits
+                      {t("Min 6 digits")}
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="inline-block h-1 w-1 rounded-full bg-gray-400"></span>
-                      Numbers only
+                      {t("Numbers only")}
                     </span>
                   </div>
                 </div>
@@ -236,7 +239,7 @@ export default function SecurityPage() {
             {/* Confirm Passcode */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Confirm New Passcode
+                {t("Confirm New Passcode")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -246,7 +249,7 @@ export default function SecurityPage() {
                   type={showConfirm ? "text" : "password"}
                   value={confirmPasscode}
                   onChange={(e) => setConfirmPasscode(e.target.value)}
-                  placeholder="Confirm new passcode"
+                  placeholder={t("Confirm new passcode")}
                   className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-12 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
                   maxLength={20}
                 />
@@ -269,12 +272,12 @@ export default function SecurityPage() {
                   {newPasscode === confirmPasscode ? (
                     <span className="flex items-center gap-1 text-xs font-medium text-green-600">
                       <CheckCircle className="h-3 w-3" />
-                      Passcodes match
+                      {t("Passcodes match")}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs font-medium text-red-600">
                       <AlertCircle className="h-3 w-3" />
-                      Passcodes do not match
+                      {t("Passcodes do not match")}
                     </span>
                   )}
                 </div>
@@ -285,6 +288,7 @@ export default function SecurityPage() {
             <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => {
                   setOldPasscode("");
                   setNewPasscode("");
@@ -292,9 +296,9 @@ export default function SecurityPage() {
                   setError("");
                   setSuccess("");
                 }}
-                className="rounded-xl cursor-pointer border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                className="rounded-xl cursor-pointer border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 type="submit"
@@ -304,12 +308,12 @@ export default function SecurityPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Updating...
+                    {t("Updating...")}
                   </>
                 ) : (
                   <>
                     <Shield className="h-4 w-4" />
-                    Update Passcode
+                    {t("Update Passcode")}
                   </>
                 )}
               </button>
@@ -319,7 +323,7 @@ export default function SecurityPage() {
 
         {/* Security Tips */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Security Tips</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t("Security Tips")}</h3>
           <div className="mt-4 space-y-3">
             {[
               {
@@ -351,7 +355,7 @@ export default function SecurityPage() {
                 <div className={`rounded-lg ${tip.bg} p-1.5`}>
                   <tip.icon className={`h-4 w-4 ${tip.color}`} />
                 </div>
-                <p className="text-sm text-gray-600">{tip.text}</p>
+                <p className="text-sm text-gray-600">{t(tip.text)}</p>
               </div>
             ))}
           </div>

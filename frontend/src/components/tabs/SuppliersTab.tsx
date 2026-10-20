@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  Loader2,
   CheckCircle2,
 } from "lucide-react";
 import {
@@ -31,6 +32,12 @@ import {
 } from "@/hooks/useSuppliers";
 import { useDebounced } from "@/hooks/useDebounced";
 import { SupplierModal } from "@/components/suppliers/SupplierModal";
+import { useLang } from "@/lib/i18n";
+import {
+  ListSkeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 
 const DeleteConfirmModal = ({
   closeModal,
@@ -43,6 +50,7 @@ const DeleteConfirmModal = ({
   isSubmitting: boolean;
   supplierName: string;
 }) => {
+  const { t } = useLang();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl">
@@ -51,27 +59,29 @@ const DeleteConfirmModal = ({
             <Trash2 className="h-8 w-8 text-rose-500" />
           </div>
           <h3 className="mt-4 text-xl font-semibold text-slate-900">
-            Delete Supplier
+            {t("Delete Supplier")}
           </h3>
           <p className="mt-2 text-sm text-slate-500">
-            Are you sure you want to delete{" "}
+            {t("Are you sure you want to delete")}{" "}
             <span className="font-semibold text-slate-700">{supplierName}</span>
-            ? This action cannot be undone.
+            ? {t("This action cannot be undone.")}
           </p>
         </div>
         <div className="flex gap-3 border-t border-slate-200 p-6">
           <button
             onClick={closeModal}
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            disabled={isSubmitting}
+            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Deleting..." : "Delete"}
+            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSubmitting ? t("Deleting...") : t("Delete")}
           </button>
         </div>
       </div>
@@ -80,6 +90,7 @@ const DeleteConfirmModal = ({
 };
 
 export default function SuppliersPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
@@ -106,6 +117,7 @@ export default function SuppliersPage() {
   const {
     data: suppliersData,
     isLoading,
+    isFetching,
     error,
   } = useSuppliers(page, limit, debouncedSearch);
   const createSupplier = useCreateSupplier();
@@ -153,7 +165,7 @@ export default function SuppliersPage() {
 
   const handleCreateSubmit = async () => {
     if (!formData.supplier_name?.trim()) {
-      toast.error("Supplier name is required");
+      toast.error(t("Supplier name is required"));
       return;
     }
     await createSupplier.mutateAsync(formData);
@@ -185,10 +197,10 @@ export default function SuppliersPage() {
               <AlertTriangle className="h-10 w-10 text-rose-400" />
             </div>
             <h3 className="mt-6 text-xl font-semibold text-slate-900">
-              Failed to Load Suppliers
+              {t("Failed to Load Suppliers")}
             </h3>
             <p className="mt-3 text-sm text-slate-500">
-              Please check your connection and try again.
+              {t("Please check your connection and try again.")}
             </p>
           </div>
         </div>
@@ -208,10 +220,10 @@ export default function SuppliersPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                  Suppliers
+                  {t("Suppliers")}
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">
-                  Manage your supplier information and contacts
+                  {t("Manage your supplier information and contacts")}
                 </p>
               </div>
             </div>
@@ -221,7 +233,7 @@ export default function SuppliersPage() {
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, email, phone..."
+                  placeholder={t("Search by name, email, phone...")}
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -236,12 +248,18 @@ export default function SuppliersPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
               >
                 <Plus className="h-4 w-4" />
-                Add Supplier
+                {t("Add Supplier")}
               </button>
             </div>
           </div>
 
           {/* Stats Cards */}
+          {isLoading ? (
+            <StatCardsSkeleton
+              count={3}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            />
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-gray-200 bg-white p-5">
               <div className="flex items-center gap-3">
@@ -250,7 +268,7 @@ export default function SuppliersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Total Suppliers
+                    {t("Total Suppliers")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {totalCount}
@@ -266,7 +284,7 @@ export default function SuppliersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Active Suppliers
+                    {t("Active Suppliers")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {suppliersData?.stats?.active || 0}
@@ -281,7 +299,7 @@ export default function SuppliersPage() {
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Inactive Suppliers
+                    {t("Inactive Suppliers")}
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
                     {suppliersData?.stats?.inactive || 0}
@@ -290,51 +308,79 @@ export default function SuppliersPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Suppliers Table */}
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-20 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
-              </div>
-            ) : suppliers.length === 0 ? (
-              <div className="p-12 text-center">
-                <Building2 className="mx-auto h-12 w-12 text-slate-300" />
-                <h3 className="mt-4 text-lg font-semibold text-slate-900">
-                  {search ? "No matching suppliers found" : "No suppliers yet"}
-                </h3>
-                <p className="mt-2 text-sm text-slate-500">
-                  {search
-                    ? "Try adjusting your search term."
-                    : "Click the 'Add Supplier' button to create your first supplier."}
-                </p>
-              </div>
-            ) : (
               <>
-                {/* Desktop Table View */}
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="min-w-full">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Supplier
+                          {t("Supplier")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Contact Info
+                          {t("Contact Info")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Contact Person
+                          {t("Contact Person")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Tax Number
+                          {t("Tax Number")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Actions
+                          {t("Actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={6} cols={5} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 lg:hidden">
+                  <ListSkeleton rows={4} />
+                </div>
+              </>
+            ) : suppliers.length === 0 ? (
+              <div className="p-12 text-center">
+                <Building2 className="mx-auto h-12 w-12 text-slate-300" />
+                <h3 className="mt-4 text-lg font-semibold text-slate-900">
+                  {search ? t("No matching suppliers found") : t("No suppliers yet")}
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  {search
+                    ? t("Try adjusting your search term.")
+                    : t("Click the 'Add Supplier' button to create your first supplier.")}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table View */}
+                <div
+                  className={`hidden overflow-x-auto transition-opacity lg:block ${
+                    isFetching ? "pointer-events-none opacity-60" : ""
+                  }`}
+                >
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Supplier")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Contact Info")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Contact Person")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Tax Number")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Actions")}
                         </th>
                       </tr>
                     </thead>
@@ -417,14 +463,14 @@ export default function SuppliersPage() {
                                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                               >
                                 <Edit className="h-3.5 w-3.5" />
-                                Edit
+                                {t("Edit")}
                               </button>
                               <button
                                 onClick={() => handleDelete(supplier)}
                                 className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
-                                Delete
+                                {t("Delete")}
                               </button>
                             </div>
                           </td>
@@ -435,7 +481,11 @@ export default function SuppliersPage() {
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="grid gap-4 p-4 lg:hidden">
+                <div
+                  className={`grid gap-4 p-4 transition-opacity lg:hidden ${
+                    isFetching ? "pointer-events-none opacity-60" : ""
+                  }`}
+                >
                   {suppliers.map((supplier) => (
                     <div
                       key={supplier.id}
@@ -519,9 +569,9 @@ export default function SuppliersPage() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
                     <div className="text-sm text-slate-500">
-                      Showing {(page - 1) * limit + 1} to{" "}
-                      {Math.min(page * limit, totalCount)} of {totalCount}{" "}
-                      suppliers
+                      {t("Showing")} {(page - 1) * limit + 1} {t("to")}{" "}
+                      {Math.min(page * limit, totalCount)} {t("of")} {totalCount}{" "}
+                      {t("suppliers")}
                     </div>
                     <div className="flex gap-2">
                       <button

@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useSuppliers";
 import {
   FileText,
+  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -18,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useLang } from "@/lib/i18n";
 
 export const SupplierModal = ({
   selectedSupplier,
@@ -28,6 +30,7 @@ export const SupplierModal = ({
   closeModal: () => void;
   isEditMode?: boolean;
 }) => {
+  const { t } = useLang();
   const [formData, setFormData] = useState<CreateSupplier>({
     supplier_name: "",
     email: "",
@@ -67,21 +70,21 @@ export const SupplierModal = ({
 
   const handleCreateSubmit = async () => {
     if (!formData.supplier_name?.trim()) {
-      toast.error("Supplier name is required");
+      toast.error(t("Supplier name is required"));
       return;
     }
     try {
       await createSupplier.mutateAsync(formData);
       closeModal();
     } catch (error) {
-      toast.error("Failed to create supplier");
+      toast.error(t("Failed to create supplier"));
       console.error(error);
     }
   };
 
   const handleEditSubmit = async () => {
     if (!isEditMode || !formData.supplier_name?.trim()) {
-      toast.error("Supplier name is required");
+      toast.error(t("Supplier name is required"));
       return;
     }
 
@@ -94,7 +97,7 @@ export const SupplierModal = ({
       await updateSupplier.mutateAsync(updateData);
       closeModal();
     } catch (error) {
-      toast.error("Failed to update supplier");
+      toast.error(t("Failed to update supplier"));
       console.error(error);
     }
   };
@@ -124,7 +127,7 @@ export const SupplierModal = ({
               <Users className="h-5 w-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-slate-900">
-              {isEditMode ? "Edit Supplier" : "Add New Supplier"}
+              {isEditMode ? t("Edit Supplier") : t("Add New Supplier")}
             </h2>
           </div>
           <button
@@ -138,7 +141,7 @@ export const SupplierModal = ({
         <div className="space-y-4 p-6">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Supplier Name *
+              {t("Supplier Name")} *
             </label>
             <input
               type="text"
@@ -146,14 +149,14 @@ export const SupplierModal = ({
               value={formData.supplier_name}
               onChange={handleChange}
               className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              placeholder="Enter supplier name"
+              placeholder={t("Enter supplier name")}
               required
             />
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Contact Person
+              {t("Contact Person")}
             </label>
             <div className="relative">
               <UserCircle className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -163,7 +166,7 @@ export const SupplierModal = ({
                 value={formData.contact_person || ""}
                 onChange={handleChange}
                 className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                placeholder="Person to contact"
+                placeholder={t("Person to contact")}
               />
             </div>
           </div>
@@ -171,7 +174,7 @@ export const SupplierModal = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Email
+                {t("Email")}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -188,7 +191,7 @@ export const SupplierModal = ({
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Phone
+                {t("Phone")}
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -206,7 +209,7 @@ export const SupplierModal = ({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Address
+              {t("Address")}
             </label>
             <div className="relative">
               <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
@@ -216,14 +219,14 @@ export const SupplierModal = ({
                 onChange={handleChange}
                 rows={2}
                 className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                placeholder="Full address"
+                placeholder={t("Full address")}
               />
             </div>
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Tax Number / GST
+              {t("Tax Number / GST")}
             </label>
             <div className="relative">
               <FileText className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -233,14 +236,14 @@ export const SupplierModal = ({
                 value={formData.tax_number || ""}
                 onChange={handleChange}
                 className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                placeholder="GST/VAT number"
+                placeholder={t("GST/VAT number")}
               />
             </div>
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Notes
+              {t("Notes")}
             </label>
             <textarea
               name="notes"
@@ -248,7 +251,7 @@ export const SupplierModal = ({
               onChange={handleChange}
               rows={3}
               className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-              placeholder="Additional notes about the supplier..."
+              placeholder={t("Additional notes about the supplier...")}
             />
           </div>
         </div>
@@ -257,17 +260,19 @@ export const SupplierModal = ({
           <button
             type="button"
             onClick={closeModal}
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            disabled={isPending}
+            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             type="button"
             onClick={isEditMode ? handleEditSubmit : handleCreateSubmit}
             disabled={isPending || !formData.supplier_name?.trim()}
-            className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isPending ? "Saving..." : isEditMode ? "Update" : "Create"}
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isPending ? t("Saving...") : isEditMode ? t("Update") : t("Create")}
           </button>
         </div>
       </div>

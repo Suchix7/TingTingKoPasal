@@ -28,6 +28,12 @@ import {
   useUpdateExpense,
   useDeleteExpense,
 } from "@/hooks/useExpenses";
+import { useLang } from "@/lib/i18n";
+import {
+  Skeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import ExpenseDetailsModal from "@/components/expenses/ExpenseDetailsModal";
 import ExpenseFormModal from "@/components/expenses/ExpenseFormModal";
@@ -35,6 +41,7 @@ import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
 import { CATEGORIES } from "@/components/expenses/ExpenseFormModal";
 
+import Tn from "@/components/layout/Tn";
 const LIMIT = 20;
 
 const money = (value?: number | null) =>
@@ -100,11 +107,12 @@ function StatCard({
   subtitle?: string;
   trend?: "up" | "down";
 }) {
+  const { t } = useLang();
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-sm font-medium text-gray-500">{t(title)}</p>
           <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
           {subtitle && <p className="mt-1 text-xs text-gray-500">{subtitle}</p>}
         </div>
@@ -125,6 +133,7 @@ function StatCard({
 }
 
 export default function ExpensesPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -172,10 +181,10 @@ export default function ExpensesPage() {
   const handleCreateExpense = async (expenseData: any) => {
     try {
       await createExpense.mutateAsync(expenseData);
-      toast.success("Expense created successfully.");
+      toast.success(t("Expense created successfully."));
       setIsCreateModalOpen(false);
     } catch (error) {
-      toast.error("Failed to create expense.");
+      toast.error(t("Failed to create expense."));
     }
   };
 
@@ -186,10 +195,10 @@ export default function ExpensesPage() {
         id: editExpense.id,
         ...expenseData,
       });
-      toast.success("Expense updated successfully.");
+      toast.success(t("Expense updated successfully."));
       setEditExpense(null);
     } catch (error) {
-      toast.error("Failed to update expense.");
+      toast.error(t("Failed to update expense."));
     }
   };
 
@@ -198,10 +207,10 @@ export default function ExpensesPage() {
 
     try {
       await deleteExpense.mutateAsync(deleteConfirm.id);
-      toast.success("Expense deleted successfully.");
+      toast.success(t("Expense deleted successfully."));
       setDeleteConfirm(null);
     } catch {
-      toast.error("Failed to delete expense.");
+      toast.error(t("Failed to delete expense."));
     }
   };
 
@@ -241,9 +250,9 @@ export default function ExpensesPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("Expenses")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Track and manage your business expenses.
+            {t("Track and manage your business expenses.")}
           </p>
         </div>
         <button
@@ -251,29 +260,36 @@ export default function ExpensesPage() {
           className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
         >
           <CreditCard size={18} />
-          Add Expense
+          {t("Add Expense")}
         </button>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Expenses"
-          value={money(totalAmount)}
-          icon={DollarSign}
-          trend="up"
+      {isLoading ? (
+        <StatCardsSkeleton
+          count={4}
+          className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
         />
-        <StatCard
-          title="Average Expense"
-          value={money(averageExpense)}
-          icon={TrendingDown}
-        />
-        <StatCard
-          title="Total Transactions"
-          value={totalCount}
-          icon={Receipt}
-        />
-        <StatCard title="Categories" value={categories.length} icon={Package} />
-      </div>
+      ) : (
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Expenses"
+            value={money(totalAmount)}
+            icon={DollarSign}
+            trend="up"
+          />
+          <StatCard
+            title="Average Expense"
+            value={money(averageExpense)}
+            icon={TrendingDown}
+          />
+          <StatCard
+            title="Total Transactions"
+            value={totalCount}
+            icon={Receipt}
+          />
+          <StatCard title="Categories" value={categories.length} icon={Package} />
+        </div>
+      )}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_180px_180px_180px_180px]">
@@ -285,7 +301,7 @@ export default function ExpensesPage() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title or notes..."
+              placeholder={t("Search by title or notes...")}
               className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
             />
           </div>
@@ -295,10 +311,10 @@ export default function ExpensesPage() {
             onChange={(event) => setCategory(event.target.value)}
             className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
           >
-            <option value="">All Categories</option>
+            <option value="">{t("All Categories")}</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>
-                {cat}
+                {t(cat)}
               </option>
             ))}
           </select>
@@ -308,11 +324,11 @@ export default function ExpensesPage() {
             onChange={(event) => setPaymentMethodId(event.target.value)}
             className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
           >
-            <option value="">All Payment Methods</option>
-            <option value="1">Cash</option>
-            <option value="2">Bank Transfer</option>
-            <option value="3">Credit Card</option>
-            <option value="4">Mobile Payment</option>
+            <option value="">{t("All Payment Methods")}</option>
+            <option value="1">{t("Cash")}</option>
+            <option value="2">{t("Bank Transfer")}</option>
+            <option value="3">{t("Credit Card")}</option>
+            <option value="4">{t("Mobile Payment")}</option>
           </select>
 
           <div className="relative">
@@ -325,7 +341,7 @@ export default function ExpensesPage() {
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
               className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-gray-400"
-              placeholder="Start Date"
+              placeholder={t("Start Date")}
             />
           </div>
 
@@ -339,7 +355,7 @@ export default function ExpensesPage() {
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
               className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-gray-400"
-              placeholder="End Date"
+              placeholder={t("End Date")}
             />
           </div>
         </div>
@@ -347,7 +363,7 @@ export default function ExpensesPage() {
         {(startDate || endDate) && (
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-gray-500">
-              Filtered by date range
+              {t("Filtered by date range")}
             </span>
             <button
               onClick={() => {
@@ -356,7 +372,7 @@ export default function ExpensesPage() {
               }}
               className="text-xs text-red-600 hover:text-red-700"
             >
-              Clear dates
+              {t("Clear dates")}
             </button>
           </div>
         )}
@@ -365,10 +381,15 @@ export default function ExpensesPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h2 className="font-bold text-gray-900">All Expenses</h2>
-            <p className="text-sm text-gray-500">
-              {totalCount} total records · {money(totalAmount)} total
-            </p>
+            <h2 className="font-bold text-gray-900">{t("All Expenses")}</h2>
+            {isLoading ? (
+              <Skeleton className="mt-1 h-4 w-48" />
+            ) : (
+              <p className="text-sm text-gray-500">
+                {totalCount} {t("total records")} · {money(totalAmount)}{" "}
+                {t("total")}
+              </p>
+            )}
           </div>
           {isFetching ? (
             <Loader2 className="animate-spin text-gray-400" size={20} />
@@ -379,27 +400,23 @@ export default function ExpensesPage() {
           <table className="w-full min-w-[1200px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-5 py-3">Date</th>
-                <th className="px-5 py-3">Title & Category</th>
-                <th className="px-5 py-3">Amount</th>
-                <th className="px-5 py-3">Payment Method</th>
-                <th className="px-5 py-3">Notes</th>
-                <th className="px-5 py-3">Created</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="px-5 py-3">{t("Date")}</th>
+                <th className="px-5 py-3">{t("Title & Category")}</th>
+                <th className="px-5 py-3">{t("Amount")}</th>
+                <th className="px-5 py-3">{t("Payment Method")}</th>
+                <th className="px-5 py-3">{t("Notes")}</th>
+                <th className="px-5 py-3">{t("Created")}</th>
+                <th className="px-5 py-3 text-right">{t("Actions")}</th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody
+              className={`divide-y divide-gray-100 transition-opacity ${
+                isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-5 py-16 text-center text-gray-500"
-                  >
-                    <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
-                    Loading expenses...
-                  </td>
-                </tr>
+                <TableRowsSkeleton rows={8} cols={7} />
               ) : !expenses.length ? (
                 <tr>
                   <td
@@ -408,12 +425,12 @@ export default function ExpensesPage() {
                   >
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle size={24} className="text-gray-400" />
-                      <p>No expenses found.</p>
+                      <p>{t("No expenses found.")}</p>
                       <button
                         onClick={() => setIsCreateModalOpen(true)}
                         className="text-blue-600 hover:text-blue-700 text-sm"
                       >
-                        Add your first expense
+                        {t("Add your first expense")}
                       </button>
                     </div>
                   </td>
@@ -431,7 +448,7 @@ export default function ExpensesPage() {
                             {dateOnly(expense.expense_date)}
                           </p>
                           <p className="text-xs text-gray-500">
-                            ID #{expense.id}
+                            {t("ID")} #{expense.id}
                           </p>
                         </div>
                       </div>
@@ -448,7 +465,7 @@ export default function ExpensesPage() {
                             categoryColors.Other
                           }
                         >
-                          {expense.category}
+                          {t(expense.category)}
                         </StatusBadge>
                       </div>
                     </td>
@@ -464,12 +481,12 @@ export default function ExpensesPage() {
                         <div className="flex items-center gap-2">
                           <CreditCard size={14} className="text-gray-400" />
                           <span className="text-sm text-gray-700">
-                            {expense.payment_method}
+                            <Tn v={expense.payment_method} />
                           </span>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400">
-                          Not specified
+                          {t("Not specified")}
                         </span>
                       )}
                     </td>
@@ -477,7 +494,7 @@ export default function ExpensesPage() {
                     <td className="px-5 py-4">
                       <p className="max-w-[200px] truncate text-sm text-gray-600">
                         {expense.notes || (
-                          <span className="text-gray-400">No notes</span>
+                          <span className="text-gray-400">{t("No notes")}</span>
                         )}
                       </p>
                     </td>
@@ -491,24 +508,24 @@ export default function ExpensesPage() {
                         <button
                           onClick={() => setEditExpense(expense)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-slate-50 hover:text-slate-600"
-                          aria-label="Edit expense"
-                          title="Edit expense"
+                          aria-label={t("Edit expense")}
+                          title={t("Edit expense")}
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => setSelectedExpenseId(expense.id)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600"
-                          aria-label="View expense details"
-                          title="View details"
+                          aria-label={t("View expense details")}
+                          title={t("View details")}
                         >
                           <Eye size={18} />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(expense)}
                           className="rounded-xl p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                          aria-label="Delete expense"
-                          title="Delete expense"
+                          aria-label={t("Delete expense")}
+                          title={t("Delete expense")}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -567,7 +584,7 @@ export default function ExpensesPage() {
       {deleteConfirm && (
         <DeleteConfirmModal
           invoiceNo={deleteConfirm.title}
-          label="expense"
+          label={t("expense")}
           isPending={deleteExpense.isPending}
           onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm(null)}

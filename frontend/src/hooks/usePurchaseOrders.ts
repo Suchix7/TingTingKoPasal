@@ -1,5 +1,6 @@
 // hooks/usePurchaseOrders.ts
 
+import { tr } from "@/lib/i18n";
 import {
   useQuery,
   keepPreviousData,
@@ -116,7 +117,7 @@ const fetchPurchaseOrders = async (
     );
     return res.data;
   } catch (error) {
-    throw new Error(getErrorMessage(error, "Failed to fetch purchase orders"));
+    throw new Error(getErrorMessage(error, tr("Failed to fetch purchase orders")));
   }
 };
 
@@ -129,7 +130,7 @@ const fetchPurchaseOrderById = async (
     );
     return res.data;
   } catch (error) {
-    throw new Error(getErrorMessage(error, "Failed to fetch purchase order"));
+    throw new Error(getErrorMessage(error, tr("Failed to fetch purchase order")));
   }
 };
 
@@ -172,11 +173,11 @@ export const useCreatePurchaseOrder = () => {
       queryClient.invalidateQueries({ queryKey: ["payment-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["paymentMethods"] });
       queryClient.invalidateQueries({ queryKey: ["eoq"] });
-      toast.success("Purchase order created successfully.");
+      toast.success(tr("Purchase order created successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to create purchase order."));
+      toast.error(getErrorMessage(error, tr("Failed to create purchase order.")));
     },
   });
 };
@@ -209,12 +210,12 @@ export const useUpdatePurchaseOrderStatus = () => {
       queryClient.invalidateQueries({ queryKey: ["eoq"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      toast.success("Purchase order status updated successfully.");
+      toast.success(tr("Purchase order status updated successfully."));
     },
 
     onError: (error: unknown) => {
       toast.error(
-        getErrorMessage(error, "Failed to update purchase order status."),
+        getErrorMessage(error, tr("Failed to update purchase order status.")),
       );
     },
   });
@@ -240,11 +241,11 @@ export const useDeletePurchaseOrder = () => {
       queryClient.invalidateQueries({ queryKey: ["payment-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["paymentMethods"] });
       queryClient.invalidateQueries({ queryKey: ["eoq"] });
-      toast.success("Purchase order deleted successfully.");
+      toast.success(tr("Purchase order deleted successfully."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to delete purchase order."));
+      toast.error(getErrorMessage(error, tr("Failed to delete purchase order.")));
     },
   });
 };

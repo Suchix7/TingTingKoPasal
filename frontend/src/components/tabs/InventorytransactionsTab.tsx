@@ -1,6 +1,11 @@
 // app/inventory-transactions/page.tsx
 "use client";
 
+import {
+  ListSkeleton,
+  StatCardsSkeleton,
+  TableRowsSkeleton,
+} from "@/components/layout/Skeleton";
 import { useMemo, useState } from "react";
 import {
   Activity,
@@ -28,6 +33,14 @@ import { useDebounced } from "@/hooks/useDebounced";
 import { format } from "date-fns";
 import Pagination from "@/components/layout/Pagination";
 import { dateTime } from "@/utils/nepaliTime";
+import Tn from "@/components/layout/Tn";
+import { useLang, tr } from "@/lib/i18n";
+
+const refLabel = (r?: string | null) => {
+  if (!r) return tr("N/A");
+  const k = tr(r);
+  return k !== r ? k : r.replaceAll("_", " ");
+};
 
 const TransactionDetailsModal = ({
   transaction,
@@ -36,6 +49,7 @@ const TransactionDetailsModal = ({
   transaction: InventoryTransaction | null;
   onClose: () => void;
 }) => {
+  const { t } = useLang();
   if (!transaction) return null;
 
   return (
@@ -52,7 +66,7 @@ const TransactionDetailsModal = ({
               <Activity className="h-5 w-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-slate-900">
-              Transaction Details
+              {t("Transaction Details")}
             </h2>
           </div>
           <button
@@ -67,7 +81,7 @@ const TransactionDetailsModal = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Transaction ID
+                {t("Transaction ID")}
               </label>
               <p className="mt-1 font-mono text-sm text-slate-900">
                 #{transaction.id}
@@ -75,7 +89,7 @@ const TransactionDetailsModal = ({
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Date & Time
+                {t("Date & Time")}
               </label>
               <p className="mt-1 text-sm text-slate-900">
                 {format(dateTime(transaction.created_at), "PPP 'at' h:mm a")}
@@ -86,30 +100,33 @@ const TransactionDetailsModal = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Product
+                {t("Product")}
               </label>
               <p className="mt-1 font-medium text-slate-900">
-                {transaction.product_name ||
-                  `Product #${transaction.product_id}`}
+                {transaction.product_name ? (
+<Tn v={transaction.product_name} />
+) : (
+`${t("Product")} #${transaction.product_id}`
+)}
               </p>
               {transaction.unit && (
                 <p className="text-xs text-slate-500">
-                  Unit: {transaction.unit}
+                  {t("Unit")}: {transaction.unit}
                 </p>
               )}
             </div>
             <div>
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Reference Type
+                {t("Reference Type")}
               </label>
               <div className="mt-1">
                 <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                  {transaction.reference_type?.replaceAll("_", " ") || "N/A"}
+                  {refLabel(transaction.reference_type)}
                 </span>
               </div>
               {transaction.reference_id && (
                 <p className="mt-1 text-xs text-slate-500">
-                  Reference ID: #{transaction.reference_id}
+                  {t("Reference ID")}: #{transaction.reference_id}
                 </p>
               )}
             </div>
@@ -120,7 +137,7 @@ const TransactionDetailsModal = ({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                  Batch ID
+                  {t("Batch ID")}
                 </label>
                 <p className="mt-1 font-mono text-sm text-slate-900">
                   #{transaction.batch_id}
@@ -129,7 +146,7 @@ const TransactionDetailsModal = ({
               {transaction.batch_number && (
                 <div>
                   <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    Batch Number
+                    {t("Batch Number")}
                   </label>
                   <p className="mt-1 text-sm text-slate-900">
                     {transaction.batch_number}
@@ -142,7 +159,7 @@ const TransactionDetailsModal = ({
           <div className="grid gap-4 grid-cols-1">
             <div className="rounded-xl bg-slate-50 p-3">
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Quantity
+                {t("Quantity")}
               </label>
               <p
                 className={`mt-1 text-2xl font-bold ${
@@ -169,7 +186,7 @@ const TransactionDetailsModal = ({
             onClick={onClose}
             className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            Close
+            {t("Close")}
           </button>
         </div>
       </div>
@@ -245,6 +262,7 @@ const getTransactionTypeBadge = (type: InventoryTransactionType) => {
 };
 
 export default function InventoryTransactionsPage() {
+  const { t } = useLang();
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [search, setSearch] = useState("");
@@ -262,7 +280,7 @@ export default function InventoryTransactionsPage() {
 
   const debouncedSearch = useDebounced(search, 300);
 
-  const { data, isLoading, error } = useInventoryTransactions({
+  const { data, isLoading, isFetching, error } = useInventoryTransactions({
     page,
     limit,
     search: debouncedSearch,
@@ -325,10 +343,10 @@ export default function InventoryTransactionsPage() {
               <AlertCircle className="h-10 w-10 text-rose-400" />
             </div>
             <h3 className="mt-6 text-xl font-semibold text-slate-900">
-              Failed to Load Transactions
+              {t("Failed to Load Transactions")}
             </h3>
             <p className="mt-3 text-sm text-slate-500">
-              Please check your connection and try again.
+              {t("Please check your connection and try again.")}
             </p>
           </div>
         </div>
@@ -349,10 +367,10 @@ export default function InventoryTransactionsPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                    Inventory Transactions
+                    {t("Inventory Transactions")}
                   </h1>
                   <p className="mt-1 text-sm text-slate-500">
-                    Track all stock movements and inventory changes
+                    {t("Track all stock movements and inventory changes")}
                   </p>
                 </div>
               </div>
@@ -362,7 +380,7 @@ export default function InventoryTransactionsPage() {
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by product..."
+                    placeholder={t("Search by product...")}
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
@@ -380,16 +398,16 @@ export default function InventoryTransactionsPage() {
                   }`}
                 >
                   <Filter className="h-4 w-4" />
-                  Filters
+                  {t("Filters")}
                   {hasActiveFilters() && (
                     <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                      Active
+                      {t("Active")}
                     </span>
                   )}
                 </button>
                 <button className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                   <Download className="h-4 w-4" />
-                  Export
+                  {t("Export")}
                 </button>
               </div>
             </div>
@@ -400,7 +418,7 @@ export default function InventoryTransactionsPage() {
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Stock Movement
+                      {t("Stock Movement")}
                     </label>
                     <select
                       value={filters.transaction_type || ""}
@@ -413,15 +431,15 @@ export default function InventoryTransactionsPage() {
                       }
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
-                      <option value="">All Movements</option>
-                      <option value="IN">Stock In</option>
-                      <option value="OUT">Stock Out</option>
-                      <option value="ADJUSTMENT">Adjustment</option>
+                      <option value="">{t("All Movements")}</option>
+                      <option value="IN">{t("Stock In")}</option>
+                      <option value="OUT">{t("Stock Out")}</option>
+                      <option value="ADJUSTMENT">{t("Adjustment")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Reference Type
+                      {t("Reference Type")}
                     </label>
                     <select
                       value={filters.reference_type || ""}
@@ -434,30 +452,30 @@ export default function InventoryTransactionsPage() {
                       }
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
-                      <option value="">All References</option>
-                      <option value="INITIAL_STOCK">Initial Stock</option>
-                      <option value="SALE">Sale</option>
-                      <option value="SALE_DELETE">Sale Delete</option>
-                      <option value="SALE_CANCELLED">Sale Cancelled</option>
-                      <option value="SALE_RETURN">Sale Return</option>
+                      <option value="">{t("All References")}</option>
+                      <option value="INITIAL_STOCK">{t("Initial Stock")}</option>
+                      <option value="SALE">{t("Sale")}</option>
+                      <option value="SALE_DELETE">{t("Sale Delete")}</option>
+                      <option value="SALE_CANCELLED">{t("Sale Cancelled")}</option>
+                      <option value="SALE_RETURN">{t("Sale Return")}</option>
                       <option value="SALE_UPDATE_RESTORE">
-                        Sale Update Restore
+                        {t("Sale Update Restore")}
                       </option>
-                      <option value="RESTOCK">Restock</option>
-                      <option value="PURCHASE_ORDER">Purchase Order</option>
-                      <option value="RETURN">Return</option>
-                      <option value="ADJUSTMENT">Adjustment</option>
-                      <option value="DEDUCT">Deduct</option>
-                      <option value="MANUAL">Manual</option>
+                      <option value="RESTOCK">{t("Restock")}</option>
+                      <option value="PURCHASE_ORDER">{t("Purchase Order")}</option>
+                      <option value="RETURN">{t("Return")}</option>
+                      <option value="ADJUSTMENT">{t("Adjustment")}</option>
+                      <option value="DEDUCT">{t("Deduct")}</option>
+                      <option value="MANUAL">{t("Manual")}</option>
                     </select>
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Batch ID
+                      {t("Batch ID")}
                     </label>
                     <input
                       type="number"
-                      placeholder="Enter batch ID"
+                      placeholder={t("Enter batch ID")}
                       value={filters.batch_id || ""}
                       onChange={(e) =>
                         handleFilterChange(
@@ -470,7 +488,7 @@ export default function InventoryTransactionsPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      From Date
+                      {t("From Date")}
                     </label>
                     <input
                       type="date"
@@ -483,7 +501,7 @@ export default function InventoryTransactionsPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      To Date
+                      {t("To Date")}
                     </label>
                     <input
                       type="date"
@@ -500,7 +518,7 @@ export default function InventoryTransactionsPage() {
                     onClick={clearFilters}
                     className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                   >
-                    Clear Filters
+                    {t("Clear Filters")}
                   </button>
                 </div>
               </div>
@@ -508,56 +526,93 @@ export default function InventoryTransactionsPage() {
           </div>
 
           {/* Stats Cards */}
+          {isLoading ? (
+            <StatCardsSkeleton
+              count={4}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            />
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatsCard
-              title="Total Inflows"
+              title={t("Total Inflows")}
               value={data?.stats?.total_inflows || 0}
               icon={TrendingUp}
               color="border-emerald-200"
             />
             <StatsCard
-              title="Total Outflows"
+              title={t("Total Outflows")}
               value={data?.stats?.total_outflows || 0}
               icon={TrendingDown}
               color="border-rose-200"
             />
             <StatsCard
-              title="Net Change"
+              title={t("Net Change")}
               value={data?.stats?.net_change || 0}
               icon={Activity}
               color="border-blue-200"
             />
             <StatsCard
-              title="Transactions"
+              title={t("Transactions")}
               value={data?.stats?.transactions || 0}
               icon={Calendar}
               color="border-purple-200"
             />
           </div>
+          )}
 
           {/* Transactions Table */}
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+          <div
+            className={`overflow-hidden rounded-3xl border border-slate-200 bg-white transition-opacity ${
+              isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
             {isLoading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-16 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
-              </div>
+              <>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Date & Time")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Product")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Batch")}
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Type")}
+                        </th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Quantity")}
+                        </th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("Actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <TableRowsSkeleton rows={6} cols={6} />
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 lg:hidden">
+                  <ListSkeleton rows={4} />
+                </div>
+              </>
             ) : transactions.length === 0 ? (
               <div className="p-12 text-center">
                 <Package className="mx-auto h-12 w-12 text-slate-300" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">
                   {search || hasActiveFilters()
-                    ? "No matching transactions found"
-                    : "No transactions yet"}
+                    ? t("No matching transactions found")
+                    : t("No transactions yet")}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   {search || hasActiveFilters()
-                    ? "Try adjusting your search or filters."
-                    : "Inventory transactions will appear here once stock movements occur."}
+                    ? t("Try adjusting your search or filters.")
+                    : t("Inventory transactions will appear here once stock movements occur.")}
                 </p>
               </div>
             ) : (
@@ -568,22 +623,22 @@ export default function InventoryTransactionsPage() {
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50">
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Date & Time
+                          {t("Date & Time")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Product
+                          {t("Product")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Batch
+                          {t("Batch")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Type
+                          {t("Type")}
                         </th>
                         <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Quantity
+                          {t("Quantity")}
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          Actions
+                          {t("Actions")}
                         </th>
                       </tr>
                     </thead>
@@ -615,12 +670,15 @@ export default function InventoryTransactionsPage() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="font-medium text-slate-900">
-                                {transaction.product_name ||
-                                  `Product #${transaction.product_id}`}
+                                {transaction.product_name ? (
+<Tn v={transaction.product_name} />
+) : (
+`${t("Product")} #${transaction.product_id}`
+)}
                               </div>
                               <div className="text-xs text-slate-400">
                                 {transaction.unit &&
-                                  ` • Unit: ${transaction.unit}`}
+                                  ` • ${t("Unit")}: ${transaction.unit}`}
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -628,15 +686,15 @@ export default function InventoryTransactionsPage() {
                                 <div>
                                   <div className="text-sm text-slate-900">
                                     {transaction.batch_number ||
-                                      `Batch #${transaction.batch_id}`}
+                                      `${t("Batch")} #${transaction.batch_id}`}
                                   </div>
                                   <div className="text-xs text-slate-400">
-                                    ID: #{transaction.batch_id}
+                                    {t("ID")}: #{transaction.batch_id}
                                   </div>
                                 </div>
                               ) : (
                                 <span className="text-xs text-slate-400">
-                                  No batch
+                                  {t("No batch")}
                                 </span>
                               )}
                             </td>
@@ -646,13 +704,10 @@ export default function InventoryTransactionsPage() {
                                   className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${typeBadge.className}`}
                                 >
                                   <TypeIcon className="h-3 w-3" />
-                                  {typeBadge.label}
+                                  {t(typeBadge.label)}
                                 </span>
                                 <span className="text-xs text-slate-500">
-                                  {transaction.reference_type?.replaceAll(
-                                    "_",
-                                    " ",
-                                  ) || "N/A"}
+                                  {refLabel(transaction.reference_type)}
                                 </span>
                               </div>
                             </td>
@@ -682,7 +737,7 @@ export default function InventoryTransactionsPage() {
                                 className="inline-flex items-center cursor-pointer gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
                               >
                                 <Eye className="h-3.5 w-3.5" />
-                                View
+                                {t("View")}
                               </button>
                             </td>
                           </tr>
@@ -715,8 +770,11 @@ export default function InventoryTransactionsPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold text-slate-900">
-                                {transaction.product_name ||
-                                  `Product #${transaction.product_id}`}
+                                {transaction.product_name ? (
+<Tn v={transaction.product_name} />
+) : (
+`${t("Product")} #${transaction.product_id}`
+)}
                               </h3>
                             </div>
                             <p className="mt-1 text-xs text-slate-400">
@@ -729,7 +787,7 @@ export default function InventoryTransactionsPage() {
                               <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600">
                                 <Boxes className="h-3 w-3" />
                                 {transaction.batch_number ||
-                                  `Batch #${transaction.batch_id}`}
+                                  `${t("Batch")} #${transaction.batch_id}`}
                               </div>
                             )}
                           </div>
@@ -737,19 +795,19 @@ export default function InventoryTransactionsPage() {
                             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${typeBadge.className}`}
                           >
                             <TypeIcon className="h-3 w-3" />
-                            {typeBadge.label}
+                            {t(typeBadge.label)}
                           </span>
                         </div>
 
                         <div className="mt-3 flex items-center gap-2">
                           <span className="text-xs text-slate-500">
-                            {transaction.reference_type?.replaceAll("_", " ")}
+                            {transaction.reference_type ? refLabel(transaction.reference_type) : ""}
                           </span>
                         </div>
 
                         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
                           <div>
-                            <p className="text-xs text-slate-400">Quantity</p>
+                            <p className="text-xs text-slate-400">{t("Quantity")}</p>
                             <p
                               className={`text-lg font-bold ${
                                 transaction.transaction_type === "IN"
@@ -771,7 +829,7 @@ export default function InventoryTransactionsPage() {
                             onClick={() => setSelectedTransaction(transaction)}
                             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                           >
-                            Details
+                            {t("Details")}
                           </button>
                         </div>
                       </div>

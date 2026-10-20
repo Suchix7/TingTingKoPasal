@@ -1,3 +1,4 @@
+import { tr } from "@/lib/i18n";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 import { getErrorMessage } from "./useInventory";
@@ -205,7 +206,7 @@ const fetchABCClassification = async ({
     return res.data;
   } catch (error) {
     throw new Error(
-      getErrorMessage(error, "Failed to fetch ABC classification"),
+      getErrorMessage(error, tr("Failed to fetch ABC classification")),
     );
   }
 };
