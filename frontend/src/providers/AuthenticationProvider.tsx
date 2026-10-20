@@ -25,7 +25,7 @@ export default function AuthenticationProvider({
 
         if (!isAuthenticated) {
           setIsAllowed(false);
-          router.replace("/auth");
+          router.replace("/admin/auth");
           return;
         }
 
@@ -33,7 +33,7 @@ export default function AuthenticationProvider({
       } catch (error) {
         console.error("Error checking authentication:", error);
         setIsAllowed(false);
-        router.replace("/auth");
+        router.replace("/admin/auth");
       } finally {
         setIsCheckingAuth(false);
       }

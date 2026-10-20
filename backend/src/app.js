@@ -29,6 +29,7 @@ import productBatchRouter from "./product-batches/route.js";
 import singleABCRouter from "./single-abc/route.js";
 import storeRouter from "./store-info/route.js";
 import activityLogRouter from "./activity-log/route.js";
+import catalogRouter from "./catalog/route.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -77,6 +78,9 @@ app.use(
   }),
 );
 app.use(express.json());
+
+// Public customer catalog: no login needed (read-only, no prices or names)
+app.use("/api/v1/catalog", catalogRouter);
 
 app.use("/api/v1", authRouter);
 app.use("/api/v1", requireAuth);

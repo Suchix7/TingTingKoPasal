@@ -419,14 +419,15 @@ export default function ProductModal({
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Cost Price
+                  Cost Price{" "}
+                  <span className="font-normal text-slate-400">(optional)</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Enter cost price"
-                  value={String(formData.cost_price)}
+                  placeholder="Optional"
+                  value={formData.cost_price ? String(formData.cost_price) : ""}
                   onChange={(e) =>
                     handleChange(
                       "cost_price",
@@ -447,14 +448,15 @@ export default function ProductModal({
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Sale Price
+                  Sale Price{" "}
+                  <span className="font-normal text-slate-400">(optional)</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Enter sale price"
-                  value={String(formData.sale_price)}
+                  placeholder="Optional"
+                  value={formData.sale_price ? String(formData.sale_price) : ""}
                   onChange={(e) =>
                     handleChange(
                       "sale_price",

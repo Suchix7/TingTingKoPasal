@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       });
       set({ authUser: res.data.user });
       toast.success("Welcome back!");
-      window.location.href = "/";
+      window.location.href = "/admin";
     } catch (error) {
       toast.error("Invalid passcode.");
     } finally {
@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await axiosInstance.post("/logout");
       set({ authUser: null });
       toast.success("Goodbye!");
-      window.location.href = "/auth";
+      window.location.href = "/admin/auth";
     } catch (error) {
       toast.error("Failed to logout.");
     }

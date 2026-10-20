@@ -38,8 +38,6 @@ export const createProduct = async (req, res) => {
     if (
       !product_name ||
       !category_id ||
-      cost_price === undefined ||
-      sale_price === undefined ||
       (!hasVariants && stock_quantity === undefined) ||
       !unit ||
       !status
@@ -50,8 +48,10 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const parsedCostPrice = Number(cost_price);
-    const parsedSalePrice = Number(sale_price);
+    // Prices are optional for now: a blank price is saved as 0
+    const blank = (v) => v === undefined || v === null || v === "";
+    const parsedCostPrice = blank(cost_price) ? 0 : Number(cost_price);
+    const parsedSalePrice = blank(sale_price) ? 0 : Number(sale_price);
     // With variants, stock lives on the variants, not on the product itself
     const parsedStockQuantity = hasVariants ? 0 : Number(stock_quantity);
 
