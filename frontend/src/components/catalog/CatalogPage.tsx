@@ -134,9 +134,11 @@ export default function CatalogPage() {
               <h1 className="truncate text-base font-semibold leading-tight tracking-tight text-gray-900 sm:text-lg">
                 {category ? (categoryName ?? "Items") : "Ting Ting ko pasal"}
               </h1>
-              <p className="truncate text-xs leading-tight text-gray-500">
-                {category ? "Ting Ting ko pasal" : "Mobile cases & accessories"}
-              </p>
+              {category && (
+                <p className="truncate text-xs leading-tight text-gray-500">
+                  Ting Ting ko pasal
+                </p>
+              )}
             </div>
           </div>
 
