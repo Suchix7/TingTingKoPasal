@@ -17,7 +17,7 @@ dotenv.config();
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
 const file = args.find((a) => !a.startsWith("--")) || "scripts/data/products.csv";
-const CATEGORY = "Mobile Case";
+const CATEGORY = "Mobile Cases";
 
 function parseCsv(text) {
   const rows = [];

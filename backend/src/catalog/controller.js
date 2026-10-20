@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 import Category from "../models/Category.js";
+import StoreInfo from "../models/StoreInfo.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
 
 // Public, read-only catalog for the customer site. It exposes the cover photo,
@@ -251,5 +252,23 @@ export const getCategories = async (_req, res) => {
   } catch (error) {
     console.error("Catalog categories error:", error);
     return res.status(500).json({ success: false, message: "Failed to load categories" });
+  }
+};
+
+// Shop name, location and phone for the customer site header
+export const getStore = async (_req, res) => {
+  try {
+    const store = await StoreInfo.findOne().select("storeName address phone").lean();
+    return res.json({
+      success: true,
+      data: {
+        name: store?.storeName || "",
+        address: store?.address || "",
+        phone: store?.phone || "",
+      },
+    });
+  } catch (error) {
+    console.error("Catalog store error:", error);
+    return res.status(500).json({ success: false, message: "Failed to load store" });
   }
 };

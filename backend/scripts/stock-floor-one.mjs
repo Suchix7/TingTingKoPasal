@@ -11,7 +11,7 @@ import Category from "../src/models/Category.js";
 dotenv.config();
 
 const apply = process.argv.includes("--apply");
-const CATEGORY = "Mobile Case";
+const CATEGORY = "Mobile Cases";
 
 await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI);
 

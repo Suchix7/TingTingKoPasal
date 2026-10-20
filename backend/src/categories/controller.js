@@ -5,6 +5,7 @@ import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 const toApiCategory = (doc) => ({
   id: doc._id.toString(),
   category_name: doc.categoryName,
+  category_name_zh: doc.categoryNameZh || null,
   description: doc.description,
   thumbnail_url: doc.thumbnailUrl || null,
   created_at: doc.createdAt,
@@ -13,7 +14,7 @@ const toApiCategory = (doc) => ({
 
 export const createCategory = async (req, res) => {
   try {
-    const { category_name, description } = req.body;
+    const { category_name, category_name_zh, description } = req.body;
 
     if (!category_name) {
       return res.status(400).json({
@@ -33,6 +34,7 @@ export const createCategory = async (req, res) => {
 
     const category = await Category.create({
       categoryName: category_name.trim(),
+      categoryNameZh: String(category_name_zh || "").trim(),
       description: description ? description.trim() : "",
     });
 
@@ -122,7 +124,7 @@ export const getCategoryById = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category_name, description } = req.body;
+    const { category_name, category_name_zh, description } = req.body;
 
     if (!category_name) {
       return res.status(400).json({
@@ -150,6 +152,9 @@ export const updateCategory = async (req, res) => {
     }
 
     existingCategory.categoryName = category_name.trim();
+    if (category_name_zh !== undefined) {
+      existingCategory.categoryNameZh = String(category_name_zh || "").trim();
+    }
     existingCategory.description = description !== undefined ? description.trim() : existingCategory.description;
     await existingCategory.save();
 

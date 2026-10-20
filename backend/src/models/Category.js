@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const categorySchema = new mongoose.Schema(
   {
     categoryName: { type: String, required: true, unique: true, trim: true },
+    categoryNameZh: { type: String, default: "", trim: true },
     description: { type: String, default: "" },
     // customer site: menu thumbnail, and position (lower first)
     thumbnailUrl: { type: String, default: "" },

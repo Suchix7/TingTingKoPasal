@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 const productSchema = new mongoose.Schema(
   {
     productName: { type: String, required: true, trim: true },
+    // shown instead of productName when the admin panel is in Chinese
+    productNameZh: { type: String, default: "", trim: true },
     sku: { type: String, required: true, unique: true, trim: true },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,

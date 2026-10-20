@@ -5,6 +5,7 @@ export function serializeProduct(doc) {
   return {
     id: String(obj._id),
     product_name: obj.productName,
+    product_name_zh: obj.productNameZh || null,
     sku: obj.sku,
     category_id: obj.categoryId ? String(obj.categoryId) : null,
     cost_price: obj.costPrice,

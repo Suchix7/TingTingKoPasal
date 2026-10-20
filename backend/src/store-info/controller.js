@@ -14,7 +14,7 @@ export const createStore = async (req, res) => {
   try {
     const { store_name, address, phone, pan_vat_number } = req.body;
 
-    if (!store_name || !address || !phone || !pan_vat_number) {
+    if (!store_name || !address || !phone) {
       return res.status(400).json({
         success: false,
         message: "Please provide all required fields",
@@ -24,14 +24,9 @@ export const createStore = async (req, res) => {
     const trimmedStoreName = store_name.trim();
     const trimmedAddress = address.trim();
     const trimmedPhone = phone.trim();
-    const trimmedPanVatNumber = pan_vat_number.trim();
+    const trimmedPanVatNumber = String(pan_vat_number || "").trim();
 
-    if (
-      !trimmedStoreName ||
-      !trimmedAddress ||
-      !trimmedPhone ||
-      !trimmedPanVatNumber
-    ) {
+    if (!trimmedStoreName || !trimmedAddress || !trimmedPhone) {
       return res.status(400).json({
         success: false,
         message: "All store fields are required",
@@ -146,13 +141,6 @@ export const updateStore = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Phone number is required",
-      });
-    }
-
-    if (!updatedPanVatNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "PAN/VAT number is required",
       });
     }
 

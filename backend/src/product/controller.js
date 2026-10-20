@@ -5,12 +5,14 @@ import InventoryTransaction from "../models/InventoryTransaction.js";
 import { generateProductBarcode } from "../utils/barcode.js";
 import { logActivity } from "../utils/activityLog.js";
 import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
+import Category from "../models/Category.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
 
 export const createProduct = async (req, res) => {
   try {
     const {
       product_name,
+      product_name_zh,
       sku,
       category_id,
       cost_price,
@@ -124,6 +126,7 @@ export const createProduct = async (req, res) => {
 
     const newProduct = await Product.create({
       productName: product_name.trim(),
+      productNameZh: String(product_name_zh || "").trim(),
       sku: finalSku,
       categoryId: category_id,
       costPrice: parsedCostPrice,
@@ -221,6 +224,7 @@ export const updateProduct = async (req, res) => {
 
     const {
       product_name,
+      product_name_zh,
       sku,
       category_id,
       cost_price,
@@ -280,6 +284,9 @@ export const updateProduct = async (req, res) => {
     const quantityChange = Math.abs(updatedStockQuantity - existingStock);
 
     existingProduct.productName = updatedProductName.trim();
+    if (product_name_zh !== undefined) {
+      existingProduct.productNameZh = String(product_name_zh || "").trim();
+    }
     existingProduct.sku = updatedSku.trim();
     existingProduct.categoryId = updatedCategory;
     existingProduct.costPrice = updatedCostPrice;
@@ -787,5 +794,30 @@ export const uploadProductPhoto = async (req, res) => {
       success: false,
       message: "Internal server error",
     });
+  }
+};
+
+// English name -> Chinese name for products and categories, so the admin panel
+// can show Chinese names wherever it only has the English one (sales, reports).
+export const getNameMap = async (_req, res) => {
+  try {
+    const [products, categories] = await Promise.all([
+      Product.find({ productNameZh: { $nin: [null, ""] } })
+        .select("productName productNameZh")
+        .lean(),
+      Category.find({ categoryNameZh: { $nin: [null, ""] } })
+        .select("categoryName categoryNameZh")
+        .lean(),
+    ]);
+
+    const map = {};
+    for (const c of categories) map[c.categoryName] = c.categoryNameZh;
+    for (const p of products) map[p.productName] = p.productNameZh;
+
+    return res.status(200).json({ success: true, data: map });
+  } catch (error) {
+    console.error("Name map error:", error.message);
+
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
