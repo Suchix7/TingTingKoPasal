@@ -15,11 +15,14 @@ import {
   useCatalogModels,
   useCovers,
 } from "@/hooks/useCatalog";
-import type { CatalogCategory } from "@/hooks/useCatalog";
+import type { CatalogCategory, Cover } from "@/hooks/useCatalog";
 import { useDebounced } from "@/hooks/useDebounced";
 import { coverImage } from "./image";
+import { pcs } from "./format";
 import CoverViewer from "./CoverViewer";
 import FilterSheet from "./FilterSheet";
+
+const inStockModels = (c: Cover) => c.models.filter((m) => m.quantity > 0);
 
 // chips shown on a card; the full list is in the full-screen view
 const MAX_CHIPS = 3;
@@ -76,6 +79,8 @@ export default function CatalogPage() {
     [data],
   );
   const total = data?.pages[0]?.pagination.total ?? 0;
+  const suggestions = data?.pages[0]?.suggestions ?? [];
+  const fuzzy = Boolean(data?.pages[0]?.fuzzy);
 
   // load the next page when the sentinel scrolls into view
   const sentinel = useRef<HTMLDivElement>(null);
@@ -93,55 +98,69 @@ export default function CatalogPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, covers.length]);
 
   const categoryName = categories.find((c) => c.id === category)?.name;
+  // phone cases are matched to phone models; accessories are plain items
+  const isCase = /case|cover/i.test(categoryName ?? "");
+  const noun = isCase ? "case" : "item";
   const activeCount = models.length;
 
   return (
     <div className="min-h-dvh bg-gray-50">
       <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 pb-3 pt-3">
-          <div className="mb-2.5 flex items-center gap-1">
+          <div className="mb-3 flex items-center gap-2.5">
             {category && (
               <button
                 type="button"
                 onClick={back}
-                className="-ml-2 rounded-full p-2 text-gray-700 active:bg-gray-100"
+                className="-ml-2 shrink-0 rounded-full p-2 text-gray-700 active:bg-gray-100"
                 aria-label="Back to categories"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
-            <h1 className="truncate text-lg font-semibold tracking-tight text-gray-900">
-              {category ? (categoryName ?? "Covers") : "Ting Ting ko pasal"}
-            </h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Ting Ting ko pasal"
+              width={48}
+              height={48}
+              className="h-11 w-11 shrink-0 rounded-full sm:h-12 sm:w-12"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-semibold leading-tight tracking-tight text-gray-900 sm:text-lg">
+                {category ? (categoryName ?? "Items") : "Ting Ting ko pasal"}
+              </h1>
+              <p className="truncate text-xs leading-tight text-gray-500">
+                {category ? "Ting Ting ko pasal" : "Mobile cases & accessories"}
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={
-                  category
-                    ? "Search your phone, e.g. iPhone 14 Pro"
-                    : "Search all, e.g. iPhone 14 Pro"
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm outline-none focus:border-gray-400 focus:bg-white"
-                enterKeyHint="search"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-400"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            {!showMenu && (
+            {
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search design or phone, e.g. Hello Kitty, iPhone 14"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm outline-none focus:border-gray-400 focus:bg-white"
+                  enterKeyHint="search"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-400"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            }
+            {!showMenu && isCase && (
               <button
                 type="button"
                 onClick={() => setFilterOpen(true)}
@@ -158,7 +177,7 @@ export default function CatalogPage() {
             )}
           </div>
 
-          {models.length > 0 && !showMenu && (
+          {models.length > 0 && !showMenu && isCase && (
             <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5">
               {models.map((m) => (
                 <Chip
@@ -185,9 +204,31 @@ export default function CatalogPage() {
           />
         ) : (
           <>
+            {q && suggestions.length > 0 && (
+              <div className="mb-3 px-1">
+                <p className="mb-2 text-xs text-gray-500">
+                  {fuzzy
+                    ? `No exact match for "${q}". Did you mean:`
+                    : "Did you mean:"}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setSearch(m)}
+                      className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-800 active:bg-gray-100"
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {!isLoading && !isError && covers.length > 0 && (
               <p className="mb-3 px-1 text-xs text-gray-500">
-                {total} {total === 1 ? "cover" : "covers"}
+                {total} {total === 1 ? noun : `${noun}s`}
               </p>
             )}
 
@@ -203,7 +244,7 @@ export default function CatalogPage() {
             ) : isError ? (
               <div className="py-20 text-center">
                 <p className="text-sm text-gray-600">
-                  Couldn&apos;t load covers.
+                  Couldn&apos;t load items.
                 </p>
                 <button
                   type="button"
@@ -216,10 +257,10 @@ export default function CatalogPage() {
             ) : covers.length === 0 ? (
               <div className="py-20 text-center">
                 <p className="text-sm font-medium text-gray-800">
-                  No covers found
+                  Nothing found
                 </p>
                 <p className="mt-1 text-sm text-gray-500">
-                  Try a different phone model or clear the search.
+                  Try a different search.
                 </p>
                 {(search || activeCount > 0) && (
                   <button
@@ -246,31 +287,50 @@ export default function CatalogPage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={coverImage(cover.photo_url, 480)}
-                      alt="Phone cover"
+                      alt=""
                       loading={i < 6 ? "eager" : "lazy"}
                       decoding="async"
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                        cover.in_stock ? "" : "opacity-50 grayscale"
+                      }`}
                     />
-                    {cover.models.length > 0 && (
+                    {!cover.in_stock ? (
+                      <span className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/70 to-transparent px-2 pb-3 pt-10">
+                        <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                          Out of stock
+                        </span>
+                      </span>
+                    ) : (
                       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-2 pb-2 pt-10 text-left">
-                        <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-white/70">
-                          Available for
-                        </span>
-                        <span className="flex flex-wrap gap-1">
-                          {cover.models.slice(0, MAX_CHIPS).map((m) => (
-                            <span
-                              key={m}
-                              className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold leading-4 text-gray-900"
-                            >
-                              {m}
+                        {inStockModels(cover).length > 0 ? (
+                          <>
+                            <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-white/70">
+                              Available for
                             </span>
-                          ))}
-                          {cover.models.length > MAX_CHIPS && (
-                            <span className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold leading-4 text-white">
-                              +{cover.models.length - MAX_CHIPS} more
+                            <span className="flex flex-wrap gap-1">
+                              {inStockModels(cover)
+                                .slice(0, MAX_CHIPS)
+                                .map((m) => (
+                                  <span
+                                    key={m.model}
+                                    className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold leading-4 text-gray-900"
+                                  >
+                                    {m.model} · {pcs(m.quantity)}
+                                  </span>
+                                ))}
+                              {inStockModels(cover).length > MAX_CHIPS && (
+                                <span className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold leading-4 text-white">
+                                  +{inStockModels(cover).length - MAX_CHIPS}{" "}
+                                  more
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
+                          </>
+                        ) : (
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold leading-4 text-gray-900">
+                            {pcs(cover.quantity)} left
+                          </span>
+                        )}
                       </span>
                     )}
                   </button>
@@ -300,6 +360,7 @@ export default function CatalogPage() {
       {viewing !== null && covers.length > 0 && (
         <CoverViewer
           covers={covers}
+          isCase={isCase}
           index={Math.min(viewing, covers.length - 1)}
           onIndexChange={(i) => {
             setViewing(i);

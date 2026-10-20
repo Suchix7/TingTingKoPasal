@@ -1,11 +1,16 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 
+export type CoverModel = { model: string; quantity: number };
+
 export type Cover = {
   id: string;
   photo_url: string;
   category_id: string | null;
-  models: string[];
+  // every phone model, in stock first; empty for plain accessories
+  models: CoverModel[];
+  quantity: number;
+  in_stock: boolean;
 };
 
 export type CatalogModel = { model: string; count: number };
@@ -42,6 +47,8 @@ export function useCovers(filters: CatalogFilters, enabled = true) {
       return res.data as {
         data: Cover[];
         pagination: { total: number; hasMore: boolean };
+        fuzzy?: boolean;
+        suggestions?: string[];
       };
     },
     getNextPageParam: (last, pages) =>
@@ -67,8 +74,8 @@ export function useCatalogCategories() {
   return useQuery({
     queryKey: ["catalog-categories"],
     queryFn: async () =>
-      (await axiosInstance.get("/catalog/categories"))
-        .data.data as CatalogCategory[],
+      (await axiosInstance.get("/catalog/categories")).data
+        .data as CatalogCategory[],
     staleTime: 5 * 60_000,
   });
 }

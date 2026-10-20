@@ -34,8 +34,7 @@ export default function FilterSheet({
     () =>
       [...models].sort(
         (a, b) =>
-          orderOf(a.model) - orderOf(b.model) ||
-          a.model.localeCompare(b.model),
+          orderOf(a.model) - orderOf(b.model) || a.model.localeCompare(b.model),
       ),
     [models],
   );

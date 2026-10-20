@@ -5,9 +5,12 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import type { Cover } from "@/hooks/useCatalog";
 import { coverImage } from "./image";
+import { pcs } from "./format";
 
 type Props = {
   covers: Cover[];
+  // phone cases: tell shoppers to ask in store when no model is listed
+  isCase: boolean;
   index: number;
   onIndexChange: (index: number) => void;
   onClose: () => void;
@@ -17,6 +20,7 @@ type Props = {
 // Swipe, arrow keys or the side buttons move between covers.
 export default function CoverViewer({
   covers,
+  isCase,
   index,
   onIndexChange,
   onClose,
@@ -99,7 +103,7 @@ export default function CoverViewer({
         <img
           key={cover.id}
           src={coverImage(cover.photo_url, 1200)}
-          alt="Phone cover"
+          alt=""
           className="max-h-full max-w-full select-none object-contain"
           draggable={false}
         />
@@ -108,7 +112,7 @@ export default function CoverViewer({
             type="button"
             onClick={() => go(-1)}
             className="absolute left-2 hidden rounded-full bg-white/15 p-2 text-white hover:bg-white/25 sm:block"
-            aria-label="Previous cover"
+            aria-label="Previous"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -118,7 +122,7 @@ export default function CoverViewer({
             type="button"
             onClick={() => go(1)}
             className="absolute right-2 hidden rounded-full bg-white/15 p-2 text-white hover:bg-white/25 sm:block"
-            aria-label="Next cover"
+            aria-label="Next"
           >
             <ChevronRight className="h-6 w-6" />
           </button>
@@ -126,27 +130,48 @@ export default function CoverViewer({
       </div>
 
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        {!cover.in_stock && (
+          <p className="mb-3 text-center">
+            <span className="rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white">
+              Out of stock
+            </span>
+          </p>
+        )}
         {cover.models.length > 0 ? (
           <>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
-              Available for
+              Phone models
             </p>
-            <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto">
-              {cover.models.map((m) => (
-                <span
-                  key={m}
-                  className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
-                >
-                  {m}
-                </span>
-              ))}
+            <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+              {cover.models.map((m) =>
+                m.quantity > 0 ? (
+                  <span
+                    key={m.model}
+                    className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
+                  >
+                    {m.model} · {pcs(m.quantity)}
+                  </span>
+                ) : (
+                  <span
+                    key={m.model}
+                    className="rounded-full border border-red-500/60 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-400 line-through decoration-red-400/60"
+                  >
+                    {m.model}
+                  </span>
+                ),
+              )}
             </div>
           </>
-        ) : (
-          <p className="text-center text-xs text-white/60">
-            Ask in store for your phone model
+        ) : cover.in_stock ? (
+          <p className="text-center text-sm font-medium text-white">
+            {pcs(cover.quantity)} in stock
+            {isCase && (
+              <span className="mt-1 block text-xs font-normal text-white/60">
+                Ask in store for your phone model
+              </span>
+            )}
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   );
