@@ -5,6 +5,7 @@ const toApiStore = (doc) => ({
   store_name: doc.storeName,
   address: doc.address,
   phone: doc.phone,
+  map_url: doc.mapUrl || "",
   pan_vat_number: doc.panVatNumber,
   created_at: doc.createdAt,
   updated_at: doc.updatedAt,
@@ -12,7 +13,7 @@ const toApiStore = (doc) => ({
 
 export const createStore = async (req, res) => {
   try {
-    const { store_name, address, phone, pan_vat_number } = req.body;
+    const { store_name, address, phone, pan_vat_number, map_url } = req.body;
 
     if (!store_name || !address || !phone) {
       return res.status(400).json({
@@ -47,6 +48,7 @@ export const createStore = async (req, res) => {
       address: trimmedAddress,
       phone: trimmedPhone,
       panVatNumber: trimmedPanVatNumber,
+      mapUrl: String(map_url || "").trim(),
     });
 
     return res.status(201).json({
@@ -98,7 +100,7 @@ export const getStore = async (req, res) => {
 
 export const updateStore = async (req, res) => {
   try {
-    const { store_name, address, phone, pan_vat_number } = req.body;
+    const { store_name, address, phone, pan_vat_number, map_url } = req.body;
 
     const existingStore = await StoreInfo.findOne();
 
@@ -147,6 +149,7 @@ export const updateStore = async (req, res) => {
     existingStore.storeName = updatedStoreName;
     existingStore.address = updatedAddress;
     existingStore.phone = updatedPhone;
+    if (map_url !== undefined) existingStore.mapUrl = String(map_url || "").trim();
     existingStore.panVatNumber = updatedPanVatNumber;
 
     await existingStore.save();

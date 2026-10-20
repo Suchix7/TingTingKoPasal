@@ -258,13 +258,14 @@ export const getCategories = async (_req, res) => {
 // Shop name, location and phone for the customer site header
 export const getStore = async (_req, res) => {
   try {
-    const store = await StoreInfo.findOne().select("storeName address phone").lean();
+    const store = await StoreInfo.findOne().select("storeName address phone mapUrl").lean();
     return res.json({
       success: true,
       data: {
         name: store?.storeName || "",
         address: store?.address || "",
         phone: store?.phone || "",
+        map_url: store?.mapUrl || "",
       },
     });
   } catch (error) {

@@ -145,10 +145,20 @@ export default function CatalogPage() {
           {(store?.address || store?.phone) && (
             <div className="mb-3 mt-3 flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 text-xs ring-1 ring-gray-200">
               {store?.address && (
-                <span className="flex min-w-0 items-center gap-1.5 text-gray-700">
+                <a
+                  href={
+                    store.map_url ||
+                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.address)}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-w-0 items-center gap-1.5 text-gray-700 active:text-gray-900"
+                >
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-red-500" />
-                  <span className="truncate">{store.address}</span>
-                </span>
+                  <span className="truncate underline decoration-gray-300 underline-offset-2">
+                    {store.address}
+                  </span>
+                </a>
               )}
               {store?.phone && (
                 <a

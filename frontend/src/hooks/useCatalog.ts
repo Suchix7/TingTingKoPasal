@@ -79,7 +79,12 @@ export function useCatalogModels(category = "") {
   });
 }
 
-export type CatalogStore = { name: string; address: string; phone: string };
+export type CatalogStore = {
+  name: string;
+  address: string;
+  phone: string;
+  map_url?: string;
+};
 
 export function useCatalogStore() {
   return useQuery({

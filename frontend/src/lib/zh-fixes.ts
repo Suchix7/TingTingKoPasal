@@ -31,6 +31,9 @@ export const zhFixes: Record<string, string> = {
   Fonepay: "Fonepay",
   "Showing page": "当前页",
   "Close photo": "关闭图片",
+  "Google Maps link": "谷歌地图链接",
+  "Opened when a customer taps the location on the shop site.":
+    "顾客在店铺网站点击地址时打开。",
   "Loading...": "加载中...",
   "Still working... the server may be waking up, this can take up to a minute.":
     "仍在处理中……服务器可能正在唤醒，最多需要一分钟。",

@@ -19,6 +19,7 @@ type FormState = {
   store_name: string;
   address: string;
   phone: string;
+  map_url: string;
   pan_vat_number: string;
 };
 
@@ -26,6 +27,7 @@ const initialForm: FormState = {
   store_name: "",
   address: "",
   phone: "",
+  map_url: "",
   pan_vat_number: "",
 };
 
@@ -48,6 +50,7 @@ export default function StorePage() {
         store_name: store.store_name || "",
         address: store.address || "",
         phone: store.phone || "",
+        map_url: store.map_url || "",
         pan_vat_number: store.pan_vat_number || "",
       });
     }
@@ -85,6 +88,7 @@ export default function StorePage() {
       store_name: form.store_name.trim(),
       address: form.address.trim(),
       phone: form.phone.trim(),
+      map_url: form.map_url.trim(),
       pan_vat_number: form.pan_vat_number.trim(),
     };
 
@@ -93,7 +97,9 @@ export default function StorePage() {
       : createMutation.mutateAsync(payload);
 
     toast.promise(promise, {
-      loading: store ? t("Updating store information...") : t("Creating store..."),
+      loading: store
+        ? t("Updating store information...")
+        : t("Creating store..."),
       success: store ? t("Store information updated.") : t("Store created."),
       error: store
         ? t("Failed to update store information.")
@@ -230,6 +236,36 @@ export default function StorePage() {
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
                 </div>
+              </div>
+
+              {/* Google Maps link */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="map_url"
+                  className="block text-sm font-medium text-neutral-700"
+                >
+                  {t("Google Maps link")}
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <MapPin className="h-5 w-5 text-neutral-400" />
+                  </div>
+                  <input
+                    id="map_url"
+                    type="url"
+                    value={form.map_url}
+                    onChange={(e) =>
+                      handleInputChange("map_url", e.target.value)
+                    }
+                    placeholder="https://maps.app.goo.gl/..."
+                    className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
+                  />
+                </div>
+                <p className="text-xs text-neutral-500">
+                  {t(
+                    "Opened when a customer taps the location on the shop site.",
+                  )}
+                </p>
               </div>
 
               {/* Phone */}
