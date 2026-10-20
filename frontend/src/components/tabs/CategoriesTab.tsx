@@ -24,6 +24,7 @@ type Category = {
   id: string;
   category_name: string;
   description?: string;
+  thumbnail_url?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -215,6 +216,7 @@ export default function CategoriesPage() {
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-5 py-3">SN</th>
+                <th className="px-5 py-3">Thumbnail</th>
                 <th className="px-5 py-3">Category Name</th>
                 <th className="px-5 py-3">Description</th>
                 <th className="px-5 py-3">Created</th>
@@ -227,7 +229,7 @@ export default function CategoriesPage() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-16 text-center text-gray-500"
                   >
                     <Loader2 className="mx-auto mb-2 animate-spin" size={24} />
@@ -236,7 +238,7 @@ export default function CategoriesPage() {
                 </tr>
               ) : categories.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <FolderTree
                       className="mx-auto mb-3 text-gray-300"
                       size={48}
@@ -265,6 +267,21 @@ export default function CategoriesPage() {
                   <tr key={category.id} className="transition hover:bg-gray-50">
                     <td className="px-5 py-4">
                       <p className="text-sm text-gray-500">{index + 1}</p>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      {category.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={category.thumbnail_url}
+                          alt=""
+                          className="h-12 w-12 rounded-lg object-cover ring-1 ring-gray-200"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-gray-300">
+                          <FolderTree size={20} />
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-5 py-4">

@@ -1,9 +1,12 @@
+import mongoose from "mongoose";
 import Category from "../models/Category.js";
+import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 
 const toApiCategory = (doc) => ({
   id: doc._id.toString(),
   category_name: doc.categoryName,
   description: doc.description,
+  thumbnail_url: doc.thumbnailUrl || null,
   created_at: doc.createdAt,
   updated_at: doc.updatedAt,
 });
@@ -172,9 +175,82 @@ export const deleteCategory = async (req, res) => {
       return res.status(404).json({ success: false, message: "Category not found" });
     }
 
+    deleteImage(category.thumbnailPublicId).catch((err) =>
+      console.error("Failed to delete category thumbnail:", err.message),
+    );
+
     return res.status(200).json({ success: true, message: "Category deleted successfully" });
   } catch (error) {
     console.error("Error deleting category:", error.message);
+
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const uploadCategoryThumbnail = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid category ID" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Thumbnail file is required" });
+    }
+
+    const category = await Category.findById(id);
+
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" });
+    }
+
+    const oldPublicId = category.thumbnailPublicId;
+
+    const result = await uploadImageBuffer(req.file.buffer, {
+      folder: "byapardesk/categories",
+    });
+
+    category.thumbnailUrl = result.secure_url;
+    category.thumbnailPublicId = result.public_id;
+    await category.save();
+
+    deleteImage(oldPublicId).catch((err) =>
+      console.error("Failed to delete old category thumbnail:", err.message),
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Thumbnail uploaded successfully",
+      data: toApiCategory(category),
+    });
+  } catch (error) {
+    console.error("Upload category thumbnail error:", error.message);
+
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const removeCategoryThumbnail = async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" });
+    }
+
+    const oldPublicId = category.thumbnailPublicId;
+    category.thumbnailUrl = "";
+    category.thumbnailPublicId = "";
+    await category.save();
+
+    deleteImage(oldPublicId).catch((err) =>
+      console.error("Failed to delete category thumbnail:", err.message),
+    );
+
+    return res.status(200).json({ success: true, data: toApiCategory(category) });
+  } catch (error) {
+    console.error("Remove category thumbnail error:", error.message);
 
     return res.status(500).json({ success: false, message: "Internal server error" });
   }

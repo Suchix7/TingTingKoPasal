@@ -9,7 +9,12 @@ export type Cover = {
 };
 
 export type CatalogModel = { model: string; count: number };
-export type CatalogCategory = { id: string; name: string };
+export type CatalogCategory = {
+  id: string;
+  name: string;
+  count: number;
+  photo_url: string;
+};
 
 export type CatalogFilters = {
   q: string;
@@ -19,8 +24,9 @@ export type CatalogFilters = {
 
 const PAGE_SIZE = 24;
 
-export function useCovers(filters: CatalogFilters) {
+export function useCovers(filters: CatalogFilters, enabled = true) {
   return useInfiniteQuery({
+    enabled,
     queryKey: ["catalog-covers", filters],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
@@ -44,11 +50,15 @@ export function useCovers(filters: CatalogFilters) {
   });
 }
 
-export function useCatalogModels() {
+export function useCatalogModels(category = "") {
   return useQuery({
-    queryKey: ["catalog-models"],
+    queryKey: ["catalog-models", category],
     queryFn: async () =>
-      (await axiosInstance.get("/catalog/models")).data.data as CatalogModel[],
+      (
+        await axiosInstance.get("/catalog/models", {
+          params: { category: category || undefined },
+        })
+      ).data.data as CatalogModel[],
     staleTime: 5 * 60_000,
   });
 }

@@ -110,13 +110,18 @@ export const getCover = async (req, res) => {
       return res.status(404).json({ success: false, message: "Cover not found" });
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
-      .select("photoUrl categoryId")
+      .select("photoUrl categoryId stock.currentStock")
       .lean();
     if (!product) {
       return res.status(404).json({ success: false, message: "Cover not found" });
     }
     const modelMap = await inStockModelsByProduct();
-    return res.json({ success: true, data: toCover(product, modelMap.get(String(product._id))) });
+    const models = modelMap.get(String(product._id));
+    const inStock = models?.length || Number(product.stock?.currentStock) > 0;
+    if (!inStock) {
+      return res.status(404).json({ success: false, message: "Cover not found" });
+    }
+    return res.json({ success: true, data: toCover(product, models) });
   } catch (error) {
     console.error("Catalog cover error:", error);
     return res.status(500).json({ success: false, message: "Failed to load cover" });
@@ -124,18 +129,17 @@ export const getCover = async (req, res) => {
 };
 
 // Phone models that have at least one cover in stock, with how many covers.
-export const getModels = async (_req, res) => {
+export const getModels = async (req, res) => {
   try {
+    const category = String(req.query.category || "");
     const modelMap = await inStockModelsByProduct();
+    const filter = { ...baseFilter(), _id: { $in: [...modelMap.keys()] } };
+    if (category) {
+      if (!mongoose.isValidObjectId(category)) return res.json({ success: true, data: [] });
+      filter.categoryId = category;
+    }
     const visible = new Set(
-      (
-        await Product.find({
-          ...baseFilter(),
-          _id: { $in: [...modelMap.keys()] },
-        })
-          .select("_id")
-          .lean()
-      ).map((p) => String(p._id)),
+      (await Product.find(filter).select("_id").lean()).map((p) => String(p._id)),
     );
 
     const counts = new Map();
@@ -154,15 +158,42 @@ export const getModels = async (_req, res) => {
   }
 };
 
+// Categories that have at least one cover on sale, with a count and a sample
+// photo for the menu.
 export const getCategories = async (_req, res) => {
   try {
-    const ids = await Product.distinct("categoryId", baseFilter());
-    const categories = await Category.find({ _id: { $in: ids } })
-      .sort({ categoryName: 1 })
+    const modelMap = await inStockModelsByProduct();
+    const products = await Product.find({
+      ...baseFilter(),
+      categoryId: { $ne: null },
+      $or: [
+        { _id: { $in: [...modelMap.keys()] } },
+        { "stock.currentStock": { $gt: 0 } },
+      ],
+    })
+      .select("photoUrl categoryId")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const stats = new Map();
+    for (const p of products) {
+      const key = String(p.categoryId);
+      const s = stats.get(key) || { count: 0, photo_url: p.photoUrl };
+      s.count += 1;
+      stats.set(key, s);
+    }
+
+    const categories = await Category.find({ _id: { $in: [...stats.keys()] } })
+      .sort({ sortOrder: 1, categoryName: 1 })
       .lean();
     return res.json({
       success: true,
-      data: categories.map((c) => ({ id: String(c._id), name: c.categoryName })),
+      data: categories.map((c) => ({
+        id: String(c._id),
+        name: c.categoryName,
+        count: stats.get(String(c._id)).count,
+        photo_url: c.thumbnailUrl || stats.get(String(c._id)).photo_url,
+      })),
     });
   } catch (error) {
     console.error("Catalog categories error:", error);

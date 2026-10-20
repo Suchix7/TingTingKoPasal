@@ -17,7 +17,7 @@ dotenv.config();
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
 const file = args.find((a) => !a.startsWith("--")) || "scripts/data/products.csv";
-const CATEGORY = "Phone Cover";
+const CATEGORY = "Mobile Case";
 
 function parseCsv(text) {
   const rows = [];
@@ -119,7 +119,7 @@ if (problems.length) {
 await mongoose.connect(process.env.MONGO_URI);
 const category =
   (await Category.findOne({ categoryName: CATEGORY })) ||
-  (await Category.create({ categoryName: CATEGORY, description: "Mobile phone covers" }));
+  (await Category.create({ categoryName: CATEGORY, description: "Mobile phone cases" }));
 
 let created = 0, skipped = 0;
 for (const it of items) {

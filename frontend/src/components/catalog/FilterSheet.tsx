@@ -4,16 +4,14 @@ import { useMemo, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 
 import { IPHONE_MODELS } from "@/lib/phoneModels";
-import type { CatalogCategory, CatalogModel } from "@/hooks/useCatalog";
+import type { CatalogModel } from "@/hooks/useCatalog";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   models: CatalogModel[];
-  categories: CatalogCategory[];
   selectedModels: string[];
-  category: string;
-  onApply: (models: string[], category: string) => void;
+  onApply: (models: string[]) => void;
 };
 
 const orderOf = (model: string) => {
@@ -21,18 +19,15 @@ const orderOf = (model: string) => {
   return i === -1 ? IPHONE_MODELS.length : i;
 };
 
-// Bottom sheet on phones: tick phone models, pick a category.
+// Bottom sheet on phones: tick phone models.
 export default function FilterSheet({
   open,
   onClose,
   models,
-  categories,
   selectedModels,
-  category,
   onApply,
 }: Props) {
   const [draftModels, setDraftModels] = useState<string[]>(selectedModels);
-  const [draftCategory, setDraftCategory] = useState(category);
   const [search, setSearch] = useState("");
 
   const sorted = useMemo(
@@ -60,7 +55,7 @@ export default function FilterSheet({
       cur.includes(model) ? cur.filter((m) => m !== model) : [...cur, model],
     );
 
-  const count = draftModels.length + (draftCategory ? 1 : 0);
+  const count = draftModels.length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/50 sm:items-center sm:justify-center">
@@ -84,30 +79,6 @@ export default function FilterSheet({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
-          {categories.length > 0 && (
-            <section className="mb-5">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Type
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {[{ id: "", name: "All" }, ...categories].map((c) => (
-                  <button
-                    key={c.id || "all"}
-                    type="button"
-                    onClick={() => setDraftCategory(c.id)}
-                    className={`rounded-full border px-4 py-2 text-sm ${
-                      draftCategory === c.id
-                        ? "border-gray-900 bg-gray-900 text-white"
-                        : "border-gray-200 bg-white text-gray-700"
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
               Phone model
@@ -162,7 +133,6 @@ export default function FilterSheet({
             type="button"
             onClick={() => {
               setDraftModels([]);
-              setDraftCategory("");
             }}
             className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700"
           >
@@ -171,7 +141,7 @@ export default function FilterSheet({
           <button
             type="button"
             onClick={() => {
-              onApply(draftModels, draftCategory);
+              onApply(draftModels);
               onClose();
             }}
             className="flex-1 rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white"

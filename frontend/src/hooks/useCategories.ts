@@ -10,6 +10,7 @@ type Category = {
   id: string;
   category_name: string;
   description?: string;
+  thumbnail_url?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -115,3 +116,13 @@ export const useDeleteCategory = () => {
     },
   });
 };
+
+export const uploadCategoryThumbnail = async (id: string, file: File) => {
+  const formData = new FormData();
+  formData.append("thumbnail", file);
+  return (await axiosInstance.post(`/categories/${id}/thumbnail`, formData))
+    .data;
+};
+
+export const removeCategoryThumbnail = async (id: string) =>
+  (await axiosInstance.delete(`/categories/${id}/thumbnail`)).data;
