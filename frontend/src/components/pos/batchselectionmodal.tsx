@@ -24,7 +24,9 @@ export default function BatchSelectionModal({
     product.id,
   );
 
-  const batches = batchesData?.data || [];
+  // Only models that can actually be sold; sold-out ones aren't listed
+  const allBatches = batchesData?.data || [];
+  const batches = allBatches.filter((b) => b.quantity > 0);
 
   const money = (value?: number | null) =>
     new Intl.NumberFormat("en-NP", {
@@ -77,7 +79,7 @@ export default function BatchSelectionModal({
         {/* Options */}
         <div className="space-y-3 p-6">
           {/* Base Product Price - hidden for products whose stock lives only on models/batches */}
-          {!(product.stock_quantity === 0 && batches.length > 0) && (
+          {!(product.stock_quantity === 0 && allBatches.length > 0) && (
             <button
               onClick={() => onSelect(product.sale_price)}
               disabled={product.stock_quantity === 0}

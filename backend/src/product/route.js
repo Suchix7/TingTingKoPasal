@@ -12,6 +12,7 @@ import {
   regenerateBarcode,
   markBarcodePrinted,
   getNameMap,
+  getProductModels,
 } from "./controller.js";
 
 const upload = multer({
@@ -26,6 +27,8 @@ router.post("/", createProduct);
 router.get("/", getProducts);
 
 router.get("/name-map", getNameMap);
+
+router.get("/models", getProductModels);
 
 router.get("/:id", getProductById);
 

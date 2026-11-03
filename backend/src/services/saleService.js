@@ -159,7 +159,8 @@ export async function createSale(body) {
     err.statusCode = 400;
     throw err;
   }
-  if (!Array.isArray(payments) || payments.length === 0) {
+  // A zero-total sale (e.g. free / Rs 0 items) needs no payment.
+  if (!Array.isArray(payments) || (payments.length === 0 && Number(grand_total) > 0)) {
     const err = new Error("Sale must contain at least one payment");
     err.statusCode = 400;
     throw err;

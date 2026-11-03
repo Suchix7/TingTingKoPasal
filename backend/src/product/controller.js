@@ -426,23 +426,118 @@ async function attachBatches(products) {
   }));
 }
 
+// Phone models (batch names) used by the products in a category, with how
+// many products have each and how many pieces are in stock. Drives the POS
+// model chips shown under a category like "Covers".
+export const getProductModels = async (req, res) => {
+  try {
+    const { category, status } = req.query;
+    const productFilter = { isDeleted: false };
+    if (category && category !== "All") {
+      if (!mongoose.isValidObjectId(category)) {
+        return res.status(400).json({ success: false, message: "Invalid category ID" });
+      }
+      productFilter.categoryId = new mongoose.Types.ObjectId(String(category));
+    }
+    if (status && status !== "All") productFilter.status = status;
+
+    const productIds = await Product.distinct("_id", productFilter);
+
+    const rows = await ProductBatch.aggregate([
+      { $match: { isDeleted: false, productId: { $in: productIds } } },
+      {
+        $group: {
+          _id: "$batchNumber",
+          products: { $addToSet: "$productId" },
+          quantity: { $sum: "$quantity" },
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: rows.map((r) => ({
+        model: r._id,
+        product_count: r.products.length,
+        quantity: r.quantity,
+      })),
+    });
+  } catch (error) {
+    console.error("Get product models error:", error.message);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 export const getProducts = async (req, res) => {
   try {
-    const { page, limit, search, category, status } = req.query;
+    const { page, limit, search, category, status, stock, sort, model } = req.query;
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const limitNum = Math.max(parseInt(limit) || 10, 1);
     const offset = (pageNum - 1) * limitNum;
 
     const filter = { isDeleted: false };
+    const and = [];
 
     if (search) {
-      filter.$or = [
-        { productName: { $regex: search, $options: "i" } },
-        { sku: { $regex: search, $options: "i" } },
-        { barcode: { $regex: search, $options: "i" } },
-      ];
+      const term = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = { $regex: term, $options: "i" };
+      // Phone models live on batches (e.g. a cover's "iPhone 15" model),
+      // so a search for the model should find the product it belongs to.
+      const modelMatches = await ProductBatch.distinct("productId", {
+        isDeleted: false,
+        $or: [{ batchNumber: regex }, { barcode: regex }],
+      });
+      and.push({
+        $or: [
+          { productName: regex },
+          { productNameZh: regex },
+          { sku: regex },
+          { barcode: regex },
+          { _id: { $in: modelMatches } },
+        ],
+      });
     }
+
+    // Stock counts the product's own stock plus any model/batch stock
+    if (stock === "in_stock" || stock === "out_of_stock") {
+      const withModelStock = await ProductBatch.distinct("productId", {
+        isDeleted: false,
+        quantity: { $gt: 0 },
+      });
+      const inStock = {
+        $or: [
+          { "stock.currentStock": { $gt: 0 } },
+          { _id: { $in: withModelStock } },
+        ],
+      };
+      and.push(
+        stock === "in_stock"
+          ? inStock
+          : {
+              "stock.currentStock": { $lte: 0 },
+              _id: { $nin: withModelStock },
+            },
+      );
+    }
+
+    // Only products that have this phone model (e.g. covers for "iPhone 13 Pro")
+    if (model) {
+      const withModel = await ProductBatch.distinct("productId", {
+        isDeleted: false,
+        batchNumber: String(model).trim(),
+      });
+      and.push({ _id: { $in: withModel } });
+    }
+
+    if (and.length > 0) filter.$and = and;
+
+    const sortOrder =
+      {
+        price_asc: { salePrice: 1, _id: 1 },
+        price_desc: { salePrice: -1, _id: 1 },
+        name_asc: { productName: 1, _id: 1 },
+      }[sort] || { createdAt: -1 };
 
     if (category && category !== "All") {
       filter.categoryId = category;
@@ -453,7 +548,11 @@ export const getProducts = async (req, res) => {
     }
 
     const [products, totalCount, statsAgg] = await Promise.all([
-      Product.find(filter).sort({ createdAt: -1 }).skip(offset).limit(limitNum),
+      Product.find(filter)
+        .collation({ locale: "en" })
+        .sort(sortOrder)
+        .skip(offset)
+        .limit(limitNum),
       Product.countDocuments(filter),
       Product.aggregate([
         { $match: filter },

@@ -696,7 +696,7 @@ export default function BillingSection({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4">
               {cartItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400">
                   <ShoppingCart className="h-12 w-12 mb-4" />
@@ -1285,7 +1285,7 @@ export default function BillingSection({
 
         {/* Quick Sale Content */}
         {activeTab === "quick" && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {/* Payment Method */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

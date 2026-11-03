@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts, useProductModels } from "@/hooks/useProducts";
+import { IPHONE_MODELS } from "@/lib/phoneModels";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCreateSale, useUploadSalePaymentProof } from "@/hooks/useSales";
 import {
@@ -108,6 +109,44 @@ export default function PointOfSalesPage() {
 
   const categories = categoriesData?.data ?? [];
 
+  // Phone model chosen inside a category, e.g. "iPhone 13 Pro" under Covers
+  const [selectedModel, setSelectedModel] = useState("");
+  const [sortBy, setSortBy] = useState<
+    "" | "price_asc" | "price_desc" | "name_asc"
+  >("");
+  // "Load more" just grows the page size; it resets whenever a filter changes
+  const PAGE_SIZE = 48;
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [lastCategoryId, setLastCategoryId] = useState(selectedCategoryId);
+  if (selectedCategoryId !== lastCategoryId) {
+    setLastCategoryId(selectedCategoryId);
+    setSelectedModel("");
+  }
+  const filterKey = `${debouncedSearch}|${selectedCategoryId}|${selectedModel}|${sortBy}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
+    setLimit(PAGE_SIZE);
+  }
+
+  const { data: categoryModels = [] } = useProductModels(
+    selectedCategoryId === "all" ? "" : selectedCategoryId,
+  );
+  // Same order as the model picker (newest iPhone first), others A-Z after
+  const sortedModels = useMemo(() => {
+    const orderOf = (m: string) => {
+      const i = IPHONE_MODELS.indexOf(m);
+      return i === -1 ? IPHONE_MODELS.length : i;
+    };
+    // Sold-out models are hidden (the selected one stays so it can be cleared)
+    return categoryModels
+      .filter((m) => m.quantity > 0 || m.model === selectedModel)
+      .sort(
+      (a, b) =>
+        orderOf(a.model) - orderOf(b.model) || a.model.localeCompare(b.model),
+    );
+  }, [categoryModels, selectedModel]);
+
   const {
     data: productsData,
     isLoading,
@@ -115,12 +154,29 @@ export default function PointOfSalesPage() {
     isError,
     refetch,
   } = useProducts({
-    search: debouncedSearch,
+    search: debouncedSearch.trim(),
     status: "Active",
     page: 1,
-    limit: 50,
+    limit,
     category: selectedCategoryId === "all" ? "" : selectedCategoryId,
+    model: selectedModel,
+    sort: sortBy,
   });
+  const totalProducts = productsData?.totalCount ?? 0;
+  // Still fetching a bigger page while the current one is on screen
+  const isLoadingMore =
+    isFetching && (productsData?.data.length ?? 0) < limit &&
+    (productsData?.data.length ?? 0) < totalProducts;
+  const hasActiveFilters =
+    search !== "" ||
+    selectedCategoryId !== "all" ||
+    sortBy !== "";
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedCategoryId("all");
+    setSelectedModel("");
+    setSortBy("");
+  };
 
   const { data: storeData } = useStore();
   const store = storeData?.data || null;
@@ -388,7 +444,8 @@ export default function PointOfSalesPage() {
       (payment) => payment.payment_method_id && Number(payment.amount) > 0,
     );
 
-    if (validPayments.length === 0) {
+    // A Rs 0 bill can go through without any payment method
+    if (validPayments.length === 0 && grandTotal > 0) {
       toast.error(t("Please add at least one valid payment method"));
       return;
     }
@@ -516,11 +573,13 @@ export default function PointOfSalesPage() {
   };
 
   return (
-    <div className="h-auto xl:h-dvh flex flex-col xl:flex-row gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] xl:pb-4 bg-gray-50 xl:overflow-y-auto">
+    // At xl the POS fills the shell's <main> (which already sits under the
+    // app header), and the product grid and the bill each scroll on their own.
+    <div className="h-auto xl:h-full xl:min-h-0 flex flex-col xl:flex-row gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] xl:pb-4 bg-gray-50 xl:overflow-hidden">
       {/* Products Section */}
-      <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex flex-col lg:flex-row items-left lg:items-center gap-4 justify-between">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-4 sm:px-6 border-b border-gray-100 space-y-3">
+          <div className="flex flex-col lg:flex-row items-left lg:items-center gap-3 justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {t("Point of Sale")}
@@ -535,14 +594,52 @@ export default function PointOfSalesPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("Search products...")}
-                className="w-full md:w-80 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all"
+                placeholder={t("Search name, phone model or barcode...")}
+                className="w-full md:w-80 pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                  aria-label={t("Clear search")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="cursor-pointer rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+              aria-label={t("Sort products")}
+            >
+              <option value="">{t("Newest first")}</option>
+              <option value="price_asc">{t("Price: low to high")}</option>
+              <option value="price_desc">{t("Price: high to low")}</option>
+              <option value="name_asc">{t("Name: A to Z")}</option>
+            </select>
+
+            <span className="text-sm text-gray-500">
+              {totalProducts} {totalProducts === 1 ? t("product") : t("products")}
+            </span>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="cursor-pointer text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
+              >
+                {t("Clear filters")}
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-4 py-3 sm:px-6 border-b border-gray-100">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setSelectedCategoryId("all")}
@@ -569,10 +666,54 @@ export default function PointOfSalesPage() {
               </button>
             ))}
           </div>
+
+          {/* Phone models inside the chosen category (e.g. Covers ->
+              iPhone 13, iPhone 13 Pro...). Wraps and scrolls so a long
+              list stays usable with a mouse, not just by swiping. */}
+          {sortedModels.length > 0 && (
+            <div className="mt-3 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => setSelectedModel("")}
+                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  selectedModel === ""
+                    ? "border-gray-900 bg-gray-900 text-white"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                }`}
+              >
+                {t("All models")}
+              </button>
+              {sortedModels.map((m) => {
+                const active = selectedModel === m.model;
+                return (
+                  <button
+                    key={m.model}
+                    type="button"
+                    onClick={() => setSelectedModel(active ? "" : m.model)}
+                    className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      active
+                        ? "border-gray-900 bg-gray-900 text-white"
+                        : m.quantity > 0
+                          ? "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                          : "border-dashed border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-400"
+                    }`}
+                    title={`${m.product_count} ${t("products")} · ${m.quantity} ${t("in stock")}`}
+                  >
+                    {m.model}
+                    <span
+                      className={`ml-1.5 ${active ? "text-gray-300" : "text-gray-400"}`}
+                    >
+                      {m.quantity}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {isLoading ? (
-          <div className="flex-1 overflow-y-auto p-3 sm:p-6" aria-busy>
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6" aria-busy>
             <CardGridSkeleton
               count={8}
               className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-4"
@@ -595,14 +736,18 @@ export default function PointOfSalesPage() {
           </div>
         ) : (
           <div
-            className={`flex flex-1 flex-col transition-opacity ${
-              isFetching ? "opacity-60" : ""
+            className={`flex min-h-0 flex-1 flex-col transition-opacity ${
+              isFetching && !isLoadingMore ? "opacity-60" : ""
             }`}
           >
             <ProductGrid
               products={products}
               cartItems={cartItems}
               addToCart={addToCart}
+              totalCount={totalProducts}
+              onLoadMore={() => setLimit((l) => l + PAGE_SIZE)}
+              isLoadingMore={isLoadingMore}
+              selectedModel={selectedModel}
             />
           </div>
         )}
@@ -613,7 +758,7 @@ export default function PointOfSalesPage() {
           bar below just scrolls down to this ref instead of overlaying
           it, so there's nothing here that can conflict with billing's own
           internal modals (tax edit, etc.), which are also fixed/z-50. */}
-      <div ref={billingRef}>
+      <div ref={billingRef} className="xl:flex xl:min-h-0">
         <BillingSection
           cartItems={cartItems}
           cartSummary={cartSummary}

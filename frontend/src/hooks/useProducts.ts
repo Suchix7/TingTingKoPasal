@@ -74,7 +74,31 @@ type ProductQueryParams = {
   search?: string;
   category?: string;
   status?: string;
+  stock?: "" | "in_stock" | "out_of_stock";
+  sort?: "" | "price_asc" | "price_desc" | "name_asc";
+  model?: string;
 };
+
+export type ProductModel = {
+  model: string;
+  product_count: number;
+  quantity: number;
+};
+
+// Phone models used by the products in a category (for the POS model chips)
+export const useProductModels = (category: string, status = "Active") =>
+  useQuery<ProductModel[]>({
+    // Under "products" so a sale's products refresh updates the counts too
+    queryKey: ["products", "models", category, status],
+    enabled: !!category,
+    queryFn: async () => {
+      const res = await axiosInstance.get<{ data: ProductModel[] }>(
+        "/products/models",
+        { params: { category, status } },
+      );
+      return res.data.data;
+    },
+  });
 
 const fetchProducts = async ({
   queryKey,

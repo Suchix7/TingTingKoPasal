@@ -43,12 +43,21 @@ interface ProductGridProps {
   products: Product[];
   cartItems: CartItem[];
   addToCart: (product: Product, unitPrice?: number, batchId?: string) => void;
+  totalCount?: number;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
+  // Phone model picked in the POS filter: tapping a product adds that model
+  selectedModel?: string;
 }
 
 export default function ProductGrid({
   products,
   cartItems,
   addToCart,
+  totalCount,
+  onLoadMore,
+  isLoadingMore = false,
+  selectedModel = "",
 }: ProductGridProps) {
   const { t, tn } = useLang();
   const [open, setOpen] = useState(false);
@@ -193,6 +202,13 @@ export default function ProductGrid({
   };
 
   const handleAddToCart = (product: Product) => {
+    const modelBatch = selectedModel
+      ? product.batches?.find((b) => b.batch_number === selectedModel)
+      : undefined;
+    if (modelBatch && modelBatch.quantity > 0) {
+      addToCart(product, modelBatch.sale_price, modelBatch.id);
+      return;
+    }
     if (product.batches && product.batches.length > 0) {
       setBatchSelectionProduct(product);
     } else {
@@ -280,7 +296,7 @@ export default function ProductGrid({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
         {/* Barcode Scanner Button */}
         <div className="mb-4 flex items-center gap-3">
           <button
@@ -324,7 +340,14 @@ export default function ProductGrid({
                   (sum, b) => sum + Number(b.quantity || 0),
                   0,
                 );
-              const isOutOfStock = totalStock <= 0;
+              const modelBatch = selectedModel
+                ? product.batches?.find((b) => b.batch_number === selectedModel)
+                : undefined;
+              // With a model picked, the card shows that model's stock
+              const shownStock = modelBatch
+                ? Number(modelBatch.quantity || 0)
+                : totalStock;
+              const isOutOfStock = shownStock <= 0;
               const cartItem = cartItems.find(
                 (item) => item.product_id === product.id,
               );
@@ -435,9 +458,14 @@ export default function ProductGrid({
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col">
                           <span className="text-sm sm:text-md font-bold text-gray-900">
-                            Rs. {product.sale_price.toLocaleString()}
+                            Rs.{" "}
+                            {(modelBatch?.sale_price ?? product.sale_price).toLocaleString()}
                           </span>
-                          {hasBatches && (
+                          {modelBatch ? (
+                            <span className="text-[10px] sm:text-xs text-blue-600 font-medium">
+                              {modelBatch.batch_number}
+                            </span>
+                          ) : hasBatches && (
                             <span className="text-[10px] sm:text-xs text-blue-600 font-medium">
                               {t("Multiple prices")}
                             </span>
@@ -447,9 +475,9 @@ export default function ProductGrid({
                           <span
                             className={`text-xs sm:text-sm font-medium ${isOutOfStock ? "text-red-500" : "text-gray-700"}`}
                           >
-                            {totalStock} {product.unit}
+                            {shownStock} {product.unit}
                           </span>
-                          {totalStock <= 5 && totalStock > 0 && (
+                          {shownStock <= 5 && shownStock > 0 && (
                             <p className="text-[10px] sm:text-xs text-orange-500">
                               {t("Low stock")}
                             </p>
@@ -476,8 +504,24 @@ export default function ProductGrid({
             </button>
           </div>
         )}
+        {onLoadMore &&
+          totalCount !== undefined &&
+          products.length < totalCount && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={onLoadMore}
+                disabled={isLoadingMore}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+              >
+                {isLoadingMore && <Loader2 size={16} className="animate-spin" />}
+                {isLoadingMore ? t("Loading...") : t("Load more")}
+              </button>
+            </div>
+          )}
         <p className="mt-4 text-center text-xs text-gray-500">
-          {t("Showing")} {products.length} {t("products")}.{" "}
+          {t("Showing")} {products.length}
+          {totalCount !== undefined ? ` / ${totalCount}` : ""} {t("products")}.{" "}
           {t("Search, choose a category, or scan barcode to find more.")}
         </p>
       </div>

@@ -26,6 +26,7 @@ export default function CoverViewer({
   onClose,
 }: Props) {
   const cover = covers[index];
+  const availableModels = cover.models.filter((m) => m.quantity > 0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const hasPrev = index > 0;
@@ -138,30 +139,25 @@ export default function CoverViewer({
           </p>
         )}
         {cover.models.length > 0 ? (
-          <>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
-              Phone models
-            </p>
-            <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
-              {cover.models.map((m) =>
-                m.quantity > 0 ? (
+          // Only the models that are actually available; sold-out ones are
+          // left out entirely (the "Out of stock" badge covers a sold-out cover)
+          availableModels.length > 0 && (
+            <>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
+                Phone models
+              </p>
+              <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+                {availableModels.map((m) => (
                   <span
                     key={m.model}
                     className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
                   >
                     {m.model} · {pcs(m.quantity)}
                   </span>
-                ) : (
-                  <span
-                    key={m.model}
-                    className="rounded-full border border-red-500/60 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-400 line-through decoration-red-400/60"
-                  >
-                    {m.model}
-                  </span>
-                ),
-              )}
-            </div>
-          </>
+                ))}
+              </div>
+            </>
+          )
         ) : cover.in_stock ? (
           <p className="text-center text-sm font-medium text-white">
             {pcs(cover.quantity)} in stock

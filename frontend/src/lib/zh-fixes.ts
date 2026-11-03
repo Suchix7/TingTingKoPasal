@@ -39,4 +39,16 @@ export const zhFixes: Record<string, string> = {
     "仍在处理中……服务器可能正在唤醒，最多需要一分钟。",
   "Loading your shop": "正在加载店铺",
   "Opening your dashboard": "正在打开后台",
+  // POS product filters
+  "All models": "全部型号",
+  "in stock": "有货",
+  "Newest first": "最新优先",
+  "Price: low to high": "价格：从低到高",
+  "Price: high to low": "价格：从高到低",
+  "Name: A to Z": "名称：A 到 Z",
+  "Clear filters": "清除筛选",
+  "Load more": "加载更多",
+  product: "件商品",
+  "Sort products": "商品排序",
+  "Search name, phone model or barcode...": "搜索名称、手机型号或条码...",
 };
