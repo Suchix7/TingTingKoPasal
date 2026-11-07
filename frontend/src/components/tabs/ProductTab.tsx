@@ -259,9 +259,9 @@ export default function ProductsPage() {
 
       {/* Statistics Cards */}
       {isLoading && !stats ? (
-        <StatCardsSkeleton className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4" />
+        <StatCardsSkeleton className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4" />
       ) : (
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Products"
           value={stats?.totalProducts || 0}
@@ -279,7 +279,6 @@ export default function ProductsPage() {
           value={stats?.lowStockProducts || 0}
           icon={AlertCircle}
           subtitle="Products with stock ≤ 5"
-          trend={{ value: 12, isPositive: false }}
         />
         <StatCard
           title="Out of Stock"
@@ -396,7 +395,159 @@ export default function ProductsPage() {
           ) : null}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Phones: one card per product instead of a wide table */}
+        <div
+          className={`divide-y divide-gray-100 md:hidden ${
+            isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, r) => (
+              <div key={r} className="flex gap-3 p-4" aria-hidden>
+                <Skeleton className="h-20 w-20 shrink-0 rounded-xl" />
+                <div className="flex-1 space-y-2 pt-1">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/3" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              </div>
+            ))
+          ) : products.length === 0 ? (
+            <div className="px-5 py-14 text-center">
+              <Package className="mx-auto mb-3 text-gray-300" size={44} />
+              <h3 className="text-base font-semibold text-gray-900">
+                {t("No products found")}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {search || selectedCategory || selectedStatus
+                  ? t("Try adjusting your filters")
+                  : t("Add your first product to start managing inventory")}
+              </p>
+            </div>
+          ) : (
+            products.map((product) => {
+              const batches = product.batches || [];
+              const totalStock =
+                Number(product.stock_quantity) +
+                batches.reduce((sum, b) => sum + Number(b.quantity || 0), 0);
+              const category = categories.find(
+                (c) => c.id === product.category_id,
+              );
+              const mediaCount = product.photos?.length || (product.photo_url ? 1 : 0);
+              return (
+                <div key={product.id} className="flex gap-3 p-4">
+                  {product.photo_url ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setZoom({
+                          url: product.photo_url!,
+                          media: product.photos,
+                          title: product.product_name,
+                        })
+                      }
+                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100 ring-1 ring-gray-200"
+                      aria-label={t("View photo")}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverImage(product.photo_url, 200)}
+                        alt={product.product_name}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                      {mediaCount > 1 && (
+                        <span className="absolute bottom-1 right-1 rounded-md bg-black/60 px-1.5 text-[10px] font-semibold text-white">
+                          {mediaCount}
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-300">
+                      <ImageIcon size={22} />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(product)}
+                        className="min-w-0 text-left"
+                      >
+                        <p className="break-words font-semibold leading-snug text-gray-900">
+                          <Tn v={product.product_name} />
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-gray-500">
+                          {category?.category_name ? (
+                            <Tn v={category.category_name} />
+                          ) : (
+                            t("Uncategorized")
+                          )}
+                          {product.status !== "Active" && ` · ${t(product.status)}`}
+                        </p>
+                      </button>
+                      <div className="-mr-2 -mt-1 flex shrink-0">
+                        <button
+                          onClick={() => openEditModal(product)}
+                          className="rounded-xl p-2 text-gray-500 active:bg-blue-50 active:text-blue-600"
+                          aria-label={t("Edit product")}
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(product)}
+                          className="rounded-xl p-2 text-gray-500 active:bg-red-50 active:text-red-600"
+                          aria-label={t("Delete product")}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex items-baseline justify-between gap-2">
+                      <p className="font-bold text-gray-900">
+                        {money(product.sale_price)}
+                      </p>
+                      <p
+                        className={`text-sm font-medium ${
+                          totalStock <= 0
+                            ? "text-red-600"
+                            : totalStock <= 5
+                              ? "text-amber-600"
+                              : "text-gray-700"
+                        }`}
+                      >
+                        {totalStock <= 0
+                          ? t("Out of stock")
+                          : `${totalStock} ${product.unit || t("units")}`}
+                      </p>
+                    </div>
+
+                    {batches.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {batches.map((b) => (
+                          <span
+                            key={b.id}
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              Number(b.quantity) > 0
+                                ? "bg-blue-50 text-blue-700"
+                                : "bg-gray-100 text-gray-400 line-through"
+                            }`}
+                          >
+                            {b.batch_number} · {b.quantity}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[1000px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
@@ -473,7 +624,7 @@ export default function ProductsPage() {
                       (sum, b) => sum + Number(b.quantity || 0),
                       0,
                     );
-                  const isLowStock = totalStock <= 5;
+                  const isLowStock = totalStock > 0 && totalStock <= 5;
                   const category = categories.find(
                     (c) => c.id === product.category_id,
                   );

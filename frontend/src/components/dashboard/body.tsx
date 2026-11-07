@@ -218,7 +218,7 @@ export default function DashboardBody() {
           outOfStockItems={outOfStockItems}
         />
 
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="stat-grid grid grid-cols-2 gap-4 xl:grid-cols-4">
           <StatCard
             title="Today Sales"
             value={money(summary?.todaySales || 0)}
@@ -248,7 +248,7 @@ export default function DashboardBody() {
           />
         </section>
 
-        <section className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="mt-4 stat-grid grid grid-cols-2 gap-4 xl:grid-cols-4">
           <MiniStat
             label="Total Credit"
             value={money(summary?.totalCredit || 0)}
@@ -663,10 +663,10 @@ function DashboardLoading({ lastGrid }: { lastGrid: string }) {
 
       <StatCardsSkeleton
         count={4}
-        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+        className="stat-grid grid grid-cols-2 gap-4 xl:grid-cols-4"
       />
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 stat-grid grid grid-cols-2 gap-4 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}

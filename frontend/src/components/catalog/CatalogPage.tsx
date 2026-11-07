@@ -26,6 +26,7 @@ import { coverImage } from "./image";
 import { pcs } from "./format";
 import CoverViewer from "./CoverViewer";
 import FilterSheet from "./FilterSheet";
+import ShopSplash from "./ShopSplash";
 
 const inStockModels = (c: Cover) => c.models.filter((m) => m.quantity > 0);
 
@@ -65,6 +66,8 @@ export default function CatalogPage() {
     data: categories = [],
     isLoading: categoriesLoading,
     isError: categoriesError,
+    isSuccess: categoriesReady,
+    isFetching: categoriesFetching,
     refetch: refetchCategories,
   } = useCatalogCategories();
 
@@ -111,6 +114,11 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-dvh bg-gray-50">
+      <ShopSplash
+        ready={categoriesReady}
+        error={categoriesError && !categoriesFetching}
+        onRetry={() => refetchCategories()}
+      />
       <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 pb-3 pt-3">
           <div className="relative flex flex-col items-center gap-1.5 text-center">

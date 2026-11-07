@@ -332,9 +332,9 @@ export default function SalesPage() {
       </div>
 
       {isLoading ? (
-        <StatCardsSkeleton className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4" />
+        <StatCardsSkeleton className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4" />
       ) : (
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           title={t("Total Profit")}
           value={money(data?.stats?.totalProfit)}
@@ -428,8 +428,137 @@ export default function SalesPage() {
           ) : null}
         </div>
 
+        {/* Phones: one card per sale; tap it to see the full sale */}
         <div
-          className={`overflow-x-auto transition-opacity ${
+          className={`divide-y divide-gray-100 md:hidden ${
+            isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, r) => (
+              <div key={r} className="space-y-2 p-4" aria-hidden>
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-5 w-32 rounded-full" />
+              </div>
+            ))
+          ) : !sales.length ? (
+            <p className="px-5 py-14 text-center text-gray-500">
+              {t("No sales found.")}
+            </p>
+          ) : (
+            sales.map((sale) => (
+              <div key={sale.id} className="p-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSaleId(sale.id)}
+                  className="block w-full text-left"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-900">{sale.invoice_no}</p>
+                      <p className="truncate text-sm text-gray-600">
+                        {sale.customer_name || t("Walk-in customer")}
+                        {sale.customer_phone ? ` · ${sale.customer_phone}` : ""}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {dateTime(sale.created_at)}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-bold text-gray-900">
+                        {money(sale.grand_total)}
+                      </p>
+                      {Number(sale.remaining_amount) > 0 ? (
+                        <p className="text-xs font-medium text-red-600">
+                          {t("Remaining")} {money(sale.remaining_amount)}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-green-700">
+                          {t("Profit")} {money(sale.profit_amount)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <StatusBadge className={paymentStatusClass[sale.payment_status]}>
+                      {t(sale.payment_status)}
+                    </StatusBadge>
+                    {sale.sale_status !== "Completed" && (
+                      <StatusBadge className={saleStatusClass[sale.sale_status]}>
+                        {t(sale.sale_status)}
+                      </StatusBadge>
+                    )}
+                    {sale.payment_proof_url ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600">
+                        <Camera size={12} /> {t("Proof photo")}
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
+
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-100 pt-2">
+                  <button
+                    onClick={() => handlePrintReceipt(sale)}
+                    disabled={!!printingId}
+                    className="rounded-xl p-2.5 text-gray-500 active:bg-green-50 active:text-green-600 disabled:opacity-50"
+                    aria-label={t("Print receipt")}
+                  >
+                    {printingId === sale.id ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Printer size={18} />
+                    )}
+                  </button>
+                  {sale.sale_status === "Completed" && (
+                    <button
+                      onClick={() => {
+                        setRevokeReason("");
+                        setRevokeTarget(sale);
+                      }}
+                      className="rounded-xl p-2.5 text-gray-500 active:bg-amber-50 active:text-amber-600"
+                      aria-label={t("Revoke sale")}
+                    >
+                      <Undo2 size={18} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleEditSale(sale)}
+                    disabled={!!editSaleId}
+                    className="rounded-xl p-2.5 text-gray-500 active:bg-slate-100 disabled:opacity-50"
+                    aria-label={t("Edit sale")}
+                  >
+                    {editSaleId === sale.id && !editSaleItemsData ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Edit size={18} />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(sale)}
+                    className="rounded-xl p-2.5 text-gray-500 active:bg-red-50 active:text-red-600"
+                    aria-label={t("Delete sale")}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <button
+                    onClick={() => setSelectedSaleId(sale.id)}
+                    className="ml-1 inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-3.5 py-2 text-sm font-medium text-white active:bg-gray-700"
+                  >
+                    <Eye size={16} />
+                    {t("View")}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div
+          className={`hidden overflow-x-auto transition-opacity md:block ${
             isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
           }`}
         >

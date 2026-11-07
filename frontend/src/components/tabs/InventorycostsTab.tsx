@@ -433,10 +433,10 @@ export default function InventoryCostsPage() {
           {isLoading ? (
             <StatCardsSkeleton
               count={3}
-              className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+              className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-3"
             />
           ) : (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-3">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5">
               <div className="flex items-center justify-between">
                 <div>

@@ -268,11 +268,11 @@ export default function EoqPlanningPage() {
           {isLoading && !stats && (
             <StatCardsSkeleton
               count={5}
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+              className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-5"
             />
           )}
           {stats && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-5">
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
                 <div className="flex items-center gap-3">
                   <div className="rounded-xl bg-slate-900 p-2.5">

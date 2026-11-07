@@ -427,11 +427,11 @@ export default function ProductModal({
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   {t("Photos & Videos")}
                 </label>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
                   {photos.map((photo, i) => (
                     <div
                       key={photoKey(photo)}
-                      className={`relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border bg-slate-50 sm:h-28 sm:w-28 ${
+                      className={`relative aspect-square w-full shrink-0 overflow-hidden rounded-xl border bg-slate-50 sm:h-28 sm:w-28 ${
                         i === 0
                           ? "border-blue-500 ring-2 ring-blue-500/30"
                           : "border-slate-200"
@@ -496,7 +496,7 @@ export default function ProductModal({
                       type="button"
                       onClick={() => photoInputRef.current?.click()}
                       disabled={isSubmitting}
-                      className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-28 sm:w-28"
+                      className="flex aspect-square w-full shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 px-1 text-center text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-28 sm:w-28"
                     >
                       <ImagePlus size={20} />
                       {t("Add Photos / Videos")}

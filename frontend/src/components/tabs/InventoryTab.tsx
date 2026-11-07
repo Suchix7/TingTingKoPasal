@@ -677,10 +677,10 @@ export default function InventoryPage() {
           {isLoading ? (
             <StatCardsSkeleton
               count={4}
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4"
             />
           ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md">
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-slate-900 p-2.5">
@@ -945,7 +945,7 @@ export default function InventoryPage() {
                   </table>
                 </div>
 
-                <div className="grid gap-4 p-4 lg:hidden">
+                <div className="grid gap-3 p-3 sm:gap-4 sm:p-4 lg:hidden">
                   {inventory.map((item) => {
                     const stockStatus = getStockStatus(
                       item.total_stock,
@@ -962,29 +962,29 @@ export default function InventoryPage() {
                     return (
                       <div
                         key={item.inventory_id || item.product_id}
-                        className="rounded-2xl border border-slate-200 bg-white p-5"
+                        className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
                       >
                         <button
                           onClick={() =>
                             toggleProductExpansion(item.product_id)
                           }
-                          className="flex items-start justify-between gap-4 w-full"
+                          className="flex w-full items-start justify-between gap-3"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 sm:h-12 sm:w-12">
                               <StatusIcon
                                 className={`h-6 w-6 ${statusStyle.iconColor}`}
                               />
                             </div>
-                            <div className="text-left">
-                              <h3 className="font-semibold text-slate-900">
+                            <div className="min-w-0 text-left">
+                              <h3 className="break-words font-semibold leading-snug text-slate-900">
                                 <Tn v={item.product_name} />
                               </h3>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex shrink-0 items-center gap-1">
                             <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle.badge}`}
+                              className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium ${statusStyle.badge}`}
                             >
                               <StatusIcon className="h-3 w-3" />
                               {t(STOCK_STATUS[stockStatus].label)}
@@ -1044,7 +1044,7 @@ export default function InventoryPage() {
                           <button
                             onClick={() => handleRestock(item.product_id)}
                             disabled={isSubmitting}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-50"
+                            className="min-w-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-50"
                           >
                             <TrendingUp className="h-4 w-4" />
                             {t("Restock")}
@@ -1052,7 +1052,7 @@ export default function InventoryPage() {
                           <button
                             onClick={() => handleDeduct(item.product_id)}
                             disabled={isSubmitting}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:opacity-50"
+                            className="min-w-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 disabled:opacity-50"
                           >
                             <TrendingDown className="h-4 w-4" />
                             {t("Deduct")}
@@ -1060,7 +1060,7 @@ export default function InventoryPage() {
                           <button
                             onClick={() => handleUpdateInventory(item)}
                             disabled={isSubmitting}
-                            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                            className="min-w-0 flex-1 rounded-xl border border-slate-200 px-2 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
                           >
                             {t("Manage")}
                           </button>

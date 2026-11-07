@@ -164,9 +164,9 @@ export default function CustomersPage() {
 
         {/* Stats Cards */}
         {isLoading ? (
-          <StatCardsSkeleton className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" />
+          <StatCardsSkeleton className="stat-grid grid grid-cols-2 lg:grid-cols-4 gap-4" />
         ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="stat-grid grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gray-100 rounded-lg">

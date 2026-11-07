@@ -32,7 +32,7 @@ import Pagination from "@/components/layout/Pagination";
 
 import Tn from "@/components/layout/Tn";
 import { useLang } from "@/lib/i18n";
-import { StatCardsSkeleton, TableRowsSkeleton } from "@/components/layout/Skeleton";
+import { Skeleton, StatCardsSkeleton, TableRowsSkeleton } from "@/components/layout/Skeleton";
 export type BatchFormData = {
   product_id: string | "";
   batch_number: string;
@@ -116,6 +116,7 @@ export default function ProductBatchesPage() {
     page,
     LIMIT,
     debouncedSearch,
+    selectedProduct,
   );
   const { data: productsData, isLoading: productsLoading } = useProducts({
     page: 1,
@@ -129,46 +130,22 @@ export default function ProductBatchesPage() {
 
   const products = productsData?.data || [];
 
-  // Filter batches by selected product (client-side since API only supports search)
-  const filteredBatches = useMemo(() => {
-    if (!selectedProduct) return batches;
-    return batches.filter(
-      (batch) => String(batch.product_id) === selectedProduct,
-    );
-  }, [batches, selectedProduct]);
+  // the server filters by product; this is just the current page
+  const filteredBatches = batches;
 
-  // Calculate stats from all batches (not filtered)
-  const stats = useMemo(() => {
-    const totalBatches = batches.length;
-    const totalQuantity = batches.reduce(
-      (sum, batch) => sum + (batch.quantity || 0),
-      0,
-    );
-    const totalValue = batches.reduce(
-      (sum, batch) => sum + (batch.quantity || 0) * (batch.cost_price || 0),
-      0,
-    );
-    const uniqueProducts = new Set(batches.map((b) => b.product_id)).size;
-
-    // Count batches with low quantity (≤5)
-    const lowQuantityBatches = batches.filter(
-      (b) => b.quantity <= 5 && b.quantity > 0,
-    ).length;
-    const zeroQuantityBatches = batches.filter((b) => b.quantity === 0).length;
-
-    return {
-      totalBatches,
-      totalQuantity,
-      totalValue,
-      uniqueProducts,
-      lowQuantityBatches,
-      zeroQuantityBatches,
-    };
-  }, [batches]);
+  // totals across every matching batch, worked out by the server
+  const stats = data?.stats ?? {
+    totalBatches: 0,
+    totalQuantity: 0,
+    totalValue: 0,
+    uniqueProducts: 0,
+    lowQuantityBatches: 0,
+    zeroQuantityBatches: 0,
+  };
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, selectedProduct]);
 
   const openAddModal = () => {
     setSelectedBatch(null);
@@ -212,9 +189,9 @@ export default function ProductBatchesPage() {
 
       {/* Statistics Cards */}
       {isLoading && !data ? (
-        <StatCardsSkeleton className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4" />
+        <StatCardsSkeleton className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4" />
       ) : (
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Batches"
           value={stats.totalBatches}
@@ -238,7 +215,6 @@ export default function ProductBatchesPage() {
           value={stats.lowQuantityBatches + stats.zeroQuantityBatches}
           icon={Package}
           subtitle={`${stats.lowQuantityBatches} ${t("low (≤5)")}, ${stats.zeroQuantityBatches} ${t("zero")}`}
-          trend={{ value: 12, isPositive: false }}
         />
       </div>
       )}
@@ -324,9 +300,7 @@ export default function ProductBatchesPage() {
           <div>
             <h2 className="font-bold text-gray-900">{t("All Batches")}</h2>
             <p className="text-sm text-gray-500">
-              {selectedProduct
-                ? `${filteredBatches.length} ${t("of")} ${totalCount} ${t("records filtered")}`
-                : `${totalCount} ${t("total records")}`}
+              {`${totalCount} ${t("total records")}`}
             </p>
           </div>
           {isFetching ? (
@@ -334,7 +308,76 @@ export default function ProductBatchesPage() {
           ) : null}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Phones: one row per phone model / batch */}
+        <div
+          className={`divide-y divide-gray-100 md:hidden ${
+            isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, r) => (
+              <div key={r} className="space-y-2 p-4" aria-hidden>
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+            ))
+          ) : filteredBatches.length === 0 ? (
+            <div className="px-5 py-14 text-center">
+              <Package className="mx-auto mb-3 text-gray-300" size={44} />
+              <h3 className="text-base font-semibold text-gray-900">
+                {t("No batches found")}
+              </h3>
+            </div>
+          ) : (
+            filteredBatches.map((batch) => (
+              <div key={batch.id} className="flex items-center gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => openEditModal(batch)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <p className="truncate font-semibold text-gray-900">
+                    {batch.batch_number || "-"}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">
+                    {batch.product_name || `${t("Product")} #${batch.product_id}`}
+                    {" · "}
+                    {money(batch.sale_price)}
+                  </p>
+                </button>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    batch.quantity <= 0
+                      ? "bg-red-50 text-red-600"
+                      : batch.quantity <= 5
+                        ? "bg-amber-50 text-amber-700"
+                        : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {batch.quantity <= 0 ? t("Out of stock") : `${batch.quantity} ${t("pcs")}`}
+                </span>
+                <div className="-mr-2 flex shrink-0">
+                  <button
+                    onClick={() => openEditModal(batch)}
+                    className="rounded-xl p-2 text-gray-500 active:bg-blue-50 active:text-blue-600"
+                    aria-label={t("Edit batch")}
+                  >
+                    <Edit size={18} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(batch)}
+                    className="rounded-xl p-2 text-gray-500 active:bg-red-50 active:text-red-600"
+                    aria-label={t("Delete batch")}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[1000px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
@@ -381,7 +424,7 @@ export default function ProductBatchesPage() {
                 </tr>
               ) : (
                 filteredBatches.map((batch, index) => {
-                  const isLowQuantity = batch.quantity <= 5;
+                  const isLowQuantity = batch.quantity > 0 && batch.quantity <= 5;
                   const batchTotalValue = batch.quantity * batch.cost_price;
                   const margin =
                     batch.cost_price > 0

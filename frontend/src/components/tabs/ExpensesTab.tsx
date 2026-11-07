@@ -267,10 +267,10 @@ export default function ExpensesPage() {
       {isLoading ? (
         <StatCardsSkeleton
           count={4}
-          className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4"
         />
       ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Expenses"
             value={money(totalAmount)}
@@ -396,7 +396,88 @@ export default function ExpensesPage() {
           ) : null}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Phones: one row per expense; tap it for the details */}
+        <div
+          className={`divide-y divide-gray-100 md:hidden ${
+            isFetching && !isLoading ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, r) => (
+              <div key={r} className="flex justify-between gap-3 p-4" aria-hidden>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200" />
+                  <div className="h-3 w-1/3 animate-pulse rounded bg-gray-200" />
+                </div>
+                <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+              </div>
+            ))
+          ) : !expenses.length ? (
+            <div className="flex flex-col items-center gap-2 px-5 py-14 text-center text-gray-500">
+              <AlertCircle size={24} className="text-gray-400" />
+              <p>{t("No expenses found.")}</p>
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="text-sm text-blue-600"
+              >
+                {t("Add your first expense")}
+              </button>
+            </div>
+          ) : (
+            expenses.map((expense) => (
+              <div key={expense.id} className="flex items-center gap-2 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedExpenseId(expense.id)}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-gray-900">
+                      {expense.title}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                      <StatusBadge
+                        className={
+                          categoryColors[expense.category] ||
+                          categoryColors.Other
+                        }
+                      >
+                        {t(expense.category)}
+                      </StatusBadge>
+                      <span>{dateOnly(expense.expense_date)}</span>
+                      {expense.payment_method && (
+                        <span>
+                          · <Tn v={expense.payment_method} />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="shrink-0 font-bold text-red-700">
+                    {money(expense.amount)}
+                  </p>
+                </button>
+                <div className="-mr-2 flex shrink-0">
+                  <button
+                    onClick={() => setEditExpense(expense)}
+                    className="rounded-xl p-2 text-gray-500 active:bg-slate-100"
+                    aria-label={t("Edit expense")}
+                  >
+                    <Edit size={18} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(expense)}
+                    className="rounded-xl p-2 text-gray-500 active:bg-red-50 active:text-red-600"
+                    aria-label={t("Delete expense")}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[1200px] text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>

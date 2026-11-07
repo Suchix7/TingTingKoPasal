@@ -132,7 +132,7 @@ export default function PhoneModelPicker({ value, onChange, disabled }: Props) {
               disabled={disabled}
               onClick={() => setQuantity(model, (row?.quantity ?? 0) + 1)}
               className="rounded-md border border-slate-200 bg-white p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
-              aria-label={`${t("More")} ${model}`}
+              aria-label={`${t("Add one")} ${model}`}
             >
               <Plus size={14} />
             </button>

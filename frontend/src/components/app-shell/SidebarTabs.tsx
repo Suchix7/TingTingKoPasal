@@ -59,7 +59,7 @@ type SidebarTabsProps = {
   onMobileClose: () => void;
 };
 
-const SIDEBAR_LINKS: {
+export const SIDEBAR_LINKS: {
   section: string;
   links: {
     name: string;

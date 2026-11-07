@@ -253,7 +253,7 @@ export const deleteProductBatch = async (req, res) => {
 
 export const getProductBatches = async (req, res) => {
   try {
-    const { page, limit, search } = req.query;
+    const { page, limit, search, productId } = req.query;
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const limitNum = Math.max(parseInt(limit) || 10, 1);
@@ -279,13 +279,35 @@ export const getProductBatches = async (req, res) => {
       filter.productId = { $in: activeIds };
     }
 
-    const [batches, totalCount] = await Promise.all([
+    // one product's batches only
+    if (productId && mongoose.isValidObjectId(productId)) {
+      filter.productId = new mongoose.Types.ObjectId(String(productId));
+    }
+
+    const [batches, totalCount, [summary]] = await Promise.all([
       ProductBatch.find(filter)
         .populate("productId", "productName sku barcode")
         .sort({ createdAt: -1 })
         .skip(offset)
         .limit(limitNum),
       ProductBatch.countDocuments(filter),
+      // totals for the summary cards: every matching batch, not just this page
+      ProductBatch.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            totalBatches: { $sum: 1 },
+            totalQuantity: { $sum: "$quantity" },
+            totalValue: { $sum: { $multiply: ["$quantity", "$costPrice"] } },
+            products: { $addToSet: "$productId" },
+            lowQuantityBatches: {
+              $sum: { $cond: [{ $and: [{ $gt: ["$quantity", 0] }, { $lte: ["$quantity", 5] }] }, 1, 0] },
+            },
+            zeroQuantityBatches: { $sum: { $cond: [{ $lte: ["$quantity", 0] }, 1, 0] } },
+          },
+        },
+      ]),
     ]);
 
     const data = batches.map((b) =>
@@ -303,6 +325,14 @@ export const getProductBatches = async (req, res) => {
       page: pageNum,
       limit: limitNum,
       totalPages: Math.ceil(totalCount / limitNum),
+      stats: {
+        totalBatches: summary?.totalBatches || 0,
+        totalQuantity: summary?.totalQuantity || 0,
+        totalValue: summary?.totalValue || 0,
+        uniqueProducts: summary?.products?.length || 0,
+        lowQuantityBatches: summary?.lowQuantityBatches || 0,
+        zeroQuantityBatches: summary?.zeroQuantityBatches || 0,
+      },
     });
   } catch (error) {
     console.error("Get product batches error:", error.message);

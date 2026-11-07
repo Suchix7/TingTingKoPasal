@@ -378,7 +378,7 @@ export default function DaybookPage() {
           <Skeleton className="h-[88px] w-full rounded-2xl" />
           <StatCardsSkeleton
             count={4}
-            className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+            className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4"
           />
           <div className="rounded-2xl border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-5 py-4">
@@ -392,7 +392,7 @@ export default function DaybookPage() {
           </div>
           <StatCardsSkeleton
             count={3}
-            className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-3"
           />
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <CardGridSkeleton
@@ -452,7 +452,7 @@ export default function DaybookPage() {
           </div>
 
           {/* Key Metrics Grid */}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total Sales"
               value={money(daybook.summary.total_sales_amount)}
@@ -503,7 +503,7 @@ export default function DaybookPage() {
           </div>
 
           {/* Secondary Metrics */}
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-3">
             <StatCard
               title="Total Received"
               value={money(daybook.summary.total_received)}

@@ -7,6 +7,7 @@ import { logActivity } from "../utils/activityLog.js";
 import { deleteImage, signProductUpload, cloudName } from "../utils/cloudinaryUpload.js";
 import Category from "../models/Category.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
+import { totalStockStages } from "../utils/stock.js";
 import {
   productMedia,
   videoPoster,
@@ -560,8 +561,10 @@ export const getProducts = async (req, res) => {
         .skip(offset)
         .limit(limitNum),
       Product.countDocuments(filter),
+      // stock counts include what's held on phone models / batches
       Product.aggregate([
         { $match: filter },
+        ...totalStockStages,
         {
           $group: {
             _id: null,
@@ -569,23 +572,22 @@ export const getProducts = async (req, res) => {
             lowStockProducts: {
               $sum: {
                 $cond: [
-                  {
-                    $and: [
-                      { $gt: ["$stock.currentStock", 0] },
-                      { $gt: ["$stock.reorderLevel", 0] },
-                      { $lte: ["$stock.currentStock", "$stock.reorderLevel"] },
-                    ],
-                  },
+                  { $and: [{ $gt: ["$totalStock", 0] }, { $lte: ["$totalStock", 5] }] },
                   1,
                   0,
                 ],
               },
             },
             outOfStockProducts: {
-              $sum: { $cond: [{ $lte: ["$stock.currentStock", 0] }, 1, 0] },
+              $sum: { $cond: [{ $lte: ["$totalStock", 0] }, 1, 0] },
             },
             inventoryValue: {
-              $sum: { $multiply: ["$stock.currentStock", "$costPrice"] },
+              $sum: {
+                $add: [
+                  { $multiply: [{ $ifNull: ["$stock.currentStock", 0] }, "$costPrice"] },
+                  "$batchValue",
+                ],
+              },
             },
           },
         },

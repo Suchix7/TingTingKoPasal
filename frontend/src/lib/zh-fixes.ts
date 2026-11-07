@@ -51,4 +51,10 @@ export const zhFixes: Record<string, string> = {
   product: "件商品",
   "Sort products": "商品排序",
   "Search name, phone model or barcode...": "搜索名称、手机型号或条码...",
+  // phone tab bar and lists
+  More: "更多",
+  Main: "主菜单",
+  "Add one": "加一个",
+  "Add more items": "继续添加商品",
+  pcs: "件",
 };

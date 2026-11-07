@@ -50,6 +50,15 @@ export type ProductBatchesResponse = {
   page: number;
   limit: number;
   totalPages?: number;
+  // totals across every matching batch (not just this page)
+  stats?: {
+    totalBatches: number;
+    totalQuantity: number;
+    totalValue: number;
+    uniqueProducts: number;
+    lowQuantityBatches: number;
+    zeroQuantityBatches: number;
+  };
 };
 
 export type ProductBatchResponse = {
@@ -83,7 +92,8 @@ export const productBatchesQueryKey = (
   page: number,
   limit: number,
   search: string,
-) => ["productBatches", { page, limit, search }] as const;
+  productId = "",
+) => ["productBatches", { page, limit, search, productId }] as const;
 
 export const productBatchesByProductQueryKey = (productId: string) =>
   ["productBatches", "product", productId] as const;
@@ -96,9 +106,14 @@ export const productBatchQueryKey = (batchId: string) =>
    Pagination + Search
 ========================================================= */
 
-export const useProductBatches = (page = 1, limit = 10, search = "") => {
+export const useProductBatches = (
+  page = 1,
+  limit = 10,
+  search = "",
+  productId = "",
+) => {
   return useQuery<ProductBatchesResponse>({
-    queryKey: productBatchesQueryKey(page, limit, search),
+    queryKey: productBatchesQueryKey(page, limit, search, productId),
 
     queryFn: async () => {
       const res = await axiosInstance.get<ProductBatchesResponse>(
@@ -108,6 +123,7 @@ export const useProductBatches = (page = 1, limit = 10, search = "") => {
             page,
             limit,
             search,
+            productId: productId || undefined,
           },
         },
       );

@@ -169,9 +169,9 @@ export default function CategoriesPage() {
 
       {/* Statistics Cards */}
       {isLoading && !data ? (
-        <StatCardsSkeleton count={3} className="grid gap-4 grid-cols-1 md:grid-cols-3" />
+        <StatCardsSkeleton count={3} className="stat-grid grid gap-4 grid-cols-2 md:grid-cols-3" />
       ) : (
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+      <div className="stat-grid grid gap-4 grid-cols-2 md:grid-cols-3">
         <StatCard
           title={t("Total Categories")}
           value={data?.stats?.totalCategories || 0}

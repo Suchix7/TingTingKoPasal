@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Menu } from "lucide-react";
-import SidebarTabs, { MainTab } from "./SidebarTabs";
+import SidebarTabs, { MainTab, SIDEBAR_LINKS } from "./SidebarTabs";
+import BottomNav from "./BottomNav";
 import LanguageToggle from "./LanguageToggle";
 import ActivityBar from "@/components/layout/ActivityBar";
 import { useLang } from "@/lib/i18n";
@@ -24,6 +25,10 @@ import BarcodeLabelsTab from "../tabs/BarcodeLabelsTab";
 import ActivityLogTab from "../tabs/ActivityLogTab";
 import StoreInfoTab from "../tabs/StoreInfoTab";
 
+const tabName = (tab: MainTab) =>
+  SIDEBAR_LINKS.flatMap((s) => s.links).find((l) => l.tab === tab)?.name ??
+  "Ting Ting ko pasal";
+
 export default function MainShell() {
   const [activeTab, setActiveTabState] = useState<MainTab>("pos");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -34,6 +39,8 @@ export default function MainShell() {
   const setActiveTab = (tab: MainTab) => {
     setActiveTabState(tab);
     setMobileMenuOpen(false);
+    // a new page starts at its top, not where the last one was scrolled to
+    document.querySelector("main")?.scrollTo({ top: 0 });
   };
 
   return (
@@ -56,15 +63,26 @@ export default function MainShell() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-gray-900 md:hidden">
-            Ting Ting ko pasal
+          {/* phones: which page this is */}
+          <span className="flex min-w-0 items-center gap-2 md:hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7 shrink-0 rounded-full"
+            />
+            <span className="truncate text-base font-semibold text-gray-900">
+              {t(tabName(activeTab))}
+            </span>
           </span>
           <div className="ml-auto">
             <LanguageToggle />
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto">
           {activeTab === "dashboard" && (
             <DashboardTab setActiveTab={setActiveTab} />
           )}
@@ -88,6 +106,12 @@ export default function MainShell() {
           {activeTab === "store-info" && <StoreInfoTab />}
           {activeTab === "security" && <SecurityTab />}
         </main>
+
+        <BottomNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onMore={() => setMobileMenuOpen(true)}
+        />
       </div>
     </div>
   );

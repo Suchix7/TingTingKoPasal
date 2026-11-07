@@ -69,7 +69,7 @@ export default function SaleDetailsModal({
         <div className="max-h-[calc(90vh-72px)] overflow-y-auto p-6">
           {isSaleLoading ? (
             <div className="space-y-6" aria-busy>
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="rounded-2xl bg-gray-50 p-4">
                     <Skeleton className="h-3 w-16" />
@@ -104,8 +104,8 @@ export default function SaleDetailsModal({
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-5">
-                <div className="rounded-2xl bg-gray-50 p-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
+                <div className="col-span-2 rounded-2xl bg-gray-50 p-4 md:col-span-1">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     {t("Invoice")}
                   </p>

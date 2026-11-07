@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts, useProductModels } from "@/hooks/useProducts";
 import { IPHONE_MODELS } from "@/lib/phoneModels";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
@@ -104,6 +104,18 @@ export default function PointOfSalesPage() {
   // stays in normal document flow - a sticky summary bar just scrolls to
   // it, rather than trying to overlay it as a fixed sheet.
   const billingRef = useRef<HTMLDivElement>(null);
+  // is the bill on screen? (mobile bar then offers to go back to products)
+  const [billInView, setBillInView] = useState(false);
+  useEffect(() => {
+    const el = billingRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setBillInView(entry.isIntersecting),
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const { data: categoriesData } = useCategories();
 
@@ -794,18 +806,24 @@ export default function PointOfSalesPage() {
         />
       </div>
 
-      {/* Mobile sticky summary bar - scrolls down to the bill above.
-          Just one fixed element, nothing it can overlap with. */}
+      {/* Mobile sticky summary bar: jumps to the bill, and once the bill is
+          on screen, back up to the products to add more. */}
       {cartItems.length > 0 && (
         <button
           type="button"
-          onClick={() =>
-            billingRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            })
-          }
-          className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-2 border-t border-gray-200 bg-gray-900 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-white shadow-2xl xl:hidden"
+          onClick={() => {
+            if (billInView) {
+              billingRef.current
+                ?.closest("main")
+                ?.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+              billingRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }
+          }}
+          className="pos-summary-bar fixed inset-x-0 z-30 flex items-center justify-between gap-2 border-t border-gray-200 bg-gray-900 px-4 pt-3 text-white shadow-2xl xl:hidden"
         >
           <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
             <ShoppingCart className="h-4 w-4 shrink-0" />
@@ -816,7 +834,7 @@ export default function PointOfSalesPage() {
             </span>
           </span>
           <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-gray-900">
-            {t("View Bill")}
+            {billInView ? t("Add more items") : t("View Bill")}
           </span>
         </button>
       )}

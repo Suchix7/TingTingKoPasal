@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useProductBatchesByProduct } from "@/hooks/useProductBatch";
 import { Package, X, Layers, AlertCircle } from "lucide-react";
 import type { Product } from "@/hooks/useProducts";
@@ -20,6 +21,13 @@ export default function BatchSelectionModal({
   onClose,
 }: BatchSelectionModalProps) {
   const { t } = useLang();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const { data: batchesData, isLoading } = useProductBatchesByProduct(
     product.id,
   );

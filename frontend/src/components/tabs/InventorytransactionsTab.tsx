@@ -529,10 +529,10 @@ export default function InventoryTransactionsPage() {
           {isLoading ? (
             <StatCardsSkeleton
               count={4}
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4"
             />
           ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="stat-grid grid gap-4 grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title={t("Total Inflows")}
               value={data?.stats?.total_inflows || 0}
