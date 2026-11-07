@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import PhotoLightbox from "@/components/layout/PhotoLightbox";
+import type { MediaItem } from "@/components/catalog/image";
 import { coverImage } from "@/components/catalog/image";
 import {
   Edit,
@@ -61,7 +62,11 @@ export default function ProductGrid({
 }: ProductGridProps) {
   const { t, tn } = useLang();
   const [open, setOpen] = useState(false);
-  const [zoom, setZoom] = useState<{ url: string; title: string } | null>(null);
+  const [zoom, setZoom] = useState<{
+    url: string;
+    media?: MediaItem[];
+    title: string;
+  } | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [batchSelectionProduct, setBatchSelectionProduct] =
@@ -414,6 +419,7 @@ export default function ProductGrid({
                               e.stopPropagation();
                               setZoom({
                                 url: product.photo_url!,
+                                media: product.photos,
                                 title: product.product_name,
                               });
                             }}
@@ -529,6 +535,7 @@ export default function ProductGrid({
       {zoom && (
         <PhotoLightbox
           url={zoom.url}
+          media={zoom.media}
           title={zoom.title}
           onClose={() => setZoom(null)}
         />

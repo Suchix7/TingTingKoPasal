@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import {
   createProduct,
   getProducts,
@@ -7,18 +6,14 @@ import {
   updateProduct,
   deleteProduct,
   getProductByBarcode,
-  uploadProductPhoto,
+  saveProductPhotos,
+  signProductMediaUpload,
   reprintBarcode,
   regenerateBarcode,
   markBarcodePrinted,
   getNameMap,
   getProductModels,
 } from "./controller.js";
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
 
 const router = express.Router();
 
@@ -38,7 +33,11 @@ router.put("/:id", updateProduct);
 
 router.delete("/:id", deleteProduct);
 
-router.post("/:id/photo", upload.single("photo"), uploadProductPhoto);
+// Signed params for uploading a photo or video straight to Cloudinary
+router.post("/media/sign", signProductMediaUpload);
+
+// Replace the photo/video list in one go (first entry is the cover)
+router.put("/:id/photos", saveProductPhotos);
 
 router.post("/:id/barcode/reprint", reprintBarcode);
 

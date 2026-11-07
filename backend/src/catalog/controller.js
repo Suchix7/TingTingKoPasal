@@ -3,9 +3,10 @@ import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 import Category from "../models/Category.js";
 import StoreInfo from "../models/StoreInfo.js";
+import { productMedia } from "../utils/media.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
 
-// Public, read-only catalog for the customer site. It exposes the cover photo,
+// Public, read-only catalog for the customer site. It exposes the photos and videos,
 // its category and how many are left (per phone model for cases, a single
 // count for accessories): no prices, names, SKUs or barcodes. Sold-out items
 // stay listed, marked out of stock, after everything that is available.
@@ -62,6 +63,7 @@ const toCover = (product, entries) => {
   return {
     id: String(product._id),
     photo_url: product.photoUrl,
+    media: productMedia(product).map(({ type, url, poster }) => ({ type, url, poster })),
     category_id: product.categoryId ? String(product.categoryId) : null,
     models,
     quantity,
@@ -139,7 +141,7 @@ export const getCovers = async (req, res) => {
         { $sort: { available: -1, createdAt: -1, _id: 1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
-        { $project: { photoUrl: 1, categoryId: 1, "stock.currentStock": 1 } },
+        { $project: { photoUrl: 1, "photos.url": 1, "photos.type": 1, categoryId: 1, "stock.currentStock": 1 } },
       ]),
       Product.countDocuments(filter),
     ]);
@@ -164,7 +166,7 @@ export const getCover = async (req, res) => {
       return res.status(404).json({ success: false, message: "Cover not found" });
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
-      .select("photoUrl categoryId stock.currentStock")
+      .select("photoUrl photos.url photos.type categoryId stock.currentStock")
       .lean();
     if (!product) {
       return res.status(404).json({ success: false, message: "Cover not found" });

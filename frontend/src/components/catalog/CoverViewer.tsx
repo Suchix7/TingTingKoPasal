@@ -1,50 +1,34 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useEffect } from "react";
+import { X } from "lucide-react";
 
 import type { Cover } from "@/hooks/useCatalog";
-import { coverImage } from "./image";
 import { pcs } from "./format";
+import MediaGallery from "./MediaGallery";
 
 type Props = {
-  covers: Cover[];
+  cover: Cover;
   // phone cases: tell shoppers to ask in store when no model is listed
   isCase: boolean;
-  index: number;
-  onIndexChange: (index: number) => void;
   onClose: () => void;
 };
 
-// Full-screen view of one cover with the phone models it fits.
-// Swipe, arrow keys or the side buttons move between covers.
-export default function CoverViewer({
-  covers,
-  isCase,
-  index,
-  onIndexChange,
-  onClose,
-}: Props) {
-  const cover = covers[index];
+// Full-screen view of one cover with the phone models it fits. Swiping only
+// moves between this cover's own photos and videos, never to another product.
+export default function CoverViewer({ cover, isCase, onClose }: Props) {
   const availableModels = cover.models.filter((m) => m.quantity > 0);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-
-  const hasPrev = index > 0;
-  const hasNext = index < covers.length - 1;
-  const go = (delta: number) => {
-    const next = index + delta;
-    if (next >= 0 && next < covers.length) onIndexChange(next);
-  };
+  const media = cover.media?.length
+    ? cover.media
+    : [{ type: "image" as const, url: cover.photo_url, poster: cover.photo_url }];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
-      if (e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, hasPrev, hasNext, onIndexChange, onClose]);
+  }, [onClose]);
 
   // keep the page behind from scrolling
   useEffect(() => {
@@ -55,40 +39,13 @@ export default function CoverViewer({
     };
   }, []);
 
-  // warm the neighbours so swiping feels instant
-  useEffect(() => {
-    [covers[index - 1], covers[index + 1]].forEach((c) => {
-      if (c) new window.Image().src = coverImage(c.photo_url, 1200);
-    });
-  }, [covers, index]);
-
-  if (!cover) return null;
-
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col bg-black"
       role="dialog"
       aria-modal="true"
-      onTouchStart={(e) => {
-        const t = e.touches[0];
-        touchStart.current = { x: t.clientX, y: t.clientY };
-      }}
-      onTouchEnd={(e) => {
-        const s = touchStart.current;
-        touchStart.current = null;
-        if (!s) return;
-        const t = e.changedTouches[0];
-        const dx = t.clientX - s.x;
-        const dy = t.clientY - s.y;
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-          go(dx < 0 ? 1 : -1);
-        }
-      }}
     >
-      <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <span className="text-sm text-white/70">
-          {index + 1} / {covers.length}
-        </span>
+      <div className="flex items-center justify-end px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <button
           type="button"
           onClick={onClose}
@@ -99,36 +56,7 @@ export default function CoverViewer({
         </button>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          key={cover.id}
-          src={coverImage(cover.photo_url, 1200)}
-          alt=""
-          className="max-h-full max-w-full select-none object-contain"
-          draggable={false}
-        />
-        {hasPrev && (
-          <button
-            type="button"
-            onClick={() => go(-1)}
-            className="absolute left-2 hidden rounded-full bg-white/15 p-2 text-white hover:bg-white/25 sm:block"
-            aria-label="Previous"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-        )}
-        {hasNext && (
-          <button
-            type="button"
-            onClick={() => go(1)}
-            className="absolute right-2 hidden rounded-full bg-white/15 p-2 text-white hover:bg-white/25 sm:block"
-            aria-label="Next"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        )}
-      </div>
+      <MediaGallery key={cover.id} items={media} dimmed={!cover.in_stock} />
 
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
         {!cover.in_stock && (

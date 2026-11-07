@@ -4,9 +4,15 @@ import ProductBatch from "../models/ProductBatch.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
 import { generateProductBarcode } from "../utils/barcode.js";
 import { logActivity } from "../utils/activityLog.js";
-import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
+import { deleteImage, signProductUpload, cloudName } from "../utils/cloudinaryUpload.js";
 import Category from "../models/Category.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
+import {
+  productMedia,
+  videoPoster,
+  MAX_PRODUCT_MEDIA,
+  PRODUCT_MEDIA_FOLDER,
+} from "../utils/media.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -847,7 +853,32 @@ export const markBarcodePrinted = async (req, res) => {
   }
 };
 
-export const uploadProductPhoto = async (req, res) => {
+export const signProductMediaUpload = async (req, res) => {
+  try {
+    const type = req.body?.type === "video" ? "video" : "image";
+    return res.json({ success: true, data: signProductUpload(type) });
+  } catch (error) {
+    console.error("Sign product media upload error:", error.message);
+    return res.status(500).json({ success: false, message: "Uploads are not available" });
+  }
+};
+
+// A newly uploaded item must be one of ours: in this Cloudinary account and
+// the product folder.
+function validNewMedia(item) {
+  if (!item || typeof item !== "object") return null;
+  const type = item.type === "video" ? "video" : item.type === "image" ? "image" : null;
+  const { url, publicId } = item;
+  if (!type || typeof url !== "string" || typeof publicId !== "string") return null;
+  if (!publicId.startsWith(`${PRODUCT_MEDIA_FOLDER}/`)) return null;
+  const prefix = `https://res.cloudinary.com/${cloudName()}/${type}/upload/`;
+  if (!url.startsWith(prefix) || !url.includes(publicId)) return null;
+  return { type, url, publicId };
+}
+
+// Body: { media: [...] } in display order; each entry is the id of a photo or
+// video the product already has, or { type, url, publicId } for a new upload.
+export const saveProductPhotos = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -855,39 +886,63 @@ export const uploadProductPhoto = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid product ID" });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "Photo file is required" });
+    const media = req.body?.media;
+    if (!Array.isArray(media)) {
+      return res.status(400).json({ success: false, message: "Invalid media list" });
+    }
+    if (media.length > MAX_PRODUCT_MEDIA) {
+      return res.status(400).json({
+        success: false,
+        message: `A product can have at most ${MAX_PRODUCT_MEDIA} photos and videos`,
+      });
     }
 
     const product = await Product.findOne({ _id: id, isDeleted: false });
-
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    const oldPublicId = product.photoPublicId;
+    const current = productMedia(product);
+    const byId = new Map(current.map((p) => [p.id, p]));
 
-    const result = await uploadImageBuffer(req.file.buffer, {
-      folder: "byapardesk/products",
-    });
+    const next = [];
+    const used = new Set();
+    for (const entry of media) {
+      const item = typeof entry === "string" ? byId.get(entry) : validNewMedia(entry);
+      if (!item) {
+        return res.status(400).json({ success: false, message: "Invalid photo or video" });
+      }
+      if (used.has(item.url)) continue;
+      used.add(item.url);
+      next.push({ type: item.type, url: item.url, publicId: item.publicId });
+    }
 
-    product.photoUrl = result.secure_url;
-    product.photoPublicId = result.public_id;
+    const cover = next[0];
+    product.photos = next;
+    product.photoUrl = cover
+      ? cover.type === "video"
+        ? videoPoster(cover.url)
+        : cover.url
+      : null;
+    product.photoPublicId = cover?.publicId || null;
     await product.save();
 
-    if (oldPublicId) {
-      deleteImage(oldPublicId).catch((err) =>
-        console.error("Failed to delete old product photo:", err.message),
-      );
+    const kept = new Set(next.map((p) => p.publicId).filter(Boolean));
+    for (const p of current) {
+      if (p.publicId && !kept.has(p.publicId)) {
+        deleteImage(p.publicId, p.type).catch((err) =>
+          console.error("Failed to delete old product media:", err.message),
+        );
+      }
     }
 
     return res.status(200).json({
       success: true,
-      message: "Photo uploaded successfully",
+      message: "Photos saved",
       data: serializeProduct(product),
     });
   } catch (error) {
-    console.error("Upload product photo error:", error.message);
+    console.error("Save product photos error:", error.message);
 
     return res.status(500).json({
       success: false,

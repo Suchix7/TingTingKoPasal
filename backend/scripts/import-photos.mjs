@@ -66,6 +66,7 @@ for (const p of plan) {
   const result = await uploadImageBuffer(fs.readFileSync(p.file), { folder: "byapardesk/products" });
   product.photoUrl = result.secure_url;
   product.photoPublicId = result.public_id;
+  product.photos = [{ type: "image", url: result.secure_url, publicId: result.public_id }];
   await product.save();
   done++;
   console.log(`uploaded ${done}: ${p.name}`);

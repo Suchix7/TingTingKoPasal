@@ -2,17 +2,20 @@
 
 import { useEffect } from "react";
 import { X } from "lucide-react";
-import { coverImage } from "@/components/catalog/image";
+import MediaGallery from "@/components/catalog/MediaGallery";
+import type { MediaItem } from "@/components/catalog/image";
 import { useLang } from "@/lib/i18n";
 
 type Props = {
   url: string;
+  // every photo and video of the product, cover first; swipe between them
+  media?: MediaItem[];
   title?: string;
   onClose: () => void;
 };
 
 // Full-screen photo so the design can be seen properly on a phone.
-export default function PhotoLightbox({ url, title, onClose }: Props) {
+export default function PhotoLightbox({ url, media, title, onClose }: Props) {
   const { t } = useLang();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -43,14 +46,14 @@ export default function PhotoLightbox({ url, title, onClose }: Props) {
           <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="flex min-h-0 flex-1 items-center justify-center px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={coverImage(url, 1200)}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex min-h-0 flex-1 flex-col pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
+        <MediaGallery
+          items={media?.length ? media : [{ type: "image", url, poster: url }]}
           alt={title ?? ""}
-          onClick={(e) => e.stopPropagation()}
-          className="max-h-full max-w-full select-none rounded-lg object-contain"
-          draggable={false}
+          labels={{ previous: t("Previous photo"), next: t("Next photo") }}
         />
       </div>
     </div>

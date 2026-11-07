@@ -1,11 +1,14 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
+import type { MediaItem } from "@/components/catalog/image";
 
 export type CoverModel = { model: string; quantity: number };
 
 export type Cover = {
   id: string;
   photo_url: string;
+  // every photo and video, cover first
+  media: MediaItem[];
   category_id: string | null;
   // every phone model, in stock first; empty for plain accessories
   models: CoverModel[];

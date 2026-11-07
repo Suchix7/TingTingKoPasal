@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import {
   useCreateProduct,
   useUpdateProduct,
-  useUploadProductPhoto,
+  useSaveProductPhotos,
   type Product,
 } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
@@ -19,8 +19,27 @@ import PhoneModelPicker from "./PhoneModelPicker";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Play, Star, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+
+const MAX_PHOTOS = 10;
+// Cloudinary's limits for a single upload on the plan in use
+const MAX_IMAGE_MB = 10;
+const MAX_VIDEO_MB = 100;
+
+// A photo or video in the form: one already saved, or a picked file not
+// uploaded yet. `preview` is what the tile shows.
+type PhotoItem =
+  | { kind: "saved"; id: string; type: "image" | "video"; preview: string }
+  | {
+      kind: "new";
+      key: string;
+      type: "image" | "video";
+      file: File;
+      preview: string;
+    };
+
+const photoKey = (p: PhotoItem) => (p.kind === "saved" ? p.id : p.key);
 
 export default function ProductModal({
   closeModal,
@@ -44,20 +63,19 @@ export default function ProductModal({
   const categories = categoriesData?.data || [];
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
-  const uploadPhotoMutation = useUploadProductPhoto();
+  const savePhotosMutation = useSaveProductPhotos();
 
   const isSubmitting =
     createProductMutation.isPending ||
     updateProductMutation.isPending ||
-    uploadPhotoMutation.isPending;
+    savePhotosMutation.isPending;
 
   const isEditMode = !!selectedProduct;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showCostPriceDialog, setShowCostPriceDialog] = useState(false);
   const [originalCostPrice, setOriginalCostPrice] = useState<number>(0);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -76,39 +94,99 @@ export default function ProductModal({
         variants: [],
       });
       setOriginalCostPrice(selectedProduct.cost_price || 0);
-      setPhotoPreview(selectedProduct.photo_url || null);
-      setPhotoFile(null);
+      setPhotos(savedPhotos(selectedProduct));
     } else {
       setFormData(initialFormData);
       setOriginalCostPrice(0);
-      setPhotoPreview(null);
-      setPhotoFile(null);
+      setPhotos([]);
     }
   }, [selectedProduct]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow picking the same file again later
+    if (picked.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error(t("Please select an image file."));
-      return;
+    const usable = picked.filter((f) => {
+      const isVideo = f.type.startsWith("video/");
+      if (!isVideo && !f.type.startsWith("image/")) {
+        toast.error(t("Please select a photo or video."));
+        return false;
+      }
+      const maxMb = isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+      if (f.size > maxMb * 1024 * 1024) {
+        toast.error(
+          isVideo
+            ? t("Videos must be under 100 MB.")
+            : t("Photos must be under 10 MB."),
+        );
+        return false;
+      }
+      return true;
+    });
+
+    const room = MAX_PHOTOS - photos.length;
+    if (usable.length > room) {
+      toast.error(t("A product can have at most 10 photos and videos."));
     }
-
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    const added: PhotoItem[] = usable
+      .slice(0, Math.max(room, 0))
+      .map((file) => ({
+        kind: "new",
+        key: `${Date.now()}-${Math.random()}`,
+        type: file.type.startsWith("video/") ? "video" : "image",
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+    if (added.length) setPhotos((prev) => [...prev, ...added]);
   };
 
-  const uploadPhotoIfNeeded = async (productId: number | string) => {
-    if (!photoFile) return;
+  const removePhoto = (key: string) =>
+    setPhotos((prev) => prev.filter((p) => photoKey(p) !== key));
+
+  const makeCover = (key: string) =>
+    setPhotos((prev) => {
+      const target = prev.find((p) => photoKey(p) === key);
+      return target ? [target, ...prev.filter((p) => p !== target)] : prev;
+    });
+
+  const photosChanged = () => {
+    const before = savedPhotos(selectedProduct).map(photoKey);
+    const after = photos.map(photoKey);
+    return (
+      photos.some((p) => p.kind === "new") ||
+      before.length !== after.length ||
+      before.some((k, i) => k !== after[i])
+    );
+  };
+
+  const savePhotosIfNeeded = async (productId: number | string) => {
+    if (!photosChanged()) return;
+
+    const entries = photos.map((p) =>
+      p.kind === "saved" ? p.id : { file: p.file, type: p.type },
+    );
+    const uploading = photos.some((p) => p.kind === "new");
 
     // Visible even after the form closes: the toast outlives this modal
-    const toastId = toast.loading(t("Uploading photo..."));
+    const toastId = toast.loading(
+      uploading ? t("Uploading...") : t("Saving photos..."),
+    );
     try {
-      await uploadPhotoMutation.mutateAsync({ id: productId, file: photoFile });
-      toast.success(t("Photo uploaded"), { id: toastId });
+      await savePhotosMutation.mutateAsync({
+        id: productId,
+        entries,
+        onProgress: (done, total, current) => {
+          const percent = Math.round(((done + current) / total) * 100);
+          toast.loading(
+            `${t("Uploading...")} ${Math.min(done + 1, total)}/${total} · ${percent}%`,
+            { id: toastId },
+          );
+        },
+      });
+      toast.success(t("Photos saved"), { id: toastId });
     } catch (error) {
-      console.error("Error uploading product photo:", error);
+      console.error("Error saving product photos:", error);
       toast.error(t("Photo upload failed"), { id: toastId });
     }
   };
@@ -232,7 +310,7 @@ export default function ProductModal({
           ...payload,
           id: selectedProduct.id,
         });
-        void uploadPhotoIfNeeded(selectedProduct.id);
+        void savePhotosIfNeeded(selectedProduct.id);
       }
 
       closeModal();
@@ -297,12 +375,12 @@ export default function ProductModal({
           id: selectedProduct.id,
         });
         // Photo uploads can be slow on mobile; don't keep the form open for it
-        void uploadPhotoIfNeeded(selectedProduct.id);
+        void savePhotosIfNeeded(selectedProduct.id);
       } else {
         const result: any = await createProductMutation.mutateAsync(payload);
         const newProductId = result?.data?.id ?? result?.id;
         if (newProductId) {
-          void uploadPhotoIfNeeded(newProductId);
+          void savePhotosIfNeeded(newProductId);
         }
       }
 
@@ -347,46 +425,96 @@ export default function ProductModal({
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  {t("Product Photo")}
+                  {t("Photos & Videos")}
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-32 sm:w-32">
-                    {photoPreview ? (
-                      <Image
-                        src={photoPreview}
-                        alt={t("Product photo")}
-                        width={256}
-                        height={256}
-                        unoptimized={photoPreview.startsWith("blob:")}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <ImagePlus className="h-6 w-6 text-slate-300" />
-                    )}
-                  </div>
-                  <div>
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      disabled={isSubmitting}
-                      className="hidden"
-                    />
+                <div className="flex flex-wrap gap-3">
+                  {photos.map((photo, i) => (
+                    <div
+                      key={photoKey(photo)}
+                      className={`relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border bg-slate-50 sm:h-28 sm:w-28 ${
+                        i === 0
+                          ? "border-blue-500 ring-2 ring-blue-500/30"
+                          : "border-slate-200"
+                      }`}
+                    >
+                      {photo.type === "video" && photo.kind === "new" ? (
+                        <video
+                          src={photo.preview}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src={photo.preview}
+                          alt={t("Product photo")}
+                          width={224}
+                          height={224}
+                          unoptimized={photo.kind === "new"}
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                      {photo.type === "video" && (
+                        <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                          <span className="rounded-full bg-black/55 p-2">
+                            <Play size={16} className="fill-white text-white" />
+                          </span>
+                        </span>
+                      )}
+                      {i === 0 ? (
+                        <span className="absolute left-1 top-1 rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          {t("Cover")}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => makeCover(photoKey(photo))}
+                          disabled={isSubmitting}
+                          title={t("Set as cover")}
+                          aria-label={t("Set as cover")}
+                          className="absolute left-1 top-1 rounded-full bg-black/55 p-1.5 text-white hover:bg-black/75 disabled:opacity-50"
+                        >
+                          <Star size={12} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(photoKey(photo))}
+                        disabled={isSubmitting}
+                        title={t("Remove photo")}
+                        aria-label={t("Remove photo")}
+                        className="absolute right-1 top-1 rounded-full bg-black/55 p-1.5 text-white hover:bg-red-600 disabled:opacity-50"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {photos.length < MAX_PHOTOS && (
                     <button
                       type="button"
                       onClick={() => photoInputRef.current?.click()}
                       disabled={isSubmitting}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-24 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-28 sm:w-28"
                     >
-                      <ImagePlus size={16} />
-                      {photoPreview ? t("Change Photo") : t("Upload Photo")}
+                      <ImagePlus size={20} />
+                      {t("Add Photos / Videos")}
                     </button>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {t("Used for visual confirmation when scanning at checkout.")}
-                    </p>
-                  </div>
+                  )}
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={handlePhotoChange}
+                    disabled={isSubmitting}
+                    className="hidden"
+                  />
                 </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  {t("Up to 10 photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.")}
+                </p>
               </div>
 
               <div className="sm:col-span-2">
@@ -740,4 +868,27 @@ export default function ProductModal({
       )}
     </>
   );
+}
+
+function savedPhotos(product?: Product | null): PhotoItem[] {
+  if (!product) return [];
+  if (product.photos?.length) {
+    return product.photos.map((p) => ({
+      kind: "saved",
+      id: p.id,
+      type: p.type === "video" ? "video" : "image",
+      preview: p.poster || p.url,
+    }));
+  }
+  // products saved before multi-photo support
+  return product.photo_url
+    ? [
+        {
+          kind: "saved",
+          id: "legacy",
+          type: "image",
+          preview: product.photo_url,
+        },
+      ]
+    : [];
 }

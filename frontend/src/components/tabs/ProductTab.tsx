@@ -34,6 +34,7 @@ import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
 import Link from "next/link";
 import PhotoLightbox from "@/components/layout/PhotoLightbox";
+import type { MediaItem } from "@/components/catalog/image";
 import { coverImage } from "@/components/catalog/image";
 
 import Tn from "@/components/layout/Tn";
@@ -148,7 +149,11 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [open, setOpen] = useState(false);
-  const [zoom, setZoom] = useState<{ url: string; title: string } | null>(null);
+  const [zoom, setZoom] = useState<{
+    url: string;
+    media?: MediaItem[];
+    title: string;
+  } | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
   const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null);
@@ -504,6 +509,7 @@ export default function ProductsPage() {
                                 onClick={() =>
                                   setZoom({
                                     url: product.photo_url!,
+                                media: product.photos,
                                     title: product.product_name,
                                   })
                                 }
@@ -773,6 +779,7 @@ export default function ProductsPage() {
       {zoom && (
         <PhotoLightbox
           url={zoom.url}
+          media={zoom.media}
           title={zoom.title}
           onClose={() => setZoom(null)}
         />

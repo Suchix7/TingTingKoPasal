@@ -28,6 +28,19 @@ const productSchema = new mongoose.Schema(
       lastPrintedQuantity: { type: Number, default: 0 },
     },
 
+    // Every photo and video in display order. photoUrl / photoPublicId mirror
+    // the first one (the cover; a video's still frame) so older code and
+    // queries keep working.
+    photos: {
+      type: [
+        {
+          type: { type: String, enum: ["image", "video"], default: "image" },
+          url: { type: String, required: true },
+          publicId: { type: String, default: null },
+        },
+      ],
+      default: [],
+    },
     photoUrl: { type: String, default: null },
     photoPublicId: { type: String, default: null },
 

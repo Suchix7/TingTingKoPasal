@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Images,
   MapPin,
+  Play,
   Phone,
   Loader2,
   Search,
@@ -335,6 +337,20 @@ export default function CatalogPage() {
                         cover.in_stock ? "" : "opacity-50 grayscale"
                       }`}
                     />
+                    {((cover.media?.length ?? 0) > 1 ||
+                      cover.media?.some((m) => m.type === "video")) && (
+                      <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                        {cover.media.some((m) => m.type === "video") && (
+                          <Play className="h-3 w-3 fill-white" />
+                        )}
+                        {cover.media.length > 1 && (
+                          <>
+                            <Images className="h-3 w-3" />
+                            {cover.media.length}
+                          </>
+                        )}
+                      </span>
+                    )}
                     {!cover.in_stock ? (
                       <span className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/70 to-transparent px-2 pb-3 pt-10">
                         <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
@@ -398,18 +414,10 @@ export default function CatalogPage() {
         onApply={setModels}
       />
 
-      {viewing !== null && covers.length > 0 && (
+      {viewing !== null && covers[viewing] && (
         <CoverViewer
-          covers={covers}
+          cover={covers[viewing]}
           isCase={isCase}
-          index={Math.min(viewing, covers.length - 1)}
-          onIndexChange={(i) => {
-            setViewing(i);
-            // nearing the end of what's loaded: fetch more
-            if (i >= covers.length - 3 && hasNextPage && !isFetchingNextPage) {
-              fetchNextPage();
-            }
-          }}
           onClose={() => setViewing(null)}
         />
       )}

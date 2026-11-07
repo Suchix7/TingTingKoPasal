@@ -40,9 +40,65 @@ export type Product = {
   matched_batch_id?: string | null;
   photo_url?: string | null;
   photo_public_id?: string | null;
+  // all photos in display order, the first one is the cover
+  photos?: ProductPhoto[];
   created_at?: string;
   updated_at?: string;
 };
+
+export type ProductPhoto = {
+  id: string;
+  type: "image" | "video";
+  url: string;
+  // still picture: the photo itself, or a frame from the video
+  poster: string;
+};
+
+// What the product form sends: an existing photo/video id, or a new file
+export type ProductMediaEntry = string | { file: File; type: "image" | "video" };
+
+type SignedUpload = {
+  cloud_name: string;
+  api_key: string;
+  resource_type: "image" | "video";
+  params: Record<string, string | number>;
+  signature: string;
+};
+
+// Uploads one file straight to Cloudinary (videos are too big to go through
+// our server) using params the backend signed.
+async function uploadToCloudinary(
+  file: File,
+  type: "image" | "video",
+  onProgress: (fraction: number) => void,
+) {
+  const sign = (
+    await axiosInstance.post<{ data: SignedUpload }>("/products/media/sign", {
+      type,
+    })
+  ).data.data;
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("api_key", sign.api_key);
+  form.append("signature", sign.signature);
+  Object.entries(sign.params).forEach(([k, v]) => form.append(k, String(v)));
+
+  const res = await axios.post(
+    `https://api.cloudinary.com/v1_1/${sign.cloud_name}/${sign.resource_type}/upload`,
+    form,
+    {
+      onUploadProgress: (e) => {
+        if (e.total) onProgress(e.loaded / e.total);
+      },
+    },
+  );
+  return {
+    type,
+    url: res.data.secure_url as string,
+    publicId: res.data.public_id as string,
+  };
+}
 
 export type ProductStats = {
   totalProducts: number;
@@ -278,29 +334,46 @@ export const useProductByBarcode = (barcode: string) => {
   });
 };
 
-export const useUploadProductPhoto = () => {
+// Saves the whole photo/video list at once, in display order (first one is
+// the cover). New files are uploaded first, one at a time, with progress.
+export const useSaveProductPhotos = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, file }: { id: number | string; file: File }) => {
-      const formData = new FormData();
-      formData.append("photo", file);
+    mutationFn: async ({
+      id,
+      entries,
+      onProgress,
+    }: {
+      id: number | string;
+      entries: ProductMediaEntry[];
+      // (files done, files total, progress of the current file 0..1)
+      onProgress?: (done: number, total: number, current: number) => void;
+    }) => {
+      const total = entries.filter((e) => typeof e !== "string").length;
+      let done = 0;
+      const media = [];
+      for (const entry of entries) {
+        if (typeof entry === "string") {
+          media.push(entry);
+          continue;
+        }
+        media.push(
+          await uploadToCloudinary(entry.file, entry.type, (f) =>
+            onProgress?.(done, total, f),
+          ),
+        );
+        done += 1;
+        onProgress?.(done, total, 0);
+      }
 
-      const res = await axiosInstance.post<ProductResponse>(
-        `/products/${id}/photo`,
-        formData,
+      const res = await axiosInstance.put<ProductResponse>(
+        `/products/${id}/photos`,
+        { media },
       );
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success(tr("Product photo updated."));
-    },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          tr("Failed to upload product photo."),
-      );
     },
   });
 };

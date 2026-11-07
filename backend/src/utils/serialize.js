@@ -1,3 +1,5 @@
+import { productMedia } from "./media.js";
+
 export function serializeProduct(doc) {
   if (!doc) return null;
   const obj = doc.toObject ? doc.toObject() : doc;
@@ -18,6 +20,12 @@ export function serializeProduct(doc) {
     barcode_last_printed_quantity: obj.barcodeLabel?.lastPrintedQuantity || 0,
     description: obj.description || null,
     photo_url: obj.photoUrl || null,
+    photos: productMedia(obj).map(({ id, type, url, poster }) => ({
+      id,
+      type,
+      url,
+      poster,
+    })),
     stock_quantity: obj.stock?.currentStock || 0,
     reorder_level: obj.stock?.reorderLevel || 0,
     reorder_quantity: obj.stock?.reorderQuantity || 0,
