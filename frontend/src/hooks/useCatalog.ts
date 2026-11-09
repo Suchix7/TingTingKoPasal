@@ -22,6 +22,8 @@ export type CatalogCategory = {
   name: string;
   count: number;
   photo_url: string;
+  // products here are stocked per size (S, M, L) rather than per phone model
+  has_sizes?: boolean;
 };
 
 export type CatalogFilters = {

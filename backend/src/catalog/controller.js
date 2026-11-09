@@ -249,6 +249,8 @@ export const getCategories = async (_req, res) => {
         name: c.categoryName,
         count: stats.get(String(c._id)).count,
         photo_url: c.thumbnailUrl || stats.get(String(c._id)).photo_url,
+        // stock lines in this category are sizes, not phone models
+        has_sizes: (c.sizes || []).length > 0,
       })),
     });
   } catch (error) {

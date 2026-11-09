@@ -68,7 +68,7 @@ export const createProduct = async (req, res) => {
     if (variantNames.size !== variantList.length) {
       return res.status(400).json({
         success: false,
-        message: "Each phone model can only be listed once",
+        message: "Each size or phone model can only be listed once",
       });
     }
     if (
@@ -191,7 +191,7 @@ export const createProduct = async (req, res) => {
       entityType: "Product",
       entityId: newProduct._id,
       summary: `Product "${newProduct.productName}" created${
-        hasVariants ? ` with ${variantList.length} phone models` : ""
+        hasVariants ? ` with ${variantList.length} sizes/models` : ""
       }`,
       details: {
         sale_price: parsedSalePrice,

@@ -8,7 +8,7 @@ import {
   useCreateCategory,
   useUpdateCategory,
 } from "@/hooks/useCategories";
-import { ImagePlus, Loader2, X } from "lucide-react";
+import { ImagePlus, Loader2, Plus, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import toast from "react-hot-toast";
 
@@ -31,12 +31,36 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [removeThumb, setRemoveThumb] = useState(false);
+  // Optional preset sizes (S, M, L...) offered when adding products here
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [newSize, setNewSize] = useState("");
+
+  // Accepts one size or several separated by commas ("S, M, L")
+  const addSizes = () => {
+    const typed = newSize
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (!typed.length) return;
+    setSizes((cur) => {
+      const next = [...cur];
+      for (const size of typed) {
+        if (!next.some((x) => x.toLowerCase() === size.toLowerCase())) {
+          next.push(size);
+        }
+      }
+      return next;
+    });
+    setNewSize("");
+  };
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   let isSubmitting = createCategory.isPending || updateCategory.isPending;
 
   useEffect(() => {
     setNameZh(editingCategory?.category_name_zh ?? "");
+    setSizes(editingCategory?.sizes ?? []);
+    setNewSize("");
     setFile(null);
     setRemoveThumb(false);
     setPreview(editingCategory?.thumbnail_url ?? null);
@@ -68,6 +92,17 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
       return;
     }
 
+    const typed = newSize
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    const allSizes = [...sizes];
+    for (const size of typed) {
+      if (!allSizes.some((x) => x.toLowerCase() === size.toLowerCase())) {
+        allSizes.push(size);
+      }
+    }
+
     try {
       let saved: any;
       if (editingCategory) {
@@ -76,6 +111,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
           category_name: formData.category_name,
           category_name_zh: nameZh.trim(),
           description: formData.description,
+          sizes: allSizes,
         });
         toast.success(t("Category updated successfully"));
       } else {
@@ -83,6 +119,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
           category_name: formData.category_name,
           category_name_zh: nameZh.trim(),
           description: formData.description,
+          sizes: allSizes,
         });
         toast.success(t("Category created successfully"));
       }
@@ -126,7 +163,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
       >
         <div className="mb-5">
           <h2 className="text-xl font-bold text-gray-900">
@@ -188,6 +225,60 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
               rows={4}
               className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400"
             />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              {t("Sizes")}{" "}
+              <span className="font-normal text-gray-400">({t("optional")})</span>
+            </label>
+            <p className="mb-2 text-xs text-gray-500">
+              {t("Products added to this category will ask for stock per size. Stock is still counted for each product separately.")}
+            </p>
+            {sizes.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {sizes.map((size) => (
+                  <span
+                    key={size}
+                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-1 pl-3 pr-1 text-sm font-medium text-gray-800"
+                  >
+                    {size}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSizes((cur) => cur.filter((x) => x !== size))
+                      }
+                      className="rounded-full p-0.5 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+                      aria-label={`${t("Remove size")} ${size}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                value={newSize}
+                onChange={(e) => setNewSize(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addSizes();
+                  }
+                }}
+                placeholder={t("e.g. S, M, L, XL")}
+                className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none transition focus:border-gray-400"
+              />
+              <button
+                type="button"
+                onClick={addSizes}
+                disabled={!newSize.trim()}
+                className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <Plus size={14} /> {t("Add size")}
+              </button>
+            </div>
           </div>
 
           <div>

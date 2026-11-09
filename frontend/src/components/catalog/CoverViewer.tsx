@@ -11,12 +11,19 @@ type Props = {
   cover: Cover;
   // phone cases: tell shoppers to ask in store when no model is listed
   isCase: boolean;
+  // stock lines are sizes (S, M, L), not phone models
+  hasSizes?: boolean;
   onClose: () => void;
 };
 
 // Full-screen view of one cover with the phone models it fits. Swiping only
 // moves between this cover's own photos and videos, never to another product.
-export default function CoverViewer({ cover, isCase, onClose }: Props) {
+export default function CoverViewer({
+  cover,
+  isCase,
+  hasSizes = false,
+  onClose,
+}: Props) {
   const availableModels = cover.models.filter((m) => m.quantity > 0);
   const media = cover.media?.length
     ? cover.media
@@ -72,7 +79,7 @@ export default function CoverViewer({ cover, isCase, onClose }: Props) {
           availableModels.length > 0 && (
             <>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
-                Phone models
+                {hasSizes ? "Sizes" : "Phone models"}
               </p>
               <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
                 {availableModels.map((m) => (

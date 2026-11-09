@@ -28,6 +28,7 @@ type Category = {
   category_name: string;
   description?: string;
   thumbnail_url?: string | null;
+  sizes?: string[];
   created_at: string;
   updated_at: string;
 };
@@ -306,6 +307,11 @@ export default function CategoriesPage() {
                       <p className="font-medium text-gray-900">
                         <Tn v={category.category_name} />
                       </p>
+                      {(category.sizes?.length ?? 0) > 0 && (
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          {t("Sizes")}: {category.sizes!.join(", ")}
+                        </p>
+                      )}
                     </td>
 
                     <td className="px-5 py-4">

@@ -16,6 +16,7 @@ import {
 } from "@/components/tabs/ProductTab";
 import { useDebounced } from "@/hooks/useDebounced";
 import PhoneModelPicker from "./PhoneModelPicker";
+import SizeStockPicker from "./SizeStockPicker";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
@@ -201,18 +202,30 @@ export default function ProductModal({
     }));
   };
 
-  // Editing a product whose stock lives only on its phone models / batches
+  // Editing a product whose stock lives only on its sizes / phone models / batches
   const stockOnModelsOnly =
     isEditMode &&
     (selectedProduct?.batches?.length ?? 0) > 0 &&
     Number(selectedProduct?.stock_quantity ?? 0) === 0;
-  // Mobile covers keep stock per phone model; everything else is a normal product
-  const [isMobileCover, setIsMobileCover] = useState(false);
-  const modelMode = !isEditMode && isMobileCover;
+  // New products keep stock either as one number, per size (clothes, gloves)
+  // or per phone model (mobile covers). Sizes and models are saved the same way.
+  const [variantMode, setVariantMode] = useState<"none" | "sizes" | "cover">(
+    "none",
+  );
+  const modelMode = !isEditMode && variantMode !== "none";
 
-  const toggleMobileCover = (on: boolean) => {
-    setIsMobileCover(on);
-    if (!on) setFormData((prev) => ({ ...prev, variants: [] }));
+  const categorySizes = (categoryId: string): string[] =>
+    categories.find((c) => String(c.id) === String(categoryId))?.sizes ?? [];
+
+  const sizeRows = (sizes: string[]) =>
+    sizes.map((model) => ({ model, quantity: 0 }));
+
+  const switchVariantMode = (next: "none" | "sizes" | "cover") => {
+    setVariantMode(next);
+    setFormData((prev) => ({
+      ...prev,
+      variants: next === "sizes" ? sizeRows(categorySizes(prev.category_id)) : [],
+    }));
   };
 
   const validateForm = () => {
@@ -233,7 +246,9 @@ export default function ProductModal({
 
     if (modelMode && formData.variants.length === 0) {
       toast.error(
-        t('Tick at least one phone model, or untick "mobile cover".'),
+        variantMode === "sizes"
+          ? t('Add at least one size, or untick "comes in sizes".')
+          : t('Tick at least one phone model, or untick "mobile cover".'),
       );
       return false;
     }
@@ -247,7 +262,7 @@ export default function ProductModal({
         return false;
       }
       if (new Set(names).size !== names.length) {
-        toast.error(t("Each phone model can only be listed once."));
+        toast.error(t("Each size or phone model can only be listed once."));
         return false;
       }
       if (
@@ -256,9 +271,7 @@ export default function ProductModal({
             !Number.isInteger(Number(v.quantity)) || Number(v.quantity) < 0,
         )
       ) {
-        toast.error(
-          t("Phone model quantities must be whole numbers, 0 or more."),
-        );
+        toast.error(t("Quantities must be whole numbers, 0 or more."));
         return false;
       }
     }
@@ -563,16 +576,31 @@ export default function ProductModal({
                   }
                   selectedId={formData.category_id}
                   onSelect={(option) => {
-                    setFormData({
-                      ...formData,
-                      category_id: String(option?.id || ""),
-                    });
-                    if (
+                    const categoryId = String(option?.id || "");
+                    const sizes: string[] = option?.metadata?.sizes ?? [];
+                    const untouched = formData.variants.every(
+                      (v) => !Number(v.quantity),
+                    );
+                    let variants = formData.variants;
+                    if (!isEditMode && sizes.length > 0) {
+                      // Category has preset sizes: show a box per size, unless
+                      // quantities were already typed for this product
+                      if (variantMode !== "sizes" || untouched) {
+                        variants = sizeRows(sizes);
+                      }
+                      setVariantMode("sizes");
+                    } else if (
                       !isEditMode &&
                       /cover|case/i.test(option?.label ?? "")
                     ) {
-                      setIsMobileCover(true);
+                      if (variantMode !== "cover") variants = [];
+                      setVariantMode("cover");
                     }
+                    setFormData({
+                      ...formData,
+                      category_id: categoryId,
+                      variants,
+                    });
                   }}
                   isLoading={isCategoriesLoading}
                   placeholder={t("Select category")}
@@ -646,7 +674,7 @@ export default function ProductModal({
 
               {stockOnModelsOnly && (
                 <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  {t("Stock for this product is kept per phone model. Change quantities or add models on the Product Batches page.")}
+                  {t("Stock for this product is kept per size / phone model. Change quantities or add more on the Product Batches page.")}
                 </div>
               )}
 
@@ -675,12 +703,44 @@ export default function ProductModal({
               )}
 
               {!isEditMode && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
                   <label className="flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
-                      checked={isMobileCover}
-                      onChange={(e) => toggleMobileCover(e.target.checked)}
+                      checked={variantMode === "sizes"}
+                      onChange={(e) =>
+                        switchVariantMode(e.target.checked ? "sizes" : "none")
+                      }
+                      disabled={isSubmitting}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-slate-700">
+                        {t("This product comes in sizes")}
+                      </span>
+                      <span className="block text-xs text-slate-500">
+                        {t("Set the stock for each size (S, M, L...). Preset sizes can be saved on the category.")}
+                      </span>
+                    </span>
+                  </label>
+
+                  {variantMode === "sizes" && (
+                    <SizeStockPicker
+                      value={formData.variants}
+                      onChange={(variants) =>
+                        setFormData((prev) => ({ ...prev, variants }))
+                      }
+                      disabled={isSubmitting}
+                    />
+                  )}
+
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={variantMode === "cover"}
+                      onChange={(e) =>
+                        switchVariantMode(e.target.checked ? "cover" : "none")
+                      }
                       disabled={isSubmitting}
                       className="mt-0.5 h-4 w-4 rounded border-slate-300"
                     />
@@ -694,16 +754,14 @@ export default function ProductModal({
                     </span>
                   </label>
 
-                  {isMobileCover && (
-                    <div className="mt-4">
-                      <PhoneModelPicker
-                        value={formData.variants}
-                        onChange={(variants) =>
-                          setFormData((prev) => ({ ...prev, variants }))
-                        }
-                        disabled={isSubmitting}
-                      />
-                    </div>
+                  {variantMode === "cover" && (
+                    <PhoneModelPicker
+                      value={formData.variants}
+                      onChange={(variants) =>
+                        setFormData((prev) => ({ ...prev, variants }))
+                      }
+                      disabled={isSubmitting}
+                    />
                   )}
                 </div>
               )}

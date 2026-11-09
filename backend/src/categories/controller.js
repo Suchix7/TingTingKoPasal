@@ -8,13 +8,28 @@ const toApiCategory = (doc) => ({
   category_name_zh: doc.categoryNameZh || null,
   description: doc.description,
   thumbnail_url: doc.thumbnailUrl || null,
+  sizes: doc.sizes || [],
   created_at: doc.createdAt,
   updated_at: doc.updatedAt,
 });
 
+// Trimmed, non-empty, no case-insensitive duplicates, order kept
+const cleanSizes = (sizes) => {
+  if (!Array.isArray(sizes)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of sizes) {
+    const size = String(raw ?? "").trim().slice(0, 40);
+    if (!size || seen.has(size.toLowerCase())) continue;
+    seen.add(size.toLowerCase());
+    out.push(size);
+  }
+  return out.slice(0, 50);
+};
+
 export const createCategory = async (req, res) => {
   try {
-    const { category_name, category_name_zh, description } = req.body;
+    const { category_name, category_name_zh, description, sizes } = req.body;
 
     if (!category_name) {
       return res.status(400).json({
@@ -36,6 +51,7 @@ export const createCategory = async (req, res) => {
       categoryName: category_name.trim(),
       categoryNameZh: String(category_name_zh || "").trim(),
       description: description ? description.trim() : "",
+      sizes: cleanSizes(sizes),
     });
 
     return res.status(201).json({
@@ -124,7 +140,7 @@ export const getCategoryById = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category_name, category_name_zh, description } = req.body;
+    const { category_name, category_name_zh, description, sizes } = req.body;
 
     if (!category_name) {
       return res.status(400).json({
@@ -156,6 +172,7 @@ export const updateCategory = async (req, res) => {
       existingCategory.categoryNameZh = String(category_name_zh || "").trim();
     }
     existingCategory.description = description !== undefined ? description.trim() : existingCategory.description;
+    if (sizes !== undefined) existingCategory.sizes = cleanSizes(sizes);
     await existingCategory.save();
 
     return res.status(200).json({

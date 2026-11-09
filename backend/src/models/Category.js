@@ -9,6 +9,9 @@ const categorySchema = new mongoose.Schema(
     thumbnailUrl: { type: String, default: "" },
     thumbnailPublicId: { type: String, default: "" },
     sortOrder: { type: Number, default: 100 },
+    // Optional preset sizes (e.g. S, M, L). New products in this category get
+    // a quantity box per size; stock itself is kept per product, per size.
+    sizes: { type: [String], default: [] },
   },
   { timestamps: true },
 );

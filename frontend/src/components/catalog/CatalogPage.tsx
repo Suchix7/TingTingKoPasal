@@ -110,6 +110,9 @@ export default function CatalogPage() {
   // phone cases are matched to phone models; accessories are plain items
   const isCase = /case|cover/i.test(categoryName ?? "");
   const noun = isCase ? "case" : "item";
+  const sizedCategoryIds = new Set(
+    categories.filter((c) => c.has_sizes).map((c) => c.id),
+  );
   const activeCount = models.length;
 
   return (
@@ -370,7 +373,9 @@ export default function CatalogPage() {
                         {inStockModels(cover).length > 0 ? (
                           <>
                             <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-white/70">
-                              Available for
+                              {sizedCategoryIds.has(cover.category_id ?? "")
+                                ? "Sizes"
+                                : "Available for"}
                             </span>
                             <span className="flex flex-wrap gap-1">
                               {inStockModels(cover)
@@ -426,6 +431,7 @@ export default function CatalogPage() {
         <CoverViewer
           cover={covers[viewing]}
           isCase={isCase}
+          hasSizes={sizedCategoryIds.has(covers[viewing].category_id ?? "")}
           onClose={() => setViewing(null)}
         />
       )}

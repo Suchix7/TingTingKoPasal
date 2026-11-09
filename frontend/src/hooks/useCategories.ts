@@ -12,6 +12,8 @@ type Category = {
   category_name_zh?: string | null;
   description?: string;
   thumbnail_url?: string | null;
+  // preset sizes offered when adding a product in this category
+  sizes?: string[];
   created_at: string;
   updated_at: string;
 };
@@ -63,6 +65,7 @@ export const useCreateCategory = () => {
       category_name: string;
       category_name_zh?: string;
       description?: string;
+      sizes?: string[];
     }) => {
       try {
         const response = await axiosInstance.post("/categories", newCategory);

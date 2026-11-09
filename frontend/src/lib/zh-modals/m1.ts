@@ -210,4 +210,25 @@ export const zhModals1: Record<string, string> = {
   "How would you like to proceed?": "您希望如何处理？",
   "Create New Batch with Updated Price": "按新价格创建新批次",
   "Cancel and Revert Cost Price": "取消并还原成本价",
+  "Select Size / Model / Batch": "选择尺码 / 型号 / 批次",
+  "Choose which size, phone model or batch to sell for": "请选择要销售的尺码、手机型号或批次：",
+  "Sizes / models / batches": "尺码 / 型号 / 批次",
+  "No sizes, models or batches available": "没有可用的尺码、型号或批次",
+  "Each size or phone model can only be listed once.": "每个尺码或手机型号只能列出一次。",
+  "Quantities must be whole numbers, 0 or more.": "数量必须是 0 或以上的整数。",
+  "Stock for this product is kept per size / phone model. Change quantities or add more on the Product Batches page.":
+    "此商品按尺码 / 手机型号分别记录库存。请在商品批次页面修改数量或添加。",
+  "This product comes in sizes": "此商品有多个尺码",
+  "Set the stock for each size (S, M, L...). Preset sizes can be saved on the category.":
+    "为每个尺码（S、M、L…）设置库存。常用尺码可以保存在分类中。",
+  "Add at least one size, or untick \"comes in sizes\".": "请至少添加一个尺码，或取消勾选“有多个尺码”。",
+  "No sizes yet. Add one below.": "还没有尺码，请在下方添加。",
+  "New size (e.g. XL, 42, Free size)": "新尺码（例如 XL、42、均码）",
+  "Add size": "添加尺码",
+  "Remove size": "删除尺码",
+  "sizes": "个尺码",
+  "Sizes": "尺码",
+  "Products added to this category will ask for stock per size. Stock is still counted for each product separately.":
+    "在此分类添加商品时，会按尺码填写库存。每个商品的库存仍然分开计算。",
+  "e.g. S, M, L, XL": "例如 S, M, L, XL",
 };
