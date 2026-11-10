@@ -380,9 +380,12 @@ export default function CatalogPage() {
                         {inStockModels(cover).length > 0 ? (
                           <>
                             <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-white/70">
-                              {sizedCategoryIds.has(cover.category_id ?? "")
+                              {cover.has_sizes ||
+                              sizedCategoryIds.has(cover.category_id ?? "")
                                 ? "Sizes"
-                                : "Available for"}
+                                : cover.variants?.length
+                                  ? "Colours"
+                                  : "Available for"}
                             </span>
                             <span className="flex flex-wrap gap-1">
                               {inStockModels(cover)
@@ -438,7 +441,10 @@ export default function CatalogPage() {
         <CoverViewer
           cover={covers[viewing]}
           isCase={isCase}
-          hasSizes={sizedCategoryIds.has(covers[viewing].category_id ?? "")}
+          hasSizes={
+            !!covers[viewing].has_sizes ||
+            sizedCategoryIds.has(covers[viewing].category_id ?? "")
+          }
           onClose={() => setViewing(null)}
         />
       )}

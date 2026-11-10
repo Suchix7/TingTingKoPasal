@@ -105,14 +105,25 @@ const toCover = (product, entries = []) => {
   const own = Math.max(Number(product.stock?.currentStock) || 0, 0);
   const quantity = own + entries.reduce((sum, m) => sum + m.quantity, 0);
   const media = productMedia(product);
+  const variants = variantsOf(media, entries);
+  if (!sized && variants.length) {
+    // colour-only lines: keep the colours in photo order
+    const rank = (m) =>
+      variants.findIndex((v) => v.name.toLowerCase() === m.model.toLowerCase());
+    models.sort(
+      (a, b) => Number(b.quantity > 0) - Number(a.quantity > 0) || rank(a) - rank(b),
+    );
+  }
   return {
     id: String(product._id),
     photo_url: product.photoUrl,
     media: media.map(({ type, url, poster }) => ({ type, url, poster })),
     category_id: product.categoryId ? String(product.categoryId) : null,
     models,
-    variants: variantsOf(media, entries),
+    variants,
     size_guide_index: media.findIndex((m) => m.sizeGuide),
+    // stock lines are sizes (S, M, L), whatever the category
+    has_sizes: sized,
     quantity,
     in_stock: quantity > 0,
   };

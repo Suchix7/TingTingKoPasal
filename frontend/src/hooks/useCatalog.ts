@@ -25,6 +25,8 @@ export type Cover = {
   variants?: CoverVariant[];
   // index into `media` of the size chart, -1 when there is none
   size_guide_index?: number;
+  // this product's stock lines are sizes rather than phone models
+  has_sizes?: boolean;
   quantity: number;
   in_stock: boolean;
 };
