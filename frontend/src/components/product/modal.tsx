@@ -495,13 +495,13 @@ export default function ProductModal({
           if (isSubmitting) return;
           closeModal();
         }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-2 backdrop-blur-sm sm:p-4"
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          className="max-h-[90dvh] w-full max-w-3xl overflow-auto rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          className="max-h-[94dvh] w-full max-w-3xl overflow-auto rounded-2xl sm:max-h-[90dvh] sm:rounded-3xl border border-slate-200 bg-white shadow-2xl"
         >
-          <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+          <div className="flex items-start justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
                 {isEditMode ? t("Update Product") : t("Add Product")}
@@ -521,8 +521,10 @@ export default function ProductModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6">
-            <div className="grid gap-5 sm:grid-cols-2">
+          <form onSubmit={handleSubmit} className="space-y-6 px-4 py-5 sm:px-6 sm:py-6">
+            {/* grid-cols-1 = minmax(0, 1fr): on phones the column must not grow
+                to fit wide content, or the whole form runs off the screen */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   {t("Photos & Videos")}
