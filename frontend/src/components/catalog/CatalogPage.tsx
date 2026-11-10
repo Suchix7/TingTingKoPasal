@@ -9,7 +9,9 @@ import {
   Play,
   Phone,
   Loader2,
+  LogOut,
   Search,
+  Tag,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -17,13 +19,15 @@ import {
 import {
   useCatalogCategories,
   useCatalogModels,
+  useCatalogSession,
   useCatalogStore,
   useCovers,
 } from "@/hooks/useCatalog";
 import type { CatalogCategory, Cover } from "@/hooks/useCatalog";
 import { useDebounced } from "@/hooks/useDebounced";
 import { coverImage } from "./image";
-import { pcs } from "./format";
+import { pcs, priceLabel } from "./format";
+import axiosInstance from "@/lib/axiosInstance";
 import CoverViewer from "./CoverViewer";
 import FilterSheet from "./FilterSheet";
 import ShopSplash from "./ShopSplash";
@@ -61,6 +65,15 @@ export default function CatalogPage() {
   }, []);
 
   const { data: store } = useCatalogStore();
+  const { data: session } = useCatalogSession();
+  const priceView = session?.role === "price";
+  const signOut = async () => {
+    try {
+      await axiosInstance.post("/logout");
+    } finally {
+      window.location.href = "/";
+    }
+  };
   const { data: modelList = [] } = useCatalogModels(category);
   const {
     data: categories = [],
@@ -123,6 +136,23 @@ export default function CatalogPage() {
         onRetry={() => refetchCategories()}
       />
       <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+        {priceView && (
+          <div className="bg-emerald-600 text-white">
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-1.5 text-xs">
+              <span className="flex min-w-0 items-center gap-1.5 font-medium">
+                <Tag className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Price view · {session?.username}</span>
+              </span>
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 font-semibold active:bg-white/25"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            </div>
+          </div>
+        )}
         <div className="mx-auto max-w-5xl px-4 pb-3 pt-3">
           <div className="relative flex flex-col items-center gap-1.5 text-center">
             {category && (
@@ -369,6 +399,11 @@ export default function CatalogPage() {
                         colours
                       </span>
                     )}
+                    {priceView && priceLabel(cover.price_min, cover.price_max) && (
+                      <span className="absolute left-2 top-9 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                        {priceLabel(cover.price_min, cover.price_max)}
+                      </span>
+                    )}
                     {!cover.in_stock ? (
                       <span className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/70 to-transparent px-2 pb-3 pt-10">
                         <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
@@ -441,6 +476,7 @@ export default function CatalogPage() {
         <CoverViewer
           cover={covers[viewing]}
           isCase={isCase}
+          showPrices={priceView}
           hasSizes={
             !!covers[viewing].has_sizes ||
             sizedCategoryIds.has(covers[viewing].category_id ?? "")

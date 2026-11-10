@@ -2,15 +2,18 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 import type { MediaItem } from "@/components/catalog/image";
 
-export type CoverModel = { model: string; quantity: number };
+// `price` fields are only sent to the signed-in price viewer
+export type CoverModel = { model: string; quantity: number; price?: number };
 
 // A colour/style of a product: its photo and the sizes left in it
 export type CoverVariant = {
   name: string;
   // index into `media`, -1 when no photo is tagged with this colour
   media_index: number;
-  sizes: { size: string; quantity: number }[];
+  sizes: { size: string; quantity: number; price?: number }[];
   quantity: number;
+  price_min?: number;
+  price_max?: number;
 };
 
 export type Cover = {
@@ -29,6 +32,9 @@ export type Cover = {
   has_sizes?: boolean;
   quantity: number;
   in_stock: boolean;
+  // selling price range, for the price viewer only
+  price_min?: number;
+  price_max?: number;
 };
 
 export type CatalogModel = { model: string; count: number };
@@ -96,6 +102,19 @@ export function useCatalogModels(category = "") {
         })
       ).data.data as CatalogModel[],
     staleTime: 5 * 60_000,
+  });
+}
+
+export type CatalogSession = { username: string; role: "admin" | "price" } | null;
+
+// who is signed in on this browser, if anyone
+export function useCatalogSession() {
+  return useQuery({
+    queryKey: ["catalog-session"],
+    ...wakeRetry,
+    queryFn: async () =>
+      (await axiosInstance.get("/session")).data.user as CatalogSession,
+    staleTime: 10 * 60_000,
   });
 }
 

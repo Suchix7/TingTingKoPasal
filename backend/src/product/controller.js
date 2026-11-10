@@ -47,6 +47,8 @@ export const createProduct = async (req, res) => {
           variant: l.variant,
           size: l.size,
           quantity: l.quantity,
+          costPrice: l.costPrice,
+          salePrice: l.salePrice,
         }))
       : Array.isArray(variants)
         ? variants
@@ -180,8 +182,9 @@ export const createProduct = async (req, res) => {
           variant: variant.variant,
           size: variant.size,
           quantity: variant.quantity,
-          costPrice: parsedCostPrice,
-          salePrice: parsedSalePrice,
+          // a colour / size can have its own price; otherwise the product's
+          costPrice: variant.costPrice ?? parsedCostPrice,
+          salePrice: variant.salePrice ?? parsedSalePrice,
           barcode: await generateProductBarcode(),
         });
 

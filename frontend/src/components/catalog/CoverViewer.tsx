@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Ruler, X } from "lucide-react";
 
 import type { Cover } from "@/hooks/useCatalog";
-import { pcs } from "./format";
+import { pcs, priceLabel, rs } from "./format";
 import { coverImage } from "./image";
 import MediaGallery from "./MediaGallery";
 
@@ -14,6 +14,8 @@ type Props = {
   isCase: boolean;
   // stock lines are sizes (S, M, L), not phone models
   hasSizes?: boolean;
+  // signed in as the price viewer: show selling prices
+  showPrices?: boolean;
   onClose: () => void;
 };
 
@@ -23,8 +25,12 @@ export default function CoverViewer({
   cover,
   isCase,
   hasSizes = false,
+  showPrices = false,
   onClose,
 }: Props) {
+  // " · Rs. 500" after a chip, only for the price viewer
+  const at = (price?: number) => (showPrices && price ? ` · ${rs(price)}` : "");
+  const coverPrice = showPrices ? priceLabel(cover.price_min, cover.price_max) : "";
   const availableModels = cover.models.filter((m) => m.quantity > 0);
   const media = cover.media?.length
     ? cover.media
@@ -93,6 +99,13 @@ export default function CoverViewer({
       />
 
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        {coverPrice && (
+          <p className="mb-3 text-center">
+            <span className="rounded-full bg-emerald-600 px-3 py-1 text-base font-bold text-white">
+              {coverPrice}
+            </span>
+          </p>
+        )}
         {!cover.in_stock && (
           <p className="mb-3 text-center">
             <span className="rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white">
@@ -144,6 +157,11 @@ export default function CoverViewer({
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-white/60">
                     {variant.sizes.length > 0 ? `Sizes in ${variant.name}` : variant.name}
+                    {showPrices && priceLabel(variant.price_min, variant.price_max) && (
+                      <span className="ml-1.5 normal-case tracking-normal text-emerald-300">
+                        {priceLabel(variant.price_min, variant.price_max)}
+                      </span>
+                    )}
                   </p>
                   {sizeGuide >= 0 && (
                     <button
@@ -164,6 +182,7 @@ export default function CoverViewer({
                           className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
                         >
                           {s.size} · {pcs(s.quantity)}
+                          {at(s.price)}
                         </span>
                       ) : (
                         <span
@@ -213,6 +232,7 @@ export default function CoverViewer({
                     className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
                   >
                     {m.model} · {pcs(m.quantity)}
+                    {at(m.price)}
                   </span>
                 ))}
               </div>

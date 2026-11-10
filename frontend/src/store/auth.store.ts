@@ -42,11 +42,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const res = await axiosInstance.post("/login", data, {
         withCredentials: true,
       });
+      if (!res.data.success) throw new Error(res.data.message);
       set({ authUser: res.data.user });
       toast.success("Welcome back!");
-      window.location.href = "/admin";
+      // the price viewer only sees the customer site, with prices
+      window.location.href = res.data.user?.role === "price" ? "/" : "/admin";
     } catch (error) {
-      toast.error("Invalid passcode.");
+      toast.error("Invalid username or password.");
+      throw error;
     } finally {
       set({ isLoggingIn: false });
     }

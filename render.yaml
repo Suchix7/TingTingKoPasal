@@ -21,3 +21,6 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         sync: false
+      # first password of the "prices" login (customer site with prices)
+      - key: PRICE_PASSWORD
+        sync: false

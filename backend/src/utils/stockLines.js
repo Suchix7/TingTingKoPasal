@@ -22,14 +22,30 @@ export function compareSizes(a, b) {
   return String(a).localeCompare(String(b));
 }
 
-// Body `stock_lines: [{ variant, size, quantity }]` -> clean list, or an error
+// A line's own price: undefined = not sent (keep what is saved), null = use
+// the product's price, otherwise the number (NaN when invalid)
+const linePrice = (v) => {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  return Number(v);
+};
+
+// Body `stock_lines: [{ variant, size, quantity, cost_price?, sale_price? }]`
+// -> clean list, or an error
 export function parseStockLines(raw) {
   if (!Array.isArray(raw)) return { lines: null };
   const lines = raw
     .map((l) => {
       const variant = String(l?.variant ?? "").trim();
       const size = String(l?.size ?? "").trim();
-      return { variant, size, name: lineName(variant, size), quantity: Number(l?.quantity ?? 0) };
+      return {
+        variant,
+        size,
+        name: lineName(variant, size),
+        quantity: Number(l?.quantity ?? 0),
+        costPrice: linePrice(l?.cost_price),
+        salePrice: linePrice(l?.sale_price),
+      };
     })
     .filter((l) => l.name);
 
@@ -42,11 +58,16 @@ export function parseStockLines(raw) {
   if (lines.some((l) => !Number.isInteger(l.quantity) || l.quantity < 0)) {
     return { error: "Quantities must be whole numbers, 0 or more" };
   }
+  const badPrice = (p) => p != null && (Number.isNaN(p) || p < 0);
+  if (lines.some((l) => badPrice(l.costPrice) || badPrice(l.salePrice))) {
+    return { error: "Colour / size prices must be numbers, 0 or more" };
+  }
   return { lines };
 }
 
-// Make the product's stock lines match `lines`: change quantities, add new
-// lines and remove ones no longer listed. Every change is logged.
+// Make the product's stock lines match `lines`: change quantities and
+// prices, add new lines and remove ones no longer listed. A line without its
+// own price takes the product's. Every stock change is logged.
 export async function syncStockLines(product, lines, referenceType = "ADJUSTMENT") {
   const all = await ProductBatch.find({ productId: product._id });
   const byName = new Map(all.map((b) => [b.batchNumber.trim().toLowerCase(), b]));
@@ -73,8 +94,8 @@ export async function syncStockLines(product, lines, referenceType = "ADJUSTMENT
         variant: l.variant,
         size: l.size,
         quantity: l.quantity,
-        costPrice: product.costPrice,
-        salePrice: product.salePrice,
+        costPrice: l.costPrice ?? product.costPrice,
+        salePrice: l.salePrice ?? product.salePrice,
         barcode: await generateProductBarcode(),
       });
       await log(created, 0, l.quantity);
@@ -88,6 +109,8 @@ export async function syncStockLines(product, lines, referenceType = "ADJUSTMENT
     batch.variant = l.variant;
     batch.size = l.size;
     batch.quantity = l.quantity;
+    if (l.costPrice !== undefined) batch.costPrice = l.costPrice ?? product.costPrice;
+    if (l.salePrice !== undefined) batch.salePrice = l.salePrice ?? product.salePrice;
     await batch.save();
     await log(batch, before, l.quantity);
   }

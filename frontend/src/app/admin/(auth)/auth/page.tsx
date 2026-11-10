@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
-import { Shield, Lock, ArrowRight, Loader2, Building2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { Shield, Lock, ArrowRight, Loader2, Building2, User } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
 export default function Page() {
   const { t } = useLang();
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [passcode, setPasscode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +19,11 @@ export default function Page() {
     e.preventDefault();
     if (loading) return;
     setError("");
+
+    if (username.trim() === "") {
+      setError(t("Please enter your username"));
+      return;
+    }
 
     if (passcode.trim() === "") {
       setError(t("Please enter your passcode"));
@@ -32,14 +37,10 @@ export default function Page() {
 
     try {
       setLoading(true);
-      await login({ passcode });
+      await login({ username: username.trim(), passcode });
     } catch (error: any) {
-      console.log("Error while submitting passcode:", error);
-      toast.error(t("Invalid passcode"));
-      setError(
-        error?.response?.data?.message || t("Invalid passcode. Please try again."),
-      );
-      throw new Error("Failed to submit passcode");
+      // the store already showed a toast
+      setError(t("Invalid username or password."));
     } finally {
       setLoading(false);
     }
@@ -81,18 +82,56 @@ export default function Page() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" method="post" action="#">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                {t("Passcode")}
+              <label
+                htmlFor="username"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                {t("Username")}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder={t("Enter your username")}
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError("");
+                  }}
+                  className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                  maxLength={40}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                {t("Password")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3">
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
+                  id="password"
+                  name="password"
                   type="password"
-                  placeholder={t("Enter your passcode")}
+                  autoComplete="current-password"
+                  placeholder={t("Enter your password")}
                   value={passcode}
                   onChange={(e) => {
                     setPasscode(e.target.value);
@@ -100,17 +139,16 @@ export default function Page() {
                   }}
                   className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
                   maxLength={20}
-                  autoFocus
                 />
               </div>
               <p className="mt-2 text-xs text-gray-400">
-                {t("Enter the passcode provided by your administrator")}
+                {t("Enter the password provided by your administrator")}
               </p>
             </div>
 
             <button
               type="submit"
-              disabled={loading || !passcode.trim()}
+              disabled={loading || !username.trim() || !passcode.trim()}
               className="group cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
@@ -133,7 +171,7 @@ export default function Page() {
             <div className="flex items-center justify-center gap-2">
               <Lock className="h-3 w-3 text-gray-400" />
               <p className="text-xs text-gray-400">
-                {t("Protected by system passcode authentication")}
+                {t("Protected by username and password sign-in")}
               </p>
             </div>
           </div>

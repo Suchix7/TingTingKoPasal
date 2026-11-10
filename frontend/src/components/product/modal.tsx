@@ -114,6 +114,10 @@ export default function ProductModal({
           (selectedProduct.batches ?? []).filter((b) => !b.is_deleted),
           selectedProduct.photos ?? [],
           [],
+          {
+            cost: Number(selectedProduct.cost_price) || 0,
+            sale: Number(selectedProduct.sale_price) || 0,
+          },
         ),
       );
       setSizeGuideKey(
@@ -310,7 +314,10 @@ export default function ProductModal({
     }
 
     if (gridMode) {
-      const problem = gridProblem(grid, t);
+      const problem = gridProblem(grid, t, {
+        cost: Number(formData.cost_price) || 0,
+        sale: Number(formData.sale_price) || 0,
+      });
       if (problem) {
         toast.error(problem);
         return false;
@@ -837,6 +844,10 @@ export default function ProductModal({
                       onChange={changeGrid}
                       photos={gridPhotos}
                       presetSizes={categorySizes(formData.category_id)}
+                      productPrices={{
+                        cost: Number(formData.cost_price) || 0,
+                        sale: Number(formData.sale_price) || 0,
+                      }}
                       disabled={isSubmitting}
                     />
                   )}

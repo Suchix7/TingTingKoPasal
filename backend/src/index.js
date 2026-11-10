@@ -12,8 +12,11 @@ const { seedDefaultPaymentMethods } = await import(
   "./config/seedPaymentMethods.js"
 );
 
+const { seedPriceViewer } = await import("./config/seedPriceViewer.js");
+
 await connectMongo();
 await seedDefaultPaymentMethods();
+await seedPriceViewer();
 
 app.get("/health", (req, res) => {
   res.json({

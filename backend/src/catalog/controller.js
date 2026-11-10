@@ -6,11 +6,13 @@ import StoreInfo from "../models/StoreInfo.js";
 import { productMedia } from "../utils/media.js";
 import { compareSizes } from "../utils/stockLines.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
+import { canSeePrices } from "../auth/middleware.js";
 
 // Public, read-only catalog for the customer site. It exposes the photos and videos,
 // its category and how many are left (per phone model for cases, a single
 // count for accessories): no prices, names, SKUs or barcodes. Sold-out items
 // stay listed, marked out of stock, after everything that is available.
+// Signed in as the price viewer, selling prices are added too.
 
 const baseFilter = () => ({
   isDeleted: false,
@@ -23,7 +25,7 @@ const baseFilter = () => ({
 // size for colour + size lines (so "M" finds every colour in M).
 async function modelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
-    .select("productId batchNumber variant size quantity")
+    .select("productId batchNumber variant size quantity salePrice")
     .lean();
 
   const map = new Map();
@@ -35,6 +37,7 @@ async function modelsByProduct() {
       variant: b.variant || "",
       size: b.size || "",
       quantity: Math.max(Number(b.quantity) || 0, 0),
+      price: Number(b.salePrice) || 0,
     });
   }
   return map;
@@ -87,7 +90,46 @@ function variantsOf(media, entries) {
     .filter(Boolean);
 }
 
-const toCover = (product, entries = []) => {
+// lowest and highest selling price of some stock lines (the product's own
+// price when it has none)
+function priceRange(lines, fallback) {
+  const prices = lines.map((e) => e.price).filter((p) => p > 0);
+  if (!prices.length) return { price_min: fallback, price_max: fallback };
+  return { price_min: Math.min(...prices), price_max: Math.max(...prices) };
+}
+
+// Selling prices for the price viewer, kept apart so the public site never
+// gets them: one range for the product, and per model / colour / size.
+function withPrices(cover, product, entries) {
+  const own = Number(product.salePrice) || 0;
+  // price the range on what is left; everything when it is all sold out
+  const left = entries.filter((e) => e.quantity > 0);
+  const linePrice = (match) => priceRange(entries.filter(match), own).price_min;
+  return {
+    ...cover,
+    ...priceRange(left.length ? left : entries, own),
+    models: cover.models.map((m) => ({
+      ...m,
+      price: linePrice((e) => e.model.toLowerCase() === m.model.toLowerCase()),
+    })),
+    variants: cover.variants.map((v) => {
+      const mine = entries.filter((e) => e.variant.toLowerCase() === v.name.toLowerCase());
+      return {
+        ...v,
+        ...priceRange(mine, own),
+        sizes: v.sizes.map((s) => ({
+          ...s,
+          price: priceRange(
+            mine.filter((e) => e.size.toLowerCase() === s.size.toLowerCase()),
+            own,
+          ).price_min,
+        })),
+      };
+    }),
+  };
+}
+
+const toCover = (product, entries = [], prices = false) => {
   // one entry per phone model / size; a size held in several colours adds up
   const merged = new Map();
   for (const e of entries) {
@@ -114,7 +156,7 @@ const toCover = (product, entries = []) => {
       (a, b) => Number(b.quantity > 0) - Number(a.quantity > 0) || rank(a) - rank(b),
     );
   }
-  return {
+  const cover = {
     id: String(product._id),
     photo_url: product.photoUrl,
     media: media.map(({ type, url, poster }) => ({ type, url, poster })),
@@ -127,6 +169,7 @@ const toCover = (product, entries = []) => {
     quantity,
     in_stock: quantity > 0,
   };
+  return prices ? withPrices(cover, product, entries) : cover;
 };
 
 export const getCovers = async (req, res) => {
@@ -140,6 +183,7 @@ export const getCovers = async (req, res) => {
       .map((m) => m.trim().toLowerCase())
       .filter(Boolean);
 
+    const prices = canSeePrices(req);
     const modelMap = await modelsByProduct();
 
     const filter = baseFilter();
@@ -210,6 +254,7 @@ export const getCovers = async (req, res) => {
             "photos.sizeGuide": 1,
             categoryId: 1,
             "stock.currentStock": 1,
+            ...(prices ? { salePrice: 1 } : {}),
           },
         },
       ]),
@@ -218,7 +263,7 @@ export const getCovers = async (req, res) => {
 
     return res.json({
       success: true,
-      data: products.map((p) => toCover(p, modelMap.get(String(p._id)))),
+      data: products.map((p) => toCover(p, modelMap.get(String(p._id)), prices)),
       pagination: { total, hasMore: page * limit < total },
       fuzzy,
       suggestions,
@@ -237,14 +282,17 @@ export const getCover = async (req, res) => {
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
       .select(
-        "photoUrl photos.url photos.type photos.variant photos.sizeGuide categoryId stock.currentStock",
+        "photoUrl photos.url photos.type photos.variant photos.sizeGuide categoryId stock.currentStock salePrice",
       )
       .lean();
     if (!product) {
       return res.status(404).json({ success: false, message: "Cover not found" });
     }
     const modelMap = await modelsByProduct();
-    return res.json({ success: true, data: toCover(product, modelMap.get(String(product._id))) });
+    return res.json({
+      success: true,
+      data: toCover(product, modelMap.get(String(product._id)), canSeePrices(req)),
+    });
   } catch (error) {
     console.error("Catalog cover error:", error);
     return res.status(500).json({ success: false, message: "Failed to load cover" });
