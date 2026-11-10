@@ -11,6 +11,10 @@ type Props = {
   // dims the photos, e.g. for a sold-out item
   dimmed?: boolean;
   labels?: { previous: string; next: string };
+  // jump to this slide when it changes (e.g. a colour was picked)
+  index?: number;
+  // told whenever the shown slide changes
+  onIndexChange?: (index: number) => void;
 };
 
 // Height of the native video control bar: swipes that start there are left
@@ -25,6 +29,8 @@ export default function MediaGallery({
   alt = "",
   dimmed = false,
   labels = { previous: "Previous photo", next: "Next photo" },
+  index: wanted,
+  onIndexChange,
 }: Props) {
   const [index, setIndex] = useState(0);
   const [drag, setDrag] = useState(0);
@@ -43,7 +49,14 @@ export default function MediaGallery({
     const i = Math.min(Math.max(next, 0), count - 1);
     setIndex(i);
     setSeen((prev) => new Set(prev).add(i - 1).add(i).add(i + 1));
+    onIndexChange?.(i);
   };
+
+  useEffect(() => {
+    if (wanted === undefined || wanted < 0 || wanted >= count) return;
+    setIndex(wanted);
+    setSeen((prev) => new Set(prev).add(wanted - 1).add(wanted).add(wanted + 1));
+  }, [wanted, count]);
 
   useEffect(() => {
     if (!multiple) return;

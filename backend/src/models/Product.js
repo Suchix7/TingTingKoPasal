@@ -37,6 +37,10 @@ const productSchema = new mongoose.Schema(
           type: { type: String, enum: ["image", "video"], default: "image" },
           url: { type: String, required: true },
           publicId: { type: String, default: null },
+          // colour/style this photo shows (matches a stock line's variant)
+          variant: { type: String, default: "" },
+          // the size chart / measuring guide, not a product photo
+          sizeGuide: { type: Boolean, default: false },
         },
       ],
       default: [],

@@ -362,6 +362,13 @@ export default function CatalogPage() {
                         )}
                       </span>
                     )}
+                    {(cover.variants?.length ?? 0) > 1 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-gray-900 shadow-sm">
+                        {cover.variants!.filter((v) => v.quantity > 0).length ||
+                          cover.variants!.length}{" "}
+                        colours
+                      </span>
+                    )}
                     {!cover.in_stock ? (
                       <span className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-black/70 to-transparent px-2 pb-3 pt-10">
                         <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">

@@ -13,10 +13,14 @@ export type ProductBatch = {
   id: string;
   product_id: string;
   batch_number: string;
+  // colour/style and size of a colour/size stock line ("" otherwise)
+  variant?: string;
+  size?: string;
   barcode?: string | null;
   quantity: number;
   cost_price: number;
   sale_price: number;
+  is_deleted?: boolean;
   created_at?: string;
   updated_at?: string;
 };
@@ -52,10 +56,19 @@ export type ProductPhoto = {
   url: string;
   // still picture: the photo itself, or a frame from the video
   poster: string;
+  // colour/style this photo shows, and whether it is the size chart
+  variant?: string;
+  size_guide?: boolean;
 };
 
-// What the product form sends: an existing photo/video id, or a new file
-export type ProductMediaEntry = string | { file: File; type: "image" | "video" };
+type MediaLabels = { variant?: string; size_guide?: boolean };
+
+// What the product form sends: an existing photo/video id, or a new file,
+// each with the colour it shows / whether it is the size guide
+export type ProductMediaEntry =
+  | string
+  | ({ id: string } & MediaLabels)
+  | ({ file: File; type: "image" | "video" } & MediaLabels);
 
 type SignedUpload = {
   cloud_name: string;
@@ -255,6 +268,7 @@ export const useUpdateProduct = () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
       queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["productBatches"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
       toast.success(tr("Product updated successfully."));
@@ -349,19 +363,24 @@ export const useSaveProductPhotos = () => {
       // (files done, files total, progress of the current file 0..1)
       onProgress?: (done: number, total: number, current: number) => void;
     }) => {
-      const total = entries.filter((e) => typeof e !== "string").length;
+      const isUpload = (e: ProductMediaEntry) =>
+        typeof e !== "string" && "file" in e;
+      const total = entries.filter(isUpload).length;
       let done = 0;
       const media = [];
       for (const entry of entries) {
-        if (typeof entry === "string") {
+        if (typeof entry === "string" || !("file" in entry)) {
           media.push(entry);
           continue;
         }
-        media.push(
-          await uploadToCloudinary(entry.file, entry.type, (f) =>
-            onProgress?.(done, total, f),
-          ),
+        const uploaded = await uploadToCloudinary(entry.file, entry.type, (f) =>
+          onProgress?.(done, total, f),
         );
+        media.push({
+          ...uploaded,
+          variant: entry.variant ?? "",
+          size_guide: !!entry.size_guide,
+        });
         done += 1;
         onProgress?.(done, total, 0);
       }

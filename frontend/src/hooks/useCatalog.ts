@@ -4,6 +4,15 @@ import type { MediaItem } from "@/components/catalog/image";
 
 export type CoverModel = { model: string; quantity: number };
 
+// A colour/style of a product: its photo and the sizes left in it
+export type CoverVariant = {
+  name: string;
+  // index into `media`, -1 when no photo is tagged with this colour
+  media_index: number;
+  sizes: { size: string; quantity: number }[];
+  quantity: number;
+};
+
 export type Cover = {
   id: string;
   photo_url: string;
@@ -12,6 +21,10 @@ export type Cover = {
   category_id: string | null;
   // every phone model, in stock first; empty for plain accessories
   models: CoverModel[];
+  // colours/styles; empty for products that only come in one
+  variants?: CoverVariant[];
+  // index into `media` of the size chart, -1 when there is none
+  size_guide_index?: number;
   quantity: number;
   in_stock: boolean;
 };

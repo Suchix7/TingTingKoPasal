@@ -8,6 +8,11 @@ const productBatchSchema = new mongoose.Schema(
       required: true,
     },
     batchNumber: { type: String, required: true, trim: true },
+    // For products sold by colour/style and/or size the line's parts are kept
+    // too (batchNumber is "Camo / M", "Camo" or "M"); empty for phone models
+    // and ordinary batches.
+    variant: { type: String, default: "", trim: true },
+    size: { type: String, default: "", trim: true },
     quantity: { type: Number, required: true, default: 0 },
     costPrice: { type: Number, required: true, min: 0 },
     salePrice: { type: Number, required: true, min: 0 },

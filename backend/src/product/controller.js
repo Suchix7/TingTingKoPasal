@@ -8,6 +8,7 @@ import { deleteImage, signProductUpload, cloudName } from "../utils/cloudinaryUp
 import Category from "../models/Category.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
 import { totalStockStages } from "../utils/stock.js";
+import { parseStockLines, syncStockLines } from "../utils/stockLines.js";
 import {
   productMedia,
   videoPoster,
@@ -29,19 +30,34 @@ export const createProduct = async (req, res) => {
       status,
       description,
       variants,
+      stock_lines,
     } = req.body;
     // Barcodes are always auto-generated; any client-supplied value is ignored.
 
-    // Optional phone-model variants: [{ model, quantity }], each tracked as
-    // its own stock line (a product batch named after the model).
-    const variantList = Array.isArray(variants)
-      ? variants
-          .map((v) => ({
-            model: String(v?.model ?? "").trim(),
-            quantity: Number(v?.quantity ?? 0),
-          }))
-          .filter((v) => v.model)
-      : [];
+    // Optional stock lines, each tracked as its own product batch:
+    // phone models `variants: [{ model, quantity }]`, or colours/sizes
+    // `stock_lines: [{ variant, size, quantity }]`.
+    const parsedLines = parseStockLines(stock_lines);
+    if (parsedLines.error) {
+      return res.status(400).json({ success: false, message: parsedLines.error });
+    }
+    const variantList = parsedLines.lines
+      ? parsedLines.lines.map((l) => ({
+          model: l.name,
+          variant: l.variant,
+          size: l.size,
+          quantity: l.quantity,
+        }))
+      : Array.isArray(variants)
+        ? variants
+            .map((v) => ({
+              model: String(v?.model ?? "").trim(),
+              variant: "",
+              size: "",
+              quantity: Number(v?.quantity ?? 0),
+            }))
+            .filter((v) => v.model)
+        : [];
     const hasVariants = variantList.length > 0;
 
     if (
@@ -161,6 +177,8 @@ export const createProduct = async (req, res) => {
         const batch = await ProductBatch.create({
           productId: newProduct._id,
           batchNumber: variant.model,
+          variant: variant.variant,
+          size: variant.size,
           quantity: variant.quantity,
           costPrice: parsedCostPrice,
           salePrice: parsedSalePrice,
@@ -240,8 +258,18 @@ export const updateProduct = async (req, res) => {
       unit,
       status,
       description,
+      stock_lines,
     } = req.body;
     // Barcodes are system-managed; edits never change them.
+
+    // Optional colours/sizes [{ variant, size, quantity }]. Only sent when the
+    // form edits them; the list replaces the product's stock lines.
+    const parsedLines = parseStockLines(stock_lines);
+    if (parsedLines.error) {
+      return res.status(400).json({ success: false, message: parsedLines.error });
+    }
+    const syncSizes = !!parsedLines.lines;
+    const sizeList = parsedLines.lines || [];
 
     const updatedProductName =
       product_name !== undefined ? product_name : existingProduct.productName;
@@ -259,10 +287,13 @@ export const updateProduct = async (req, res) => {
       sale_price !== undefined && sale_price !== ""
         ? Number(sale_price)
         : Number(existingProduct.salePrice);
+    // With sizes, stock lives on the sizes, not on the product itself
     const updatedStockQuantity =
-      stock_quantity !== undefined && stock_quantity !== ""
-        ? Number(stock_quantity)
-        : Number(existingProduct.stock?.currentStock || 0);
+      syncSizes && sizeList.length > 0
+        ? 0
+        : stock_quantity !== undefined && stock_quantity !== ""
+          ? Number(stock_quantity)
+          : Number(existingProduct.stock?.currentStock || 0);
     const updatedUnit = unit !== undefined ? unit : existingProduct.unit;
     const updatedStatus = status !== undefined ? status : existingProduct.status;
     const updatedDescription =
@@ -315,6 +346,10 @@ export const updateProduct = async (req, res) => {
       });
     }
 
+    if (syncSizes) {
+      await syncStockLines(existingProduct, sizeList);
+    }
+
     await logActivity({
       action: "PRODUCT_UPDATED",
       entityType: "Product",
@@ -323,7 +358,9 @@ export const updateProduct = async (req, res) => {
       details: {
         sale_price: existingProduct.salePrice,
         cost_price: existingProduct.costPrice,
-        stock: existingProduct.stock?.currentStock,
+        stock: syncSizes && sizeList.length
+          ? sizeList.map(({ name, quantity }) => ({ name, quantity }))
+          : existingProduct.stock?.currentStock,
       },
     });
 
@@ -880,6 +917,8 @@ function validNewMedia(item) {
 
 // Body: { media: [...] } in display order; each entry is the id of a photo or
 // video the product already has, or { type, url, publicId } for a new upload.
+// Either may come as an object with `variant` (the colour/style it shows)
+// and `size_guide` (it is the size chart); a bare id keeps its saved labels.
 export const saveProductPhotos = async (req, res) => {
   try {
     const { id } = req.params;
@@ -909,14 +948,35 @@ export const saveProductPhotos = async (req, res) => {
 
     const next = [];
     const used = new Set();
+    let hasSizeGuide = false;
     for (const entry of media) {
-      const item = typeof entry === "string" ? byId.get(entry) : validNewMedia(entry);
+      const saved =
+        typeof entry === "string"
+          ? byId.get(entry)
+          : typeof entry?.id === "string"
+            ? byId.get(entry.id)
+            : null;
+      const item = saved || (typeof entry === "object" ? validNewMedia(entry) : null);
       if (!item) {
         return res.status(400).json({ success: false, message: "Invalid photo or video" });
       }
       if (used.has(item.url)) continue;
       used.add(item.url);
-      next.push({ type: item.type, url: item.url, publicId: item.publicId });
+      const labelled = typeof entry === "object" && entry !== null;
+      const variant = labelled
+        ? String(entry.variant ?? "").trim().slice(0, 60)
+        : saved?.variant || "";
+      // only one size guide per product
+      const sizeGuide =
+        !hasSizeGuide && (labelled ? !!entry.size_guide : !!saved?.sizeGuide);
+      if (sizeGuide) hasSizeGuide = true;
+      next.push({
+        type: item.type,
+        url: item.url,
+        publicId: item.publicId,
+        variant: sizeGuide ? "" : variant,
+        sizeGuide,
+      });
     }
 
     const cover = next[0];

@@ -4,6 +4,7 @@ import ProductBatch from "../models/ProductBatch.js";
 import Category from "../models/Category.js";
 import StoreInfo from "../models/StoreInfo.js";
 import { productMedia } from "../utils/media.js";
+import { compareSizes } from "../utils/stockLines.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
 
 // Public, read-only catalog for the customer site. It exposes the photos and videos,
@@ -17,10 +18,12 @@ const baseFilter = () => ({
   photoUrl: { $nin: [null, ""] },
 });
 
-// productId -> [{ model, quantity }] for every phone model (even sold out)
+// productId -> [{ model, variant, size, quantity }] for every stock line
+// (even sold out). `model` is what the filters show: the phone model, or the
+// size for colour + size lines (so "M" finds every colour in M).
 async function modelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
-    .select("productId batchNumber quantity")
+    .select("productId batchNumber variant size quantity")
     .lean();
 
   const map = new Map();
@@ -28,7 +31,9 @@ async function modelsByProduct() {
     const key = String(b.productId);
     if (!map.has(key)) map.set(key, []);
     map.get(key).push({
-      model: b.batchNumber,
+      model: b.size || b.batchNumber,
+      variant: b.variant || "",
+      size: b.size || "",
       quantity: Math.max(Number(b.quantity) || 0, 0),
     });
   }
@@ -52,20 +57,62 @@ async function inStockProductIds(modelMap) {
   return ids;
 }
 
-const toCover = (product, entries) => {
-  const models = [...(entries || [])].sort(
+// Colours/styles of a product with the sizes left in each. Colour order
+// follows the photos; each points at its photo in `media` (-1 if none).
+function variantsOf(media, entries) {
+  const names = [];
+  const add = (n) => {
+    if (n && !names.some((x) => x.toLowerCase() === n.toLowerCase())) names.push(n);
+  };
+  media.forEach((m) => add(m.variant));
+  entries.forEach((e) => add(e.variant));
+
+  return names
+    .map((name) => {
+      const mine = entries.filter((e) => e.variant.toLowerCase() === name.toLowerCase());
+      if (!mine.length) return null; // a labelled photo with no stock line
+      const sizes = mine
+        .filter((e) => e.size)
+        .map((e) => ({ size: e.size, quantity: e.quantity }))
+        .sort((a, b) => compareSizes(a.size, b.size));
+      return {
+        name,
+        media_index: media.findIndex(
+          (m) => m.variant.toLowerCase() === name.toLowerCase(),
+        ),
+        sizes,
+        quantity: mine.reduce((sum, e) => sum + e.quantity, 0),
+      };
+    })
+    .filter(Boolean);
+}
+
+const toCover = (product, entries = []) => {
+  // one entry per phone model / size; a size held in several colours adds up
+  const merged = new Map();
+  for (const e of entries) {
+    const key = e.model.toLowerCase();
+    const m = merged.get(key) || { model: e.model, quantity: 0 };
+    m.quantity += e.quantity;
+    merged.set(key, m);
+  }
+  const sized = entries.some((e) => e.size);
+  const models = [...merged.values()].sort(
     (a, b) =>
       Number(b.quantity > 0) - Number(a.quantity > 0) ||
-      a.model.localeCompare(b.model),
+      (sized ? compareSizes(a.model, b.model) : a.model.localeCompare(b.model)),
   );
   const own = Math.max(Number(product.stock?.currentStock) || 0, 0);
-  const quantity = own + models.reduce((sum, m) => sum + m.quantity, 0);
+  const quantity = own + entries.reduce((sum, m) => sum + m.quantity, 0);
+  const media = productMedia(product);
   return {
     id: String(product._id),
     photo_url: product.photoUrl,
-    media: productMedia(product).map(({ type, url, poster }) => ({ type, url, poster })),
+    media: media.map(({ type, url, poster }) => ({ type, url, poster })),
     category_id: product.categoryId ? String(product.categoryId) : null,
     models,
+    variants: variantsOf(media, entries),
+    size_guide_index: media.findIndex((m) => m.sizeGuide),
     quantity,
     in_stock: quantity > 0,
   };
@@ -102,11 +149,13 @@ export const getCovers = async (req, res) => {
       const idsFor = (isFuzzy) =>
         scope
           .filter((p) => {
-            const models = inStockOnly(modelMap.get(String(p._id))).map((m) => m.model);
+            const available = inStockOnly(modelMap.get(String(p._id)));
+            const models = available.map((m) => m.model);
+            const colours = available.map((m) => m.variant).filter(Boolean);
             const matchesSearch =
               words.length === 0 ||
               modelScore(words, p.productName, isFuzzy) !== null ||
-              models.some((m) => modelScore(words, m, isFuzzy) !== null);
+              [...models, ...colours].some((m) => modelScore(words, m, isFuzzy) !== null);
             const matchesPick =
               wanted.length === 0 ||
               models.some((m) => wanted.includes(m.toLowerCase()));
@@ -141,7 +190,17 @@ export const getCovers = async (req, res) => {
         { $sort: { available: -1, createdAt: -1, _id: 1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
-        { $project: { photoUrl: 1, "photos.url": 1, "photos.type": 1, categoryId: 1, "stock.currentStock": 1 } },
+        {
+          $project: {
+            photoUrl: 1,
+            "photos.url": 1,
+            "photos.type": 1,
+            "photos.variant": 1,
+            "photos.sizeGuide": 1,
+            categoryId: 1,
+            "stock.currentStock": 1,
+          },
+        },
       ]),
       Product.countDocuments(filter),
     ]);
@@ -166,7 +225,9 @@ export const getCover = async (req, res) => {
       return res.status(404).json({ success: false, message: "Cover not found" });
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
-      .select("photoUrl photos.url photos.type categoryId stock.currentStock")
+      .select(
+        "photoUrl photos.url photos.type photos.variant photos.sizeGuide categoryId stock.currentStock",
+      )
       .lean();
     if (!product) {
       return res.status(404).json({ success: false, message: "Cover not found" });

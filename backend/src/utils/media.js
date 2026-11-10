@@ -29,6 +29,8 @@ export function productMedia(obj) {
         url: p.url,
         poster: type === "video" ? videoPoster(p.url) : p.url,
         publicId: p.publicId || null,
+        variant: p.variant || "",
+        sizeGuide: !!p.sizeGuide,
       };
     });
   }
@@ -40,6 +42,8 @@ export function productMedia(obj) {
         url: obj.photoUrl,
         poster: obj.photoUrl,
         publicId: obj.photoPublicId || null,
+        variant: "",
+        sizeGuide: false,
       },
     ];
   }

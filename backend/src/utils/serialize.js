@@ -20,11 +20,13 @@ export function serializeProduct(doc) {
     barcode_last_printed_quantity: obj.barcodeLabel?.lastPrintedQuantity || 0,
     description: obj.description || null,
     photo_url: obj.photoUrl || null,
-    photos: productMedia(obj).map(({ id, type, url, poster }) => ({
+    photos: productMedia(obj).map(({ id, type, url, poster, variant, sizeGuide }) => ({
       id,
       type,
       url,
       poster,
+      variant,
+      size_guide: sizeGuide,
     })),
     stock_quantity: obj.stock?.currentStock || 0,
     reorder_level: obj.stock?.reorderLevel || 0,
@@ -49,6 +51,8 @@ export function serializeBatch(doc, extra = {}) {
     id: String(obj._id),
     product_id: String(obj.productId),
     batch_number: obj.batchNumber,
+    variant: obj.variant || "",
+    size: obj.size || "",
     barcode: obj.barcode || null,
     quantity: obj.quantity,
     cost_price: obj.costPrice,

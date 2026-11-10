@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ruler, X } from "lucide-react";
 
 import type { Cover } from "@/hooks/useCatalog";
 import { pcs } from "./format";
+import { coverImage } from "./image";
 import MediaGallery from "./MediaGallery";
 
 type Props = {
@@ -28,6 +29,26 @@ export default function CoverViewer({
   const media = cover.media?.length
     ? cover.media
     : [{ type: "image" as const, url: cover.photo_url, poster: cover.photo_url }];
+
+  // Colours / styles: pick one to see its photo and the sizes left in it
+  const variants = cover.variants ?? [];
+  const sizeGuide = cover.size_guide_index ?? -1;
+  const [slide, setSlide] = useState(0);
+  const [picked, setPicked] = useState(() =>
+    Math.max(variants.findIndex((v) => v.quantity > 0), 0),
+  );
+  const variant = variants[picked];
+
+  const pickVariant = (i: number) => {
+    setPicked(i);
+    if (variants[i].media_index >= 0) setSlide(variants[i].media_index);
+  };
+  // swiping onto a colour's photo selects that colour
+  const onSlide = (i: number) => {
+    setSlide(i);
+    const v = variants.findIndex((x) => x.media_index === i);
+    if (v >= 0) setPicked(v);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,7 +84,13 @@ export default function CoverViewer({
         </button>
       </div>
 
-      <MediaGallery key={cover.id} items={media} dimmed={!cover.in_stock} />
+      <MediaGallery
+        key={cover.id}
+        items={media}
+        dimmed={!cover.in_stock}
+        index={slide}
+        onIndexChange={onSlide}
+      />
 
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
         {!cover.in_stock && (
@@ -73,14 +100,112 @@ export default function CoverViewer({
             </span>
           </p>
         )}
-        {cover.models.length > 0 ? (
+        {variants.length > 0 ? (
+          <div className="space-y-3">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
+                {variants.length === 1 ? "Colour" : `Colours · ${variants.length}`}
+              </p>
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+                {variants.map((v, i) => {
+                  const active = i === picked;
+                  const soldOut = v.quantity <= 0;
+                  const photo = media[v.media_index];
+                  return (
+                    <button
+                      key={v.name}
+                      type="button"
+                      onClick={() => pickVariant(i)}
+                      aria-pressed={active}
+                      className={`flex h-12 shrink-0 items-center gap-2 rounded-full pl-1 pr-3 text-sm font-semibold transition ${
+                        active ? "bg-white text-gray-900" : "bg-white/10 text-white active:bg-white/20"
+                      } ${soldOut ? "opacity-50" : ""}`}
+                    >
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={coverImage(photo.poster, 96)}
+                          alt=""
+                          className="h-10 w-10 rounded-full bg-white object-cover"
+                          draggable={false}
+                        />
+                      ) : (
+                        <span className="h-10 w-2" />
+                      )}
+                      <span className={soldOut ? "line-through" : ""}>{v.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {variant && (
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-white/60">
+                    {variant.sizes.length > 0 ? `Sizes in ${variant.name}` : variant.name}
+                  </p>
+                  {sizeGuide >= 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSlide(sizeGuide)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white active:bg-white/20"
+                    >
+                      <Ruler className="h-3.5 w-3.5" /> Size guide
+                    </button>
+                  )}
+                </div>
+                {variant.sizes.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {variant.sizes.map((s) =>
+                      s.quantity > 0 ? (
+                        <span
+                          key={s.size}
+                          className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
+                        >
+                          {s.size} · {pcs(s.quantity)}
+                        </span>
+                      ) : (
+                        <span
+                          key={s.size}
+                          className="rounded-full border border-white/20 px-3 py-1.5 text-sm font-medium text-white/40 line-through"
+                          aria-label={`${s.size} sold out`}
+                        >
+                          {s.size}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-white">
+                    {variant.quantity > 0 ? `${pcs(variant.quantity)} in stock` : "Sold out"}
+                  </p>
+                )}
+                {variant.quantity <= 0 && variant.sizes.length > 0 && (
+                  <p className="mt-2 text-xs text-white/60">This colour is sold out.</p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : cover.models.length > 0 ? (
           // Only the models that are actually available; sold-out ones are
           // left out entirely (the "Out of stock" badge covers a sold-out cover)
           availableModels.length > 0 && (
             <>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
-                {hasSizes ? "Sizes" : "Phone models"}
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-white/60">
+                  {hasSizes ? "Sizes" : "Phone models"}
+                </p>
+                {sizeGuide >= 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSlide(sizeGuide)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white active:bg-white/20"
+                  >
+                    <Ruler className="h-3.5 w-3.5" /> Size guide
+                  </button>
+                )}
+              </div>
               <div className="flex max-h-32 flex-wrap gap-2 overflow-y-auto">
                 {availableModels.map((m) => (
                   <span
