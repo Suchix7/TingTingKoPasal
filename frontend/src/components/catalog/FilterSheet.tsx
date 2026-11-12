@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 
-import { IPHONE_MODELS } from "@/lib/phoneModels";
+import { compareModelOrSize } from "@/lib/phoneModels";
 import type { CatalogModel } from "@/hooks/useCatalog";
 
 type Props = {
@@ -12,11 +12,6 @@ type Props = {
   models: CatalogModel[];
   selectedModels: string[];
   onApply: (models: string[]) => void;
-};
-
-const orderOf = (model: string) => {
-  const i = IPHONE_MODELS.indexOf(model);
-  return i === -1 ? IPHONE_MODELS.length : i;
 };
 
 // Bottom sheet on phones: tick phone models.
@@ -32,10 +27,8 @@ export default function FilterSheet({
 
   const sorted = useMemo(
     () =>
-      [...models].sort(
-        (a, b) =>
-          orderOf(a.model) - orderOf(b.model) || a.model.localeCompare(b.model),
-      ),
+      // one straight line: iPhone X, XR, XS ... 11, 11 Pro, 11 Pro Max, 12...
+      [...models].sort((a, b) => compareModelOrSize(a.model, b.model)),
     [models],
   );
 

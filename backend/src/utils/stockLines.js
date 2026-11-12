@@ -42,25 +42,63 @@ export function renameLine(batch, name) {
   }
 }
 
-// iPhone 13, iPhone 13 Pro, iPhone 13 Pro Max, iPhone 14, ... (number first,
-// then plain < Plus < Pro < Pro Max); anything else alphabetically
-const MODEL_TIER = ["", "mini", "e", "plus", "pro", "pro max"];
+// Where an iPhone sits in one straight line, oldest to newest:
+// X, XR, XS, XS Max, 11, 11 Pro, 11 Pro Max, SE (2nd gen), 12 mini, 12, ...
+// 16 Pro Max, 16e, 17, 17 Pro, 17 Pro Max, Air, 18 ... (same as the frontend's
+// lib/phoneModels.ts). null when the name isn't an iPhone we can place.
+const SPECIAL_IPHONES = {
+  x: 10,
+  xr: 10.1,
+  xs: 10.2,
+  "xs max": 10.3,
+  "se (2nd gen)": 11.8,
+  "se 2": 11.8,
+  "se 2020": 11.8,
+  "se (3rd gen)": 13.8,
+  "se 3": 13.8,
+  "se 2022": 13.8,
+  air: 17.8,
+};
+const IPHONE_TIERS = ["mini", "", "plus", "pro", "pro max", "e"];
+
+function iphoneRank(name) {
+  const s = String(name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (!s.startsWith("iphone")) return null;
+  const rest = s.slice(6).trim();
+  if (rest in SPECIAL_IPHONES) return SPECIAL_IPHONES[rest];
+  const m = rest.match(/^(\d+)\s*(.*)$/);
+  if (!m) return null;
+  const tier = IPHONE_TIERS.indexOf(m[2].trim());
+  return tier === -1 ? null : Number(m[1]) + tier / 10;
+}
+
+// Other phones: same brand by number, then plain < Plus < Pro < Pro Max
+const MODEL_TIER = ["", "mini", "e", "plus", "pro", "pro max", "ultra"];
+
+// iPhones oldest to newest, then other phones, then anything else A-Z
 export function compareModels(a, b) {
-  const parse = (s) => {
-    const m = String(s).match(/^(.*?)(\d+)\s*(.*)$/);
-    return m
-      ? { brand: m[1].trim().toLowerCase(), n: Number(m[2]), tier: m[3].trim().toLowerCase() }
-      : null;
-  };
-  const pa = parse(a);
-  const pb = parse(b);
-  if (pa && pb && pa.brand === pb.brand) {
-    if (pa.n !== pb.n) return pa.n - pb.n;
-    const ta = MODEL_TIER.indexOf(pa.tier);
-    const tb = MODEL_TIER.indexOf(pb.tier);
-    if (ta !== -1 && tb !== -1) return ta - tb;
+  const ra = iphoneRank(a);
+  const rb = iphoneRank(b);
+  if (ra !== null && rb !== null && ra !== rb) return ra - rb;
+  if (ra !== null && rb === null) return -1;
+  if (ra === null && rb !== null) return 1;
+  if (ra === null && rb === null) {
+    const parse = (s) => {
+      const m = String(s).match(/^(.*?)(\d+)\s*(.*)$/);
+      return m
+        ? { brand: m[1].trim().toLowerCase(), n: Number(m[2]), tier: m[3].trim().toLowerCase() }
+        : null;
+    };
+    const pa = parse(a);
+    const pb = parse(b);
+    if (pa && pb && pa.brand === pb.brand) {
+      if (pa.n !== pb.n) return pa.n - pb.n;
+      const ta = MODEL_TIER.indexOf(pa.tier);
+      const tb = MODEL_TIER.indexOf(pb.tier);
+      if (ta !== -1 && tb !== -1 && ta !== tb) return ta - tb;
+    }
   }
-  return String(a).localeCompare(String(b), undefined, { numeric: true });
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
 }
 
 // Where a clothing size sits: XS < S < M < L < XL < 2XL (= XXL) < 3XL...

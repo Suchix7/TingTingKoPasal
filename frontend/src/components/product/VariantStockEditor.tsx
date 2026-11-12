@@ -6,7 +6,7 @@ import { ImageOff, Minus, Plus, Trash2, X } from "lucide-react";
 
 import type { ProductBatch } from "@/hooks/useProducts";
 import { useLang } from "@/lib/i18n";
-import { IPHONE_MODELS } from "@/lib/phoneModels";
+import { IPHONE_MODELS, compareModels, compareSizes } from "@/lib/phoneModels";
 
 // Stock split by size, by colour/style, or both (Camo: M 1, L 1, XL 1).
 // For mobile covers the second part is the phone model instead of a size
@@ -44,32 +44,6 @@ const NO_COLOUR = "";
 const cell = (colour: string, size: string) => `${colour}|${size}`;
 const newKey = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-
-// Where a clothing size sits: XS < S < M < L < XL < 2XL (= XXL)... read from
-// the start of the label, so "L (48kg-58kg)" counts as L (same as the backend)
-function sizeRank(label: string): number | null {
-  const m = label.trim().toUpperCase().match(/^(\d*)(X*)(S|M|L)(?![A-Z])/);
-  if (!m) return null;
-  const [, digits, xs, letter] = m;
-  const x = digits ? Number(digits) : xs.length;
-  if (letter === "M") return 0;
-  return letter === "S" ? -(1 + x) : 1 + x;
-}
-
-// S, M, L, XL, 2XL... then numbers, then the rest
-function compareSizes(a: string, b: string) {
-  const ra = sizeRank(a);
-  const rb = sizeRank(b);
-  if (ra !== null || rb !== null) {
-    if (ra === null) return 1;
-    if (rb === null) return -1;
-    if (ra !== rb) return ra - rb;
-  }
-  const na = Number(a);
-  const nb = Number(b);
-  if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-  return a.localeCompare(b, undefined, { numeric: true });
-}
 
 export const emptyGrid = (sizes: string[] = []): StockGrid => ({
   models: false,
@@ -154,9 +128,7 @@ export function gridFromProduct(
     sale: own(b.sale_price, product?.sale),
   }));
   if (!lines.length) return emptyGrid(presetSizes);
-  const order = models
-    ? (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
-    : compareSizes;
+  const order = models ? compareModels : compareSizes;
 
   const useColours = lines.some((l) => l.variant);
   const sizes: string[] = [];

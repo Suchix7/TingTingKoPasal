@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useProducts, useProductModels } from "@/hooks/useProducts";
-import { IPHONE_MODELS } from "@/lib/phoneModels";
+import { compareModelOrSize } from "@/lib/phoneModels";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCreateSale, useUploadSalePaymentProof } from "@/hooks/useSales";
 import {
@@ -147,20 +147,15 @@ export default function PointOfSalesPage() {
   const { data: categoryModels = [] } = useProductModels(
     selectedCategoryId === "all" ? "" : selectedCategoryId,
   );
-  // Same order as the model picker (newest iPhone first), others A-Z after
-  const sortedModels = useMemo(() => {
-    const orderOf = (m: string) => {
-      const i = IPHONE_MODELS.indexOf(m);
-      return i === -1 ? IPHONE_MODELS.length : i;
-    };
-    // Sold-out models are hidden (the selected one stays so it can be cleared)
-    return categoryModels
-      .filter((m) => m.quantity > 0 || m.model === selectedModel)
-      .sort(
-      (a, b) =>
-        orderOf(a.model) - orderOf(b.model) || a.model.localeCompare(b.model),
-    );
-  }, [categoryModels, selectedModel]);
+  // One straight line: sizes S, M, L..., iPhone X ... 11, 11 Pro, 12..., others A-Z
+  const sortedModels = useMemo(
+    () =>
+      // Sold-out models are hidden (the selected one stays so it can be cleared)
+      categoryModels
+        .filter((m) => m.quantity > 0 || m.model === selectedModel)
+        .sort((a, b) => compareModelOrSize(a.model, b.model)),
+    [categoryModels, selectedModel],
+  );
 
   const {
     data: productsData,
