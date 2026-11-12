@@ -144,6 +144,8 @@ export default function PointOfSalesPage() {
     setLimit(PAGE_SIZE);
   }
 
+  // the model chips show two rows until "Show all models" is tapped
+  const [showAllModels, setShowAllModels] = useState(false);
   const { data: categoryModels = [] } = useProductModels(
     selectedCategoryId === "all" ? "" : selectedCategoryId,
   );
@@ -682,7 +684,12 @@ export default function PointOfSalesPage() {
               iPhone 13, iPhone 13 Pro...). Wraps and scrolls so a long
               list stays usable with a mouse, not just by swiping. */}
           {sortedModels.length > 0 && (
-            <div className="mt-3 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+            <>
+            <div
+              className={`mt-3 flex flex-wrap gap-1.5 ${
+                showAllModels ? "" : "max-h-[4.75rem] overflow-hidden"
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => setSelectedModel("")}
@@ -720,6 +727,18 @@ export default function PointOfSalesPage() {
                 );
               })}
             </div>
+            {sortedModels.length > 8 && (
+              <button
+                type="button"
+                onClick={() => setShowAllModels((v) => !v)}
+                className="mt-1.5 inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+              >
+                {showAllModels
+                  ? t("Show less")
+                  : `${t("Show all models")} (${sortedModels.length})`}
+              </button>
+            )}
+            </>
           )}
         </div>
 

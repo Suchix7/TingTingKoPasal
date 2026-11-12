@@ -14,6 +14,7 @@ import {
   initialFormData,
   type ProductFormData,
 } from "@/components/tabs/ProductTab";
+import type { ProductBatch } from "@/hooks/useProducts";
 import { useDebounced } from "@/hooks/useDebounced";
 import PhoneModelPicker from "./PhoneModelPicker";
 import VariantStockEditor, {
@@ -46,6 +47,15 @@ type PhotoItem =
       file: File;
       preview: string;
     };
+
+// Live stock lines of a cover kept per phone model only (no colour / size);
+// empty for any other product
+function plainCoverLines(batches: ProductBatch[]): ProductBatch[] {
+  const live = batches.filter((b) => !b.is_deleted);
+  return live.length > 0 && live.every((b) => b.model && !b.variant && !b.size)
+    ? live
+    : [];
+}
 
 const photoKey = (p: PhotoItem) => (p.kind === "saved" ? p.id : p.key);
 
@@ -95,6 +105,7 @@ export default function ProductModal({
   useEffect(() => {
     setNameZh(selectedProduct?.product_name_zh || "");
     if (selectedProduct) {
+      const coverLines = plainCoverLines(selectedProduct.batches ?? []);
       setFormData({
         product_name: selectedProduct.product_name || "",
         barcode: selectedProduct.barcode || "",
@@ -105,12 +116,16 @@ export default function ProductModal({
         cost_price: selectedProduct.cost_price || 0,
         sale_price: selectedProduct.sale_price || 0,
         stock_quantity: selectedProduct.stock_quantity || 0,
-        variants: [],
+        variants: coverLines.map((b) => ({
+          model: b.model || "",
+          quantity: Number(b.quantity) || 0,
+        })),
       });
-      setVariantMode("none");
-      // Existing colours / sizes, so they can be edited here
+      setVariantMode(coverLines.length ? "cover" : "none");
+      // Existing colours / sizes, so they can be edited here (a plain cover's
+      // phone models are edited in the model picker instead)
       setGrid(
-        gridFromProduct(
+        coverLines.length ? emptyGrid() : gridFromProduct(
           (selectedProduct.batches ?? []).filter((b) => !b.is_deleted),
           selectedProduct.photos ?? [],
           [],
@@ -261,9 +276,13 @@ export default function ProductModal({
   // Sizes can be edited here when the product has none yet, or when its
   // category has preset sizes (gloves, clothes). Phone models and purchase
   // batches are still managed on the Product Batches page.
+  // A cover saved per phone model only (no colours): its models can be
+  // edited here in the model picker
+  const savedCover = isEditMode && plainCoverLines(savedBatches).length > 0;
   const editSizes =
     isEditMode &&
     (savedBatches.length === 0 ||
+      savedCover ||
       savedBatches.some((b) => b.variant || b.size) ||
       categorySizes(selectedProduct?.category_id ?? "").length > 0);
   // Editing a product whose stock lives only on its phone models / batches
@@ -272,7 +291,7 @@ export default function ProductModal({
     !editSizes &&
     savedBatches.length > 0 &&
     Number(selectedProduct?.stock_quantity ?? 0) === 0;
-  const coverMode = !isEditMode && variantMode === "cover";
+  const coverMode = variantMode === "cover" && (!isEditMode || editSizes);
   const gridMode = gridActive(grid) && (!isEditMode || editSizes);
   // stock is kept on lines (sizes / colours / phone models), not one number
   const modelMode = coverMode || gridMode;
@@ -408,6 +427,16 @@ export default function ProductModal({
     }
     if (!editSizes) return rest;
     if (gridMode) return { ...rest, stock_lines: gridToLines(grid) };
+    // a cover's phone models replace its saved lines
+    if (coverMode) {
+      return {
+        ...rest,
+        stock_lines: formData.variants.map((v) => ({
+          model: v.model.trim(),
+          quantity: Number(v.quantity),
+        })),
+      };
+    }
     // Sizes/colours unticked on a product that had them: remove them
     return savedBatches.length > 0 ? { ...rest, stock_lines: [] } : rest;
   };
@@ -873,7 +902,8 @@ export default function ProductModal({
                     />
                   )}
 
-                  {!isEditMode && !gridActive(grid) && (
+                  {!gridActive(grid) &&
+                    (!isEditMode || coverMode || savedBatches.length === 0) && (
                     <label className="flex min-h-11 cursor-pointer items-start gap-3">
                       <input
                         type="checkbox"

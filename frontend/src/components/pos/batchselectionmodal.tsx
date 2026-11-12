@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/layout/Skeleton";
 
 import Tn from "@/components/layout/Tn";
 import { useLang } from "@/lib/i18n";
+import { compareModelOrSize } from "@/lib/phoneModels";
 interface BatchSelectionModalProps {
   product: Product;
   onSelect: (unitPrice: number, batchId?: string) => void;
@@ -21,6 +22,10 @@ interface BatchSelectionModalProps {
 // The phone model (or size) a stock line is for
 const lineModel = (b: ProductBatch) =>
   b.model || b.size || (b.variant ? "" : b.batch_number);
+
+// phone models / sizes in one straight line (iPhone 11, 11 Pro, 12... or S, M, L)
+const byLine = (a: ProductBatch, b: ProductBatch) =>
+  compareModelOrSize(lineModel(a) || a.batch_number, lineModel(b) || b.batch_number);
 
 export default function BatchSelectionModal({
   product,
@@ -50,7 +55,7 @@ export default function BatchSelectionModal({
 
   // Lines with a colour/style are picked by the colour's photo first, then
   // by phone model / size; other lines stay in the plain list
-  const plainLines = batches.filter((b) => !b.variant);
+  const plainLines = batches.filter((b) => !b.variant).sort(byLine);
   const colours: {
     name: string;
     lines: ProductBatch[];
@@ -67,6 +72,8 @@ export default function BatchSelectionModal({
         photo: variantPhoto(product, b) || product.photo_url || null,
       });
   }
+  // colours keep their order; inside each, models / sizes go in a line
+  for (const c of colours) c.lines.sort(byLine);
   const colour = colours.find((c) => c.name === picked);
 
   const money = (value?: number | null) =>

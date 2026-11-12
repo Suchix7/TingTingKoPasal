@@ -41,6 +41,8 @@ export const zhFixes: Record<string, string> = {
   "Opening your dashboard": "正在打开后台",
   // POS product filters
   "All models": "全部型号",
+  "Show all models": "显示全部型号",
+  "Show less": "收起",
   "in stock": "有货",
   "Newest first": "最新优先",
   "Price: low to high": "价格：从低到高",
