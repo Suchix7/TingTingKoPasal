@@ -14,7 +14,7 @@ import {
   ImageIcon,
   Maximize2,
 } from "lucide-react";
-import type { Product } from "@/hooks/useProducts";
+import type { Product, ProductBatch } from "@/hooks/useProducts";
 import {
   initialFormData,
   type ProductFormData,
@@ -27,6 +27,16 @@ import toast from "react-hot-toast";
 
 import Tn from "@/components/layout/Tn";
 import { useLang } from "@/lib/i18n";
+// The phone model (or size) a stock line is for: "Blue / iPhone 13" is for
+// iPhone 13, a plain line is named after its model
+const lineModel = (b: ProductBatch) =>
+  b.model || b.size || (b.variant ? "" : b.batch_number);
+
+// A product's stock lines for the model picked in the POS chips: one, or one
+// per colour for covers sold in several colours
+const modelLines = (product: Product, model: string) =>
+  model ? (product.batches ?? []).filter((b) => lineModel(b) === model) : [];
+
 type CartItem = {
   product_id: string;
   product_name: string;
@@ -207,10 +217,11 @@ export default function ProductGrid({
   };
 
   const handleAddToCart = (product: Product) => {
-    const modelBatch = selectedModel
-      ? product.batches?.find((b) => b.batch_number === selectedModel)
-      : undefined;
-    if (modelBatch && modelBatch.quantity > 0) {
+    // only one line has that model in stock: sell it directly; several
+    // colours: let the cashier pick one
+    const inStock = modelLines(product, selectedModel).filter((b) => b.quantity > 0);
+    const modelBatch = inStock.length === 1 ? inStock[0] : undefined;
+    if (modelBatch) {
       addToCart(product, modelBatch.sale_price, modelBatch.id);
       return;
     }
@@ -345,12 +356,12 @@ export default function ProductGrid({
                   (sum, b) => sum + Number(b.quantity || 0),
                   0,
                 );
-              const modelBatch = selectedModel
-                ? product.batches?.find((b) => b.batch_number === selectedModel)
-                : undefined;
-              // With a model picked, the card shows that model's stock
-              const shownStock = modelBatch
-                ? Number(modelBatch.quantity || 0)
+              const matches = modelLines(product, selectedModel);
+              const modelBatch = matches.length === 1 ? matches[0] : undefined;
+              // With a model picked, the card shows that model's stock (all
+              // colours together)
+              const shownStock = matches.length
+                ? matches.reduce((sum, b) => sum + Number(b.quantity || 0), 0)
                 : totalStock;
               const isOutOfStock = shownStock <= 0;
               const cartItem = cartItems.find(

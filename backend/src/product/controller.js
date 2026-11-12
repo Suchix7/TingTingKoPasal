@@ -343,6 +343,21 @@ export const updateProduct = async (req, res) => {
 
     await existingProduct.save();
 
+    // Stock lines saved without a price (0, e.g. covers imported before they
+    // were priced) take the product's price, so the POS never sells them at
+    // Rs 0 and profit uses the real cost. Lines with their own price keep it.
+    for (const [field, price] of [
+      ["costPrice", updatedCostPrice],
+      ["salePrice", updatedSalePrice],
+    ]) {
+      if (price > 0) {
+        await ProductBatch.updateMany(
+          { productId: existingProduct._id, isDeleted: false, [field]: 0 },
+          { $set: { [field]: price } },
+        );
+      }
+    }
+
     if (quantityChange > 0) {
       await InventoryTransaction.create({
         productId: existingProduct._id,
