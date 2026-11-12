@@ -156,7 +156,9 @@ export default function CoverViewer({
               <div>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-white/60">
-                    {variant.sizes.length > 0 ? `Sizes in ${variant.name}` : variant.name}
+                    {variant.sizes.length > 0
+                      ? `${cover.has_models ? "Phone models" : "Sizes"} in ${variant.name}`
+                      : variant.name}
                     {showPrices && priceLabel(variant.price_min, variant.price_max) && (
                       <span className="ml-1.5 normal-case tracking-normal text-emerald-300">
                         {priceLabel(variant.price_min, variant.price_max)}

@@ -283,6 +283,27 @@ export default function ProductModal({
     if (on) setGrid(emptyGrid());
   };
 
+  // A cover sold in several colours: stock per colour x phone model, keeping
+  // the models already ticked
+  const coverToColours = () => {
+    const usable = photos.filter((p) => photoKey(p) !== sizeGuideKey);
+    const colours = (usable.length ? usable : [null]).map((p, i) => ({
+      key: `c${Date.now().toString(36)}${i}`,
+      name: usable.length > 1 ? `${t("Colour")} ${i + 1}` : "",
+      photoKey: p ? photoKey(p) : null,
+    }));
+    setGrid({
+      ...emptyGrid(),
+      models: true,
+      useSizes: true,
+      sizes: formData.variants.map((v) => v.model),
+      useColours: true,
+      colours,
+    });
+    setVariantMode("none");
+    setFormData((prev) => ({ ...prev, variants: [] }));
+  };
+
   const changeGrid = (next: StockGrid) => {
     setGrid(next);
     if (gridActive(next)) setVariantMode("none");
@@ -880,6 +901,26 @@ export default function ProductModal({
                       }
                       disabled={isSubmitting}
                     />
+                  )}
+
+                  {coverMode && (
+                    <label className="flex min-h-11 cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={coverToColours}
+                        disabled={isSubmitting}
+                        className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-slate-700">
+                          {t("This cover comes in colours / styles")}
+                        </span>
+                        <span className="block text-xs text-slate-500">
+                          {t("One product with a photo per colour, and stock for each colour and phone model.")}
+                        </span>
+                      </span>
+                    </label>
                   )}
                 </div>
               )}

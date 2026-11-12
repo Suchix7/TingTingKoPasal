@@ -30,6 +30,8 @@ export type Cover = {
   size_guide_index?: number;
   // this product's stock lines are sizes rather than phone models
   has_sizes?: boolean;
+  // colours split by phone model (variant `sizes` are then phone models)
+  has_models?: boolean;
   quantity: number;
   in_stock: boolean;
   // selling price range, for the price viewer only

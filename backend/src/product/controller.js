@@ -35,8 +35,9 @@ export const createProduct = async (req, res) => {
     // Barcodes are always auto-generated; any client-supplied value is ignored.
 
     // Optional stock lines, each tracked as its own product batch:
-    // phone models `variants: [{ model, quantity }]`, or colours/sizes
-    // `stock_lines: [{ variant, size, quantity }]`.
+    // phone models `variants: [{ model, quantity }]`, or colours with sizes /
+    // phone models `stock_lines: [{ variant, size | model, quantity }]`.
+    // `model` below is the line's name; `phone` its phone model.
     const parsedLines = parseStockLines(stock_lines);
     if (parsedLines.error) {
       return res.status(400).json({ success: false, message: parsedLines.error });
@@ -46,6 +47,7 @@ export const createProduct = async (req, res) => {
           model: l.name,
           variant: l.variant,
           size: l.size,
+          phone: l.model,
           quantity: l.quantity,
           costPrice: l.costPrice,
           salePrice: l.salePrice,
@@ -56,6 +58,7 @@ export const createProduct = async (req, res) => {
               model: String(v?.model ?? "").trim(),
               variant: "",
               size: "",
+              phone: String(v?.model ?? "").trim(),
               quantity: Number(v?.quantity ?? 0),
             }))
             .filter((v) => v.model)
@@ -181,6 +184,7 @@ export const createProduct = async (req, res) => {
           batchNumber: variant.model,
           variant: variant.variant,
           size: variant.size,
+          model: variant.phone,
           quantity: variant.quantity,
           // a colour / size can have its own price; otherwise the product's
           costPrice: variant.costPrice ?? parsedCostPrice,
@@ -473,9 +477,10 @@ async function attachBatches(products) {
   }));
 }
 
-// Phone models (batch names) used by the products in a category, with how
-// many products have each and how many pieces are in stock. Drives the POS
-// model chips shown under a category like "Covers".
+// Phone models (or sizes) used by the products in a category, with how many
+// products have each and how many pieces are in stock. Drives the POS model
+// chips shown under a category like "Covers". "Blue / iPhone 13" counts as
+// iPhone 13.
 export const getProductModels = async (req, res) => {
   try {
     const { category, status } = req.query;
@@ -494,7 +499,19 @@ export const getProductModels = async (req, res) => {
       { $match: { isDeleted: false, productId: { $in: productIds } } },
       {
         $group: {
-          _id: "$batchNumber",
+          _id: {
+            $cond: [
+              { $gt: [{ $strLenCP: { $ifNull: ["$model", ""] } }, 0] },
+              "$model",
+              {
+                $cond: [
+                  { $gt: [{ $strLenCP: { $ifNull: ["$size", ""] } }, 0] },
+                  "$size",
+                  "$batchNumber",
+                ],
+              },
+            ],
+          },
           products: { $addToSet: "$productId" },
           quantity: { $sum: "$quantity" },
         },
@@ -572,7 +589,7 @@ export const getProducts = async (req, res) => {
     if (model) {
       const withModel = await ProductBatch.distinct("productId", {
         isDeleted: false,
-        batchNumber: String(model).trim(),
+        $or: [{ batchNumber: String(model).trim() }, { model: String(model).trim() }],
       });
       and.push({ _id: { $in: withModel } });
     }

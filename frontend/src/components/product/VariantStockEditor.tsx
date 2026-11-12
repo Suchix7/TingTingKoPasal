@@ -6,11 +6,16 @@ import { ImageOff, Minus, Plus, Trash2, X } from "lucide-react";
 
 import type { ProductBatch } from "@/hooks/useProducts";
 import { useLang } from "@/lib/i18n";
+import { IPHONE_MODELS } from "@/lib/phoneModels";
 
 // Stock split by size, by colour/style, or both (Camo: M 1, L 1, XL 1).
+// For mobile covers the second part is the phone model instead of a size
+// (Blue: iPhone 13 1, iPhone 15 Pro Max 1).
 // Each colour can be linked to the product photo that shows it.
 export type StockColour = { key: string; name: string; photoKey: string | null };
 export type StockGrid = {
+  // `sizes` are phone models (covers) rather than sizes
+  models: boolean;
   useSizes: boolean;
   useColours: boolean;
   sizes: string[];
@@ -27,6 +32,7 @@ export type StockGrid = {
 export type StockLine = {
   variant: string;
   size: string;
+  model: string;
   quantity: number;
   cost_price: number | null;
   sale_price: number | null;
@@ -52,6 +58,7 @@ function compareSizes(a: string, b: string) {
 }
 
 export const emptyGrid = (sizes: string[] = []): StockGrid => ({
+  models: false,
   useSizes: sizes.length > 0,
   useColours: false,
   sizes,
@@ -72,7 +79,8 @@ export function gridToLines(g: StockGrid): StockLine[] {
   return colours.flatMap((c) =>
     sizes.map((s) => ({
       variant: c.name.trim(),
-      size: s.trim(),
+      size: g.models ? "" : s.trim(),
+      model: g.models ? s.trim() : "",
       quantity: g.qty[cell(c.key, s)] || 0,
       cost_price: g.usePrices ? (g.cost[cell(c.key, s)] ?? null) : null,
       sale_price: g.usePrices ? (g.sale[cell(c.key, s)] ?? null) : null,
@@ -89,7 +97,9 @@ export function gridProblem(
   t: (s: string) => string,
   product?: ProductPrices,
 ): string | null {
-  if (g.useSizes && g.sizes.length === 0) return t("Add at least one size.");
+  if (g.useSizes && g.sizes.length === 0) {
+    return g.models ? t("Add at least one phone model.") : t("Add at least one size.");
+  }
   if (g.useColours) {
     if (g.colours.length === 0) return t("Add at least one colour / style.");
     if (g.colours.some((c) => !c.name.trim())) return t("Give every colour / style a name.");
@@ -102,7 +112,7 @@ export function gridProblem(
       (l) => (l.cost_price ?? product.cost) > (l.sale_price ?? product.sale),
     );
     if (bad) {
-      const name = [bad.variant, bad.size].filter(Boolean).join(" / ");
+      const name = [bad.variant, bad.size || bad.model].filter(Boolean).join(" / ");
       return `${name}: ${t("Cost price cannot be greater than sale price.")}`;
     }
   }
@@ -119,20 +129,25 @@ export function gridFromProduct(
 ): StockGrid {
   const own = (price: number, base?: number) =>
     base === undefined || Number(price) === Number(base) ? undefined : Number(price);
+  // colours split by phone model (a cover): the grid's sizes are models
+  const models = batches.some((b) => b.model && b.variant);
   const lines = batches.map((b) => ({
     variant: b.variant || "",
     // size-only lines saved before colours existed are named after the size
-    size: b.size || (b.variant ? "" : b.batch_number),
+    size: b.size || b.model || (b.variant ? "" : b.batch_number),
     quantity: Number(b.quantity) || 0,
     cost: own(b.cost_price, product?.cost),
     sale: own(b.sale_price, product?.sale),
   }));
   if (!lines.length) return emptyGrid(presetSizes);
+  const order = models
+    ? (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
+    : compareSizes;
 
   const useColours = lines.some((l) => l.variant);
   const sizes: string[] = [];
   for (const l of lines) if (l.size && !sizes.some((s) => same(s, l.size))) sizes.push(l.size);
-  sizes.sort(compareSizes);
+  sizes.sort(order);
 
   const colours: StockColour[] = [];
   if (useColours) {
@@ -158,7 +173,7 @@ export function gridFromProduct(
     if (l.sale !== undefined) sale[cell(colour, size)] = l.sale;
   }
   const usePrices = Object.keys(cost).length + Object.keys(sale).length > 0;
-  return { useSizes: sizes.length > 0, useColours, sizes, colours, qty, usePrices, cost, sale };
+  return { models, useSizes: sizes.length > 0, useColours, sizes, colours, qty, usePrices, cost, sale };
 }
 
 type Props = {
@@ -278,7 +293,37 @@ export default function VariantStockEditor({
   const photoOf = (photoKey: string | null) => photos.find((p) => p.key === photoKey) ?? null;
   const sizes = g.useSizes ? g.sizes : [""];
   const total = gridTotal(g);
-  const missingPresets = presetSizes.filter((p) => !g.sizes.some((s) => same(s, p)));
+  // phone models are suggested while typing instead of shown as chips
+  const missingPresets = g.models ? [] : presetSizes.filter((p) => !g.sizes.some((s) => same(s, p)));
+  const word = g.models
+    ? {
+        title: t("This cover comes in phone models"),
+        hint: t("Set the stock for each phone model (iPhone 13, iPhone 15 Pro Max...)."),
+        list: t("Phone models"),
+        add: t("Add model"),
+        remove: t("Remove model"),
+        placeholder: t("Phone model (e.g. iPhone 16 Pro Max)"),
+        empty: t("Add phone models above."),
+        count: t("models"),
+        samePrice: t("Same price for all models"),
+        colours: t("Each colour gets its own photo and stock. Customers pick the colour, then see the phone models left in it."),
+        prices: t("Different prices for some colours / models"),
+        pricesHint: t("Set a selling and cost price for each colour or model. Leave a box empty to use the product's price."),
+      }
+    : {
+        title: t("This product comes in sizes"),
+        hint: t("Set the stock for each size (S, M, L...). Preset sizes can be saved on the category."),
+        list: t("Sizes"),
+        add: t("Add size"),
+        remove: t("Remove size"),
+        placeholder: t("New size (e.g. XL, 42, Free size)"),
+        empty: t("Add sizes above."),
+        count: t("sizes"),
+        samePrice: t("Same price for all sizes"),
+        colours: t("Each colour gets its own photo and stock. Customers pick the colour, then see the sizes left in it."),
+        prices: t("Different prices for some colours / sizes"),
+        pricesHint: t("Set a selling and cost price for each colour or size. Leave a box empty to use the product's price."),
+      };
 
   const toggle = (checked: boolean, onToggle: (v: boolean) => void, title: string, hint: string) => (
     <label className="flex min-h-11 cursor-pointer items-start gap-3">
@@ -349,7 +394,7 @@ export default function VariantStockEditor({
   const colourPrices = (colour: string) =>
     g.usePrices && g.useSizes && g.sizes.length > 1 ? (
       <div className="mb-2 rounded-lg bg-slate-50 p-2">
-        <p className="mb-1 text-[11px] font-medium text-slate-500">{t("Same price for all sizes")}</p>
+        <p className="mb-1 text-[11px] font-medium text-slate-500">{word.samePrice}</p>
         <div className="flex gap-2">
           {priceInput("sale", g.sizes.map((s) => cell(colour, s)), t("Sell"))}
           {priceInput("cost", g.sizes.map((s) => cell(colour, s)), t("Cost"))}
@@ -365,7 +410,7 @@ export default function VariantStockEditor({
           {g.sizes.map((s) => stepper(colour, s, s))}
         </div>
       ) : (
-        <p className="text-xs text-slate-500">{t("Add sizes above.")}</p>
+        <p className="text-xs text-slate-500">{word.empty}</p>
       )
     ) : (
       <div className="max-w-40">{stepper(colour, "", t("Quantity"))}</div>
@@ -376,13 +421,13 @@ export default function VariantStockEditor({
       {toggle(
         g.useSizes,
         toggleSizes,
-        t("This product comes in sizes"),
-        t("Set the stock for each size (S, M, L...). Preset sizes can be saved on the category."),
+        word.title,
+        word.hint,
       )}
 
       {g.useSizes && (
         <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t("Sizes")}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{word.list}</p>
           <div className="flex flex-wrap gap-2">
             {g.sizes.map((s) => (
               <span
@@ -395,7 +440,7 @@ export default function VariantStockEditor({
                   disabled={disabled}
                   onClick={() => removeSize(s)}
                   className="rounded-full p-1.5 text-white/70 hover:bg-white/20 hover:text-white"
-                  aria-label={`${t("Remove size")} ${s}`}
+                  aria-label={`${word.remove} ${s}`}
                 >
                   <X size={12} />
                 </button>
@@ -426,7 +471,8 @@ export default function VariantStockEditor({
                 }
               }}
               disabled={disabled}
-              placeholder={t("New size (e.g. XL, 42, Free size)")}
+              list={g.models ? "grid-phone-models" : undefined}
+              placeholder={word.placeholder}
               className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-400"
             />
             <button
@@ -438,9 +484,16 @@ export default function VariantStockEditor({
               disabled={disabled || !newSize.trim()}
               className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
             >
-              <Plus size={14} /> {t("Add size")}
+              <Plus size={14} /> {word.add}
             </button>
           </div>
+          {g.models && (
+            <datalist id="grid-phone-models">
+              {IPHONE_MODELS.filter((m) => !g.sizes.some((s) => same(s, m))).map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+          )}
         </div>
       )}
 
@@ -448,7 +501,7 @@ export default function VariantStockEditor({
         g.useColours,
         toggleColours,
         t("This product comes in colours / styles"),
-        t("Each colour gets its own photo and stock. Customers pick the colour, then see the sizes left in it."),
+        word.colours,
       )}
 
       {g.useColours ? (
@@ -569,14 +622,14 @@ export default function VariantStockEditor({
         toggle(
           g.usePrices,
           (on) => set({ usePrices: on }),
-          t("Different prices for some colours / sizes"),
-          t("Set a selling and cost price for each colour or size. Leave a box empty to use the product's price."),
+          word.prices,
+          word.pricesHint,
         )}
 
       {gridActive(g) && (
         <p className="text-xs text-slate-500">
           {g.useColours && `${g.colours.length} ${t("colours")} · `}
-          {g.useSizes && `${sizes.length} ${t("sizes")} · `}
+          {g.useSizes && `${sizes.length} ${word.count} · `}
           {t("total stock")} <span className="font-semibold text-slate-700">{total}</span>
         </p>
       )}

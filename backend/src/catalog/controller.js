@@ -4,7 +4,7 @@ import ProductBatch from "../models/ProductBatch.js";
 import Category from "../models/Category.js";
 import StoreInfo from "../models/StoreInfo.js";
 import { productMedia } from "../utils/media.js";
-import { compareSizes } from "../utils/stockLines.js";
+import { compareModels, compareSizes, lineParts } from "../utils/stockLines.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
 import { canSeePrices } from "../auth/middleware.js";
 
@@ -20,22 +20,27 @@ const baseFilter = () => ({
   photoUrl: { $nin: [null, ""] },
 });
 
-// productId -> [{ model, variant, size, quantity }] for every stock line
-// (even sold out). `model` is what the filters show: the phone model, or the
-// size for colour + size lines (so "M" finds every colour in M).
+// productId -> [{ model, variant, size, phone, part, quantity }] for every
+// stock line (even sold out). `model` is what the filters show: the phone
+// model, or the size for colour + size lines (so "M" finds every colour in M,
+// "iPhone 13" every colour made for it). `part` is the size or phone model
+// shown under a colour.
 async function modelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
-    .select("productId batchNumber variant size quantity salePrice")
+    .select("productId batchNumber variant size model quantity salePrice")
     .lean();
 
   const map = new Map();
   for (const b of batches) {
     const key = String(b.productId);
     if (!map.has(key)) map.set(key, []);
+    const { variant, size, model } = lineParts(b);
     map.get(key).push({
-      model: b.size || b.batchNumber,
-      variant: b.variant || "",
-      size: b.size || "",
+      model: size || model || b.batchNumber,
+      variant,
+      size,
+      phone: model,
+      part: size || (variant ? model : ""),
       quantity: Math.max(Number(b.quantity) || 0, 0),
       price: Number(b.salePrice) || 0,
     });
@@ -60,8 +65,9 @@ async function inStockProductIds(modelMap) {
   return ids;
 }
 
-// Colours/styles of a product with the sizes left in each. Colour order
-// follows the photos; each points at its photo in `media` (-1 if none).
+// Colours/styles of a product with the sizes (or phone models) left in each.
+// Colour order follows the photos; each points at its photo in `media` (-1
+// if none).
 function variantsOf(media, entries) {
   const names = [];
   const add = (n) => {
@@ -75,9 +81,11 @@ function variantsOf(media, entries) {
       const mine = entries.filter((e) => e.variant.toLowerCase() === name.toLowerCase());
       if (!mine.length) return null; // a labelled photo with no stock line
       const sizes = mine
-        .filter((e) => e.size)
-        .map((e) => ({ size: e.size, quantity: e.quantity }))
-        .sort((a, b) => compareSizes(a.size, b.size));
+        .filter((e) => e.part)
+        .map((e) => ({ size: e.part, quantity: e.quantity }))
+        .sort((a, b) =>
+          mine.some((e) => e.size) ? compareSizes(a.size, b.size) : compareModels(a.size, b.size),
+        );
       return {
         name,
         media_index: media.findIndex(
@@ -120,7 +128,7 @@ function withPrices(cover, product, entries) {
         sizes: v.sizes.map((s) => ({
           ...s,
           price: priceRange(
-            mine.filter((e) => e.size.toLowerCase() === s.size.toLowerCase()),
+            mine.filter((e) => e.part.toLowerCase() === s.size.toLowerCase()),
             own,
           ).price_min,
         })),
@@ -142,13 +150,13 @@ const toCover = (product, entries = [], prices = false) => {
   const models = [...merged.values()].sort(
     (a, b) =>
       Number(b.quantity > 0) - Number(a.quantity > 0) ||
-      (sized ? compareSizes(a.model, b.model) : a.model.localeCompare(b.model)),
+      (sized ? compareSizes(a.model, b.model) : compareModels(a.model, b.model)),
   );
   const own = Math.max(Number(product.stock?.currentStock) || 0, 0);
   const quantity = own + entries.reduce((sum, m) => sum + m.quantity, 0);
   const media = productMedia(product);
   const variants = variantsOf(media, entries);
-  if (!sized && variants.length) {
+  if (variants.length && !entries.some((e) => e.part)) {
     // colour-only lines: keep the colours in photo order
     const rank = (m) =>
       variants.findIndex((v) => v.name.toLowerCase() === m.model.toLowerCase());
@@ -166,6 +174,8 @@ const toCover = (product, entries = [], prices = false) => {
     size_guide_index: media.findIndex((m) => m.sizeGuide),
     // stock lines are sizes (S, M, L), whatever the category
     has_sizes: sized,
+    // colours split by phone model (Blue: iPhone 13, iPhone 15...)
+    has_models: !sized && entries.some((e) => e.phone && e.variant),
     quantity,
     in_stock: quantity > 0,
   };

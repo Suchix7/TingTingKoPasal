@@ -426,7 +426,7 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                               {cover.has_sizes ||
                               sizedCategoryIds.has(cover.category_id ?? "")
                                 ? "Sizes"
-                                : cover.variants?.length
+                                : cover.variants?.length && !cover.has_models
                                   ? "Colours"
                                   : "Available for"}
                             </span>

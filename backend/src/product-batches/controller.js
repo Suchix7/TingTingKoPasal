@@ -4,6 +4,7 @@ import ProductBatch from "../models/ProductBatch.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
 import { serializeBatch } from "../utils/serialize.js";
 import { generateProductBarcode } from "../utils/barcode.js";
+import { renameLine } from "../utils/stockLines.js";
 
 export const createProductBatch = async (req, res) => {
   try {
@@ -175,7 +176,7 @@ export const updateProductBatch = async (req, res) => {
     const stockDifference = updatedQuantity - previousQuantity;
 
     existingBatch.productId = updatedProductId;
-    existingBatch.batchNumber = updatedBatchNumber;
+    renameLine(existingBatch, updatedBatchNumber);
     existingBatch.quantity = updatedQuantity;
     existingBatch.costPrice = updatedCostPrice;
     existingBatch.salePrice = updatedSalePrice;

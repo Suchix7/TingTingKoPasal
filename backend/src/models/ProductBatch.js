@@ -8,11 +8,14 @@ const productBatchSchema = new mongoose.Schema(
       required: true,
     },
     batchNumber: { type: String, required: true, trim: true },
-    // For products sold by colour/style and/or size the line's parts are kept
-    // too (batchNumber is "Camo / M", "Camo" or "M"); empty for phone models
-    // and ordinary batches.
+    // For products sold by colour/style and/or size or phone model the line's
+    // parts are kept too (batchNumber is "Camo / M", "Camo", "M" or
+    // "Blue / iPhone 13"). A line has a size or a phone model, never both.
+    // Plain phone-model lines and ordinary batches may leave them empty.
     variant: { type: String, default: "", trim: true },
     size: { type: String, default: "", trim: true },
+    // phone model a cover line fits ("iPhone 15 Pro Max")
+    model: { type: String, default: "", trim: true },
     quantity: { type: Number, required: true, default: 0 },
     costPrice: { type: Number, required: true, min: 0 },
     salePrice: { type: Number, required: true, min: 0 },

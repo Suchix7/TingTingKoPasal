@@ -16,6 +16,8 @@ export type ProductBatch = {
   // colour/style and size of a colour/size stock line ("" otherwise)
   variant?: string;
   size?: string;
+  // phone model of a colour × model cover line ("" otherwise)
+  model?: string;
   barcode?: string | null;
   quantity: number;
   cost_price: number;
