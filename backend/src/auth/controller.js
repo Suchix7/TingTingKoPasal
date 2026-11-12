@@ -7,7 +7,7 @@ import {
   ROLE_PRICE,
   normalizeUsername,
 } from "./accounts.js";
-import { sessionRole } from "./middleware.js";
+import { adminUsername, priceUsername } from "./middleware.js";
 
 const invalid = (res) =>
   res.status(401).json({ success: false, message: "Invalid username or password" });
@@ -48,10 +48,15 @@ export async function loginController(req, res) {
     }
 
     const role = isAdmin ? ROLE_ADMIN : ROLE_PRICE;
-    // only admins get into the admin panel and its API
-    req.session.isAuthenticated = isAdmin;
-    req.session.role = role;
-    req.session.username = username;
+    // signing in as one account keeps the other one signed in, so the admin
+    // panel and /prices can be open side by side in the same browser
+    const prevAdmin = adminUsername(req);
+    const prevPrice = priceUsername(req);
+    delete req.session.role;
+    delete req.session.username;
+    req.session.isAuthenticated = isAdmin || !!prevAdmin;
+    req.session.adminUsername = isAdmin ? username : prevAdmin || undefined;
+    req.session.priceUsername = isPriceViewer ? username : prevPrice || undefined;
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -65,11 +70,27 @@ export async function loginController(req, res) {
   }
 }
 
+// body `{ scope: "admin" | "prices" }` signs out just that account; without
+// a scope (or when nothing is left) the whole session ends
 export async function logoutController(req, res) {
   try {
-    req.session.destroy(() => {
+    const scope = req.body?.scope;
+    const done = () =>
       res.status(200).json({ success: true, message: "Logout successful" });
-    });
+
+    if (scope === "admin" || scope === "prices") {
+      const keepAdmin = scope === "prices" ? adminUsername(req) : null;
+      const keepPrice = scope === "admin" ? priceUsername(req) : null;
+      if (keepAdmin || keepPrice) {
+        delete req.session.role;
+        delete req.session.username;
+        req.session.isAuthenticated = !!keepAdmin;
+        req.session.adminUsername = keepAdmin || undefined;
+        req.session.priceUsername = keepPrice || undefined;
+        return req.session.save(done);
+      }
+    }
+    req.session.destroy(done);
   } catch (error) {
     console.log("Error in logoutController:", error);
     return res
@@ -83,7 +104,7 @@ export async function checkController(req, res) {
     return res.status(200).json({
       success: true,
       message: "Authenticated",
-      user: { username: req.session.username || "admin", role: ROLE_ADMIN },
+      user: { username: adminUsername(req), role: ROLE_ADMIN },
     });
   } catch (error) {
     console.log("Error in checkController:", error);
@@ -93,10 +114,13 @@ export async function checkController(req, res) {
   }
 }
 
+// public: who is signed in on this browser (either, both or neither)
 export function sessionController(req, res) {
-  const role = sessionRole(req);
+  const admin = adminUsername(req);
+  const prices = priceUsername(req);
   return res.status(200).json({
     success: true,
-    user: role ? { username: req.session.username || "admin", role } : null,
+    admin: admin ? { username: admin, role: ROLE_ADMIN } : null,
+    prices: prices ? { username: prices, role: ROLE_PRICE } : null,
   });
 }

@@ -62,10 +62,12 @@ const wakeRetry = {
   retryDelay: (attempt: number) => Math.min(1500 * (attempt + 1), 8000),
 };
 
-export function useCovers(filters: CatalogFilters, enabled = true) {
+// `prices`: the /prices page asks for selling prices (sent only to the
+// signed-in price viewer)
+export function useCovers(filters: CatalogFilters, enabled = true, prices = false) {
   return useInfiniteQuery({
     enabled,
-    queryKey: ["catalog-covers", filters],
+    queryKey: ["catalog-covers", filters, prices],
     ...wakeRetry,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
@@ -76,6 +78,7 @@ export function useCovers(filters: CatalogFilters, enabled = true) {
           q: filters.q || undefined,
           models: filters.models.length ? filters.models.join(",") : undefined,
           category: filters.category || undefined,
+          prices: prices ? 1 : undefined,
         },
       });
       return res.data as {
@@ -105,15 +108,19 @@ export function useCatalogModels(category = "") {
   });
 }
 
-export type CatalogSession = { username: string; role: "admin" | "price" } | null;
+type SignedIn = { username: string; role: "admin" | "price" } | null;
+// an admin and the price viewer can both be signed in on one browser
+export type CatalogSession = { admin: SignedIn; prices: SignedIn };
 
 // who is signed in on this browser, if anyone
 export function useCatalogSession() {
   return useQuery({
     queryKey: ["catalog-session"],
     ...wakeRetry,
-    queryFn: async () =>
-      (await axiosInstance.get("/session")).data.user as CatalogSession,
+    queryFn: async () => {
+      const d = (await axiosInstance.get("/session")).data;
+      return { admin: d.admin ?? null, prices: d.prices ?? null } as CatalogSession;
+    },
     staleTime: 10 * 60_000,
   });
 }

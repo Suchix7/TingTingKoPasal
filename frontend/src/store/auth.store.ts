@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ authUser: res.data.user });
       toast.success("Welcome back!");
       // the price viewer only sees the customer site, with prices
-      window.location.href = res.data.user?.role === "price" ? "/" : "/admin";
+      window.location.href = res.data.user?.role === "price" ? "/prices" : "/admin";
     } catch (error) {
       toast.error("Invalid username or password.");
       throw error;
@@ -57,7 +57,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: async () => {
     try {
-      await axiosInstance.post("/logout");
+      // ends the admin login only; a price-viewer login on this browser stays
+      await axiosInstance.post("/logout", { scope: "admin" });
       set({ authUser: null });
       toast.success("Goodbye!");
       window.location.href = "/admin/auth";

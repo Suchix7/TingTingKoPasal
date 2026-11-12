@@ -37,7 +37,8 @@ const inStockModels = (c: Cover) => c.models.filter((m) => m.quantity > 0);
 // chips shown on a card; the full list is in the full-screen view
 const MAX_CHIPS = 3;
 
-export default function CatalogPage() {
+// `priceView`: the /prices page, for the signed-in price viewer
+export default function CatalogPage({ priceView = false }: { priceView?: boolean }) {
   const [search, setSearch] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [category, setCategory] = useState("");
@@ -65,11 +66,18 @@ export default function CatalogPage() {
   }, []);
 
   const { data: store } = useCatalogStore();
-  const { data: session } = useCatalogSession();
-  const priceView = session?.role === "price";
+  const { data: session, isSuccess: sessionReady } = useCatalogSession();
+  const priceUser = session?.prices?.username;
+  // /prices without the price login: sign in first
+  useEffect(() => {
+    if (priceView && sessionReady && !priceUser) {
+      window.location.replace("/admin/auth?for=prices");
+    }
+  }, [priceView, sessionReady, priceUser]);
+  // signs out the price viewer only; an admin signed in here stays signed in
   const signOut = async () => {
     try {
-      await axiosInstance.post("/logout");
+      await axiosInstance.post("/logout", { scope: "prices" });
     } finally {
       window.location.href = "/";
     }
@@ -94,7 +102,7 @@ export default function CatalogPage() {
     hasNextPage,
     fetchNextPage,
     refetch,
-  } = useCovers({ q, models, category }, !showMenu);
+  } = useCovers({ q, models, category }, !showMenu && (!priceView || !!priceUser), priceView);
 
   const covers = useMemo(
     () => data?.pages.flatMap((p) => p.data) ?? [],
@@ -141,7 +149,7 @@ export default function CatalogPage() {
             <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-1.5 text-xs">
               <span className="flex min-w-0 items-center gap-1.5 font-medium">
                 <Tag className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Price view · {session?.username}</span>
+                <span className="truncate">Price view · {priceUser}</span>
               </span>
               <button
                 type="button"

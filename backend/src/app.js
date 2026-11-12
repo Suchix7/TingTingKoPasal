@@ -32,6 +32,7 @@ import activityLogRouter from "./activity-log/route.js";
 import catalogRouter from "./catalog/route.js";
 
 const isProd = process.env.NODE_ENV === "production";
+const SESSION_DAYS = 30;
 
 const app = express();
 
@@ -67,10 +68,16 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    // stay signed in across browser restarts; each visit pushes the 30 days on
+    rolling: true,
     store: process.env.MONGO_URI
-      ? MongoStore.create({ mongoUrl: process.env.MONGO_URI })
+      ? MongoStore.create({
+          mongoUrl: process.env.MONGO_URI,
+          ttl: SESSION_DAYS * 24 * 60 * 60,
+        })
       : undefined,
     cookie: {
+      maxAge: SESSION_DAYS * 24 * 60 * 60 * 1000,
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? "none" : "lax",
