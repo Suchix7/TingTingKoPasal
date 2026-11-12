@@ -63,17 +63,59 @@ export function compareModels(a, b) {
   return String(a).localeCompare(String(b), undefined, { numeric: true });
 }
 
-const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "XXXL", "3XL", "4XL"];
+// Where a clothing size sits: XS < S < M < L < XL < 2XL (= XXL) < 3XL...
+// Read from the start of the label, so "L (48kg-58kg)" counts as L.
+// null when the label isn't a letter size.
+function sizeRank(label) {
+  const m = String(label ?? "")
+    .trim()
+    .toUpperCase()
+    .match(/^(\d*)(X*)(S|M|L)(?![A-Z])/);
+  if (!m) return null;
+  const [, digits, xs, letter] = m;
+  const x = digits ? Number(digits) : xs.length;
+  if (letter === "M") return 0;
+  return letter === "S" ? -(1 + x) : 1 + x;
+}
 
-// Sort sizes the way people expect: S, M, L, XL... then numbers, then the rest
+// Sort sizes the way people expect: S, M, L, XL, 2XL... then numbers, then
+// the rest
 export function compareSizes(a, b) {
-  const ia = SIZE_ORDER.indexOf(String(a).toUpperCase());
-  const ib = SIZE_ORDER.indexOf(String(b).toUpperCase());
-  if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  const ra = sizeRank(a);
+  const rb = sizeRank(b);
+  if (ra !== null || rb !== null) {
+    if (ra === null) return 1;
+    if (rb === null) return -1;
+    if (ra !== rb) return ra - rb;
+  }
   const na = Number(a);
   const nb = Number(b);
   if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-  return String(a).localeCompare(String(b));
+  return String(a).localeCompare(String(b), undefined, { numeric: true });
+}
+
+// Serialized stock lines in a sensible order: colours in the order they were
+// added, and inside each colour sizes S, M, L, XL... or phone models in order
+export function sortLines(lines) {
+  const byAge = [...lines].sort(
+    (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0),
+  );
+  const groups = new Map();
+  for (const line of byAge) {
+    const key = line.variant || "";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(line);
+  }
+  const key = (l) => l.size || l.model || (l.variant ? "" : l.batch_number) || "";
+  return [...groups.values()].flatMap((group) =>
+    group.sort((a, b) => {
+      const ka = key(a);
+      const kb = key(b);
+      return sizeRank(ka) !== null || sizeRank(kb) !== null
+        ? compareSizes(ka, kb)
+        : compareModels(ka, kb);
+    }),
+  );
 }
 
 // A line's own price: undefined = not sent (keep what is saved), null = use

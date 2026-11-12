@@ -8,7 +8,7 @@ import { deleteImage, signProductUpload, cloudName } from "../utils/cloudinaryUp
 import Category from "../models/Category.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
 import { totalStockStages } from "../utils/stock.js";
-import { parseStockLines, syncStockLines } from "../utils/stockLines.js";
+import { parseStockLines, sortLines, syncStockLines } from "../utils/stockLines.js";
 import {
   productMedia,
   videoPoster,
@@ -488,7 +488,7 @@ async function attachBatches(products) {
 
   return products.map((product) => ({
     ...serializeProduct(product),
-    batches: batchesByProduct.get(String(product._id)) || [],
+    batches: sortLines(batchesByProduct.get(String(product._id)) || []),
   }));
 }
 
@@ -713,7 +713,7 @@ export const getProductById = async (req, res) => {
       success: true,
       data: {
         ...serializeProduct(product),
-        batches: batches.map((b) => serializeBatch(b)),
+        batches: sortLines(batches.map((b) => serializeBatch(b))),
       },
     });
   } catch (error) {
@@ -784,7 +784,7 @@ export const getProductByBarcode = async (req, res) => {
         : undefined,
       data: {
         ...serializeProduct(product),
-        batches: batches.map((b) => serializeBatch(b)),
+        batches: sortLines(batches.map((b) => serializeBatch(b))),
         matched_batch_id: matchedBatchId ? String(matchedBatchId) : null,
       },
     });

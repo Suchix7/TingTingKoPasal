@@ -32,6 +32,21 @@ import { useLang } from "@/lib/i18n";
 const lineModel = (b: ProductBatch) =>
   b.model || b.size || (b.variant ? "" : b.batch_number);
 
+// Card photo: when the cover photo is of a colour that is sold out, show the
+// first colour still in stock instead
+const cardPhoto = (product: Product) => {
+  const cover = product.photos?.[0];
+  const lines = product.batches ?? [];
+  const coverColour = cover?.variant?.trim().toLowerCase();
+  if (!coverColour) return product.photo_url;
+  const coverInStock = lines.some(
+    (b) => b.variant?.trim().toLowerCase() === coverColour && b.quantity > 0,
+  );
+  if (coverInStock) return product.photo_url;
+  const available = lines.find((b) => b.variant && b.quantity > 0);
+  return available ? linePhoto(product, available) : product.photo_url;
+};
+
 // A product's stock lines for the model picked in the POS chips: one, or one
 // per colour for covers sold in several colours
 const modelLines = (product: Product, model: string) =>
@@ -412,7 +427,7 @@ export default function ProductGrid({
                         {product.photo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={coverImage(product.photo_url, 480)}
+                            src={coverImage(cardPhoto(product) || product.photo_url, 480)}
                             alt={product.product_name}
                             loading="lazy"
                             decoding="async"

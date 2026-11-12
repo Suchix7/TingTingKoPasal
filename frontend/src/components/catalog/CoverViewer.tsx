@@ -37,11 +37,17 @@ export default function CoverViewer({
     : [{ type: "image" as const, url: cover.photo_url, poster: cover.photo_url }];
 
   // Colours / styles: pick one to see its photo and the sizes left in it
-  const variants = cover.variants ?? [];
+  // in-stock colours first, so a sold-out one is never what opens first
+  const variants = [...(cover.variants ?? [])].sort(
+    (a, b) => Number(b.quantity > 0) - Number(a.quantity > 0),
+  );
   const sizeGuide = cover.size_guide_index ?? -1;
-  const [slide, setSlide] = useState(0);
-  const [picked, setPicked] = useState(() =>
-    Math.max(variants.findIndex((v) => v.quantity > 0), 0),
+  const [picked, setPicked] = useState(0);
+  // open on the first available colour's photo
+  const [slide, setSlide] = useState(() =>
+    cover.in_stock && variants[0]?.quantity > 0 && variants[0].media_index >= 0
+      ? variants[0].media_index
+      : 0,
   );
   const variant = variants[picked];
 

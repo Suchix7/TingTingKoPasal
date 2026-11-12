@@ -22,7 +22,7 @@ const STEPS = [
   "Unlocking the doors",
   "Turning on the lights",
   "Arranging the shelves",
-  "Polishing the cases",
+  "Dusting off the products",
   "Counting what's in stock",
   "Almost there",
 ];

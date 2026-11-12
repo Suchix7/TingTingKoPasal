@@ -4,7 +4,7 @@ import ProductBatch from "../models/ProductBatch.js";
 import InventoryTransaction from "../models/InventoryTransaction.js";
 import { serializeBatch } from "../utils/serialize.js";
 import { generateProductBarcode } from "../utils/barcode.js";
-import { renameLine } from "../utils/stockLines.js";
+import { renameLine, sortLines } from "../utils/stockLines.js";
 
 export const createProductBatch = async (req, res) => {
   try {
@@ -369,7 +369,7 @@ export const getProductBatchesByProductId = async (req, res) => {
         barcode: product.barcode,
       },
       totalCount: batches.length,
-      data: batches.map((b) => serializeBatch(b)),
+      data: sortLines(batches.map((b) => serializeBatch(b))),
     });
   } catch (error) {
     console.error("Get product batches by product ID error:", error.message);

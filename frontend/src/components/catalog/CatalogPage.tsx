@@ -35,6 +35,16 @@ import ShopSplash from "./ShopSplash";
 
 const inStockModels = (c: Cover) => c.models.filter((m) => m.quantity > 0);
 
+// Card photo: when the cover photo shows a colour that is sold out, show
+// the first colour still in stock instead
+const cardPhoto = (c: Cover) => {
+  if (!c.in_stock || !c.variants?.length) return c.photo_url;
+  const first = c.variants.find((v) => v.media_index === 0);
+  if (first && first.quantity > 0) return c.photo_url;
+  const available = c.variants.find((v) => v.quantity > 0 && v.media_index >= 0);
+  return available ? c.media[available.media_index]?.poster || c.photo_url : c.photo_url;
+};
+
 // chips shown on a card; the full list is in the full-screen view
 const MAX_CHIPS = 3;
 
@@ -379,7 +389,7 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={coverImage(cover.photo_url, 480)}
+                      src={coverImage(cardPhoto(cover), 480)}
                       alt=""
                       loading={i < 6 ? "eager" : "lazy"}
                       decoding="async"

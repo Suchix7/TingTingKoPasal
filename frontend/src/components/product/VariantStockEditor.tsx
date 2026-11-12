@@ -45,16 +45,30 @@ const cell = (colour: string, size: string) => `${colour}|${size}`;
 const newKey = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-// S, M, L, XL... then numbers, then the rest (same order as the backend)
-const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "XXXL", "3XL", "4XL"];
+// Where a clothing size sits: XS < S < M < L < XL < 2XL (= XXL)... read from
+// the start of the label, so "L (48kg-58kg)" counts as L (same as the backend)
+function sizeRank(label: string): number | null {
+  const m = label.trim().toUpperCase().match(/^(\d*)(X*)(S|M|L)(?![A-Z])/);
+  if (!m) return null;
+  const [, digits, xs, letter] = m;
+  const x = digits ? Number(digits) : xs.length;
+  if (letter === "M") return 0;
+  return letter === "S" ? -(1 + x) : 1 + x;
+}
+
+// S, M, L, XL, 2XL... then numbers, then the rest
 function compareSizes(a: string, b: string) {
-  const ia = SIZE_ORDER.indexOf(a.toUpperCase());
-  const ib = SIZE_ORDER.indexOf(b.toUpperCase());
-  if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  const ra = sizeRank(a);
+  const rb = sizeRank(b);
+  if (ra !== null || rb !== null) {
+    if (ra === null) return 1;
+    if (rb === null) return -1;
+    if (ra !== rb) return ra - rb;
+  }
   const na = Number(a);
   const nb = Number(b);
   if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-  return a.localeCompare(b);
+  return a.localeCompare(b, undefined, { numeric: true });
 }
 
 export const emptyGrid = (sizes: string[] = []): StockGrid => ({
