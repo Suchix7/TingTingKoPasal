@@ -591,7 +591,7 @@ export default function PointOfSalesPage() {
     <div className="h-auto xl:h-full xl:min-h-0 flex flex-col xl:flex-row gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] xl:pb-4 bg-gray-50 xl:overflow-hidden">
       {/* Products Section */}
       <div className="flex-1 min-h-0 min-w-0 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-4 sm:px-6 border-b border-gray-100 space-y-3">
+        <div className="shrink-0 px-4 py-4 sm:px-6 border-b border-gray-100 space-y-3">
           <div className="flex flex-col lg:flex-row items-left lg:items-center gap-3 justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -652,8 +652,10 @@ export default function PointOfSalesPage() {
           </div>
         </div>
 
-        <div className="px-4 py-3 sm:px-6 border-b border-gray-100">
-          <div className="flex gap-2 overflow-x-auto pb-1">
+        {/* Never squeezed by the product grid below; on phones the categories
+            swipe sideways, on bigger screens they wrap onto more lines */}
+        <div className="shrink-0 px-4 py-3 sm:px-6 border-b border-gray-100">
+          <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
             <button
               onClick={() => setSelectedCategoryId("all")}
               className={`cursor-pointer shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
