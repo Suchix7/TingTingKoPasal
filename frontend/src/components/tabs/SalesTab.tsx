@@ -33,6 +33,7 @@ import {
 import { useStore } from "@/hooks/useStoreInfo";
 import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import SaleDetailsModal from "@/components/sales/SaleDetailsModal";
+import SaleItemThumbs from "@/components/sales/SaleItemThumbs";
 import EditSaleModal from "@/components/sales/EditSaleModal";
 import ReceiptPrinter, { ReceiptData } from "@/components/pos/ReceiptPrinter";
 import { prepareReceiptData } from "@/utils/receiptHelper";
@@ -483,6 +484,11 @@ export default function SalesPage() {
                       )}
                     </div>
                   </div>
+                  {(sale.items?.length ?? 0) > 0 && (
+                    <div className="mt-2.5">
+                      <SaleItemThumbs items={sale.items} max={5} />
+                    </div>
+                  )}
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <StatusBadge className={paymentStatusClass[sale.payment_status]}>
                       {t(sale.payment_status)}
@@ -604,6 +610,11 @@ export default function SalesPage() {
                           <p className="text-xs text-gray-500">{t("ID")} #{sale.id}</p>
                         </div>
                       </div>
+                      {(sale.items?.length ?? 0) > 0 && (
+                        <div className="mt-2">
+                          <SaleItemThumbs items={sale.items} size="sm" />
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-5 py-4">

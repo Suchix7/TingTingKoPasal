@@ -40,8 +40,25 @@ const CATALOG = {
       "Lei fend hat with glasses": ["Brown", "Grey", "Charcoal", "Black"],
       "Lei fend hat": ["Brown", "Grey", "Charcoal", "Black"],
       "Woollen dog beanie": ["Dark Brown", "Grey", "Cream"],
+      "Woolen beanie": [
+        "Red",
+        "Cream",
+        "Charcoal",
+        "Orange",
+        "Teal",
+        "Khaki",
+        "Pink",
+        "White",
+        "Dark Brown",
+        "Purple",
+      ],
     },
   },
+};
+
+// Products whose description doesn't say how many of each colour there are
+const EACH = {
+  "Woolen beanie": 1,
 };
 
 const SIZE_LINE = /^\s*(XXXL|XXL|XL|L|M|S|XS|\d+)\s*[-:=]\s*(\d+)\s*$/i;
@@ -86,7 +103,9 @@ for (const [categoryName, { sizeGuide, products: colourMap }] of Object.entries(
       console.log(`SKIP  ${p.productName}: expected ${photosNeeded} photos, has ${p.photos.length}`);
       continue;
     }
-    const each = perColour(p.description);
+    const each =
+      perColour(p.description) ??
+      (EACH[p.productName] ? [{ size: "", quantity: EACH[p.productName] }] : null);
     if (!each) {
       console.log(`SKIP  ${p.productName}: description has no per-colour quantity`);
       continue;

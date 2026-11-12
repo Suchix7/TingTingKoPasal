@@ -93,7 +93,10 @@ export default function CoverViewer({
       <MediaGallery
         key={cover.id}
         items={media}
-        dimmed={!cover.in_stock}
+        soldOut={(i) =>
+          !cover.in_stock ||
+          variants.some((v) => v.media_index === i && v.quantity <= 0)
+        }
         index={slide}
         onIndexChange={onSlide}
       />

@@ -1,6 +1,7 @@
 "use client";
 
-import { Calendar, CreditCard, Phone, User, X } from "lucide-react";
+import { Calendar, CreditCard, ImageIcon, Phone, User, X } from "lucide-react";
+import { coverImage } from "@/components/catalog/image";
 import { SaleItem, useSaleById, useSaleItems } from "@/hooks/useSales";
 import {
   SalePayment as FullSalePayment,
@@ -52,7 +53,9 @@ export default function SaleDetailsModal({
       <div className="max-h-[90dvh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{t("Sale Details")}</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {t("Sale Details")}
+            </h2>
             <p className="text-sm text-gray-500">
               {t("Invoice, items, and payment history")}
             </p>
@@ -79,7 +82,10 @@ export default function SaleDetailsModal({
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="space-y-3 rounded-2xl border border-gray-200 p-4">
+                  <div
+                    key={i}
+                    className="space-y-3 rounded-2xl border border-gray-200 p-4"
+                  >
                     <Skeleton className="h-5 w-32" />
                     <Skeleton className="h-4 w-2/3" />
                     <Skeleton className="h-4 w-1/2" />
@@ -149,7 +155,9 @@ export default function SaleDetailsModal({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-gray-200 p-4">
-                  <h3 className="mb-3 font-bold text-gray-900">{t("Customer")}</h3>
+                  <h3 className="mb-3 font-bold text-gray-900">
+                    {t("Customer")}
+                  </h3>
                   <div className="space-y-2 text-sm text-gray-700">
                     <p className="flex items-center gap-2">
                       <User size={16} className="text-gray-400" />
@@ -210,67 +218,122 @@ export default function SaleDetailsModal({
                     {t("No sale items found.")}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                        <tr>
-                          <th className="px-4 py-3">{t("Product")}</th>
-                          <th className="px-4 py-3">{t("Qty")}</th>
-                          <th className="px-4 py-3">{t("Unit Price")}</th>
-                          <th className="px-4 py-3">{t("Cost Price")}</th>
-                          <th className="px-4 py-3 text-right">{t("Total")}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {items.map((item: SaleItem, index: number) => (
-                          <tr
-                            key={`${item.product_id}-${item.batch_id ?? "no-batch"}-${index}`}
-                          >
-                            <td className="px-4 py-3">
-                              <p className="font-medium text-gray-900">
-                                <Tn v={item.product_name} />
+                  <>
+                    {/* Phones: one card per item with its photo */}
+                    <div className="divide-y divide-gray-100 md:hidden">
+                      {items.map((item: SaleItem, index: number) => (
+                        <div
+                          key={`${item.product_id}-${item.batch_id ?? "no-batch"}-${index}`}
+                          className="flex gap-3 p-3"
+                        >
+                          <ItemPhoto item={item} large />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900">
+                              <Tn v={item.product_name} />
+                            </p>
+                            {item.batch_number && (
+                              <p className="text-xs font-medium text-blue-600">
+                                {item.batch_number}
                               </p>
-                              {Number(item.discount_amount) > 0 && (
-                                <p className="mt-0.5 text-xs text-amber-700">
-                                  {t("Sold below marked price")}:{" "}
-                                  {money(item.discount_amount)} {t("less")}
-                                  {item.discount_reason
-                                    ? ` (${item.discount_reason})`
-                                    : ""}
-                                </p>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">{item.quantity}</td>
-                            <td className="px-4 py-3">
-                              {money(item.unit_price)}
-                              {Number(item.discount_amount) > 0 && (
-                                <p className="text-xs text-amber-700">
-                                  {t("sold at")}{" "}
-                                  {money(
-                                    Number(item.unit_price) -
-                                      Number(item.discount_amount) /
-                                        Number(item.quantity),
-                                  )}
-                                </p>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              {money(item.cost_price)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold">
-                              {money(item.total_price)}
-                            </td>
+                            )}
+                            <div className="mt-1 flex items-baseline justify-between gap-2 text-sm">
+                              <span className="text-gray-600">
+                                {item.quantity} × {money(item.unit_price)}
+                              </span>
+                              <span className="font-semibold text-gray-900">
+                                {money(item.total_price)}
+                              </span>
+                            </div>
+                            {Number(item.discount_amount) > 0 && (
+                              <p className="mt-0.5 text-xs text-amber-700">
+                                {t("Sold below marked price")}:{" "}
+                                {money(item.discount_amount)} {t("less")}
+                                {item.discount_reason
+                                  ? ` (${item.discount_reason})`
+                                  : ""}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="hidden overflow-x-auto md:block">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                          <tr>
+                            <th className="px-4 py-3">{t("Product")}</th>
+                            <th className="px-4 py-3">{t("Qty")}</th>
+                            <th className="px-4 py-3">{t("Unit Price")}</th>
+                            <th className="px-4 py-3">{t("Cost Price")}</th>
+                            <th className="px-4 py-3 text-right">
+                              {t("Total")}
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {items.map((item: SaleItem, index: number) => (
+                            <tr
+                              key={`${item.product_id}-${item.batch_id ?? "no-batch"}-${index}`}
+                            >
+                              <td className="px-4 py-3">
+                                <div className="flex items-start gap-3">
+                                  <ItemPhoto item={item} />
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      <Tn v={item.product_name} />
+                                    </p>
+                                    {item.batch_number && (
+                                      <p className="text-xs font-medium text-blue-600">
+                                        {item.batch_number}
+                                      </p>
+                                    )}
+                                    {Number(item.discount_amount) > 0 && (
+                                      <p className="mt-0.5 text-xs text-amber-700">
+                                        {t("Sold below marked price")}:{" "}
+                                        {money(item.discount_amount)}{" "}
+                                        {t("less")}
+                                        {item.discount_reason
+                                          ? ` (${item.discount_reason})`
+                                          : ""}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">{item.quantity}</td>
+                              <td className="px-4 py-3">
+                                {money(item.unit_price)}
+                                {Number(item.discount_amount) > 0 && (
+                                  <p className="text-xs text-amber-700">
+                                    {t("sold at")}{" "}
+                                    {money(
+                                      Number(item.unit_price) -
+                                        Number(item.discount_amount) /
+                                          Number(item.quantity),
+                                    )}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                {money(item.cost_price)}
+                              </td>
+                              <td className="px-4 py-3 text-right font-semibold">
+                                {money(item.total_price)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
 
               <div className="rounded-2xl border border-gray-200">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h3 className="font-bold text-gray-900">{t("Sale Payments")}</h3>
+                  <h3 className="font-bold text-gray-900">
+                    {t("Sale Payments")}
+                  </h3>
                 </div>
                 {isPaymentsLoading && !payments.length ? (
                   <div className="p-4">
@@ -347,5 +410,42 @@ export default function SaleDetailsModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// Photo of what was sold (the colour's photo when there is one); tap to open
+// it full size
+function ItemPhoto({
+  item,
+  large = false,
+}: {
+  item: SaleItem;
+  large?: boolean;
+}) {
+  const box = large ? "h-16 w-16" : "h-12 w-12";
+  if (!item.photo_url) {
+    return (
+      <div
+        className={`flex ${box} shrink-0 items-center justify-center rounded-lg bg-gray-100`}
+      >
+        <ImageIcon className="h-5 w-5 text-gray-300" />
+      </div>
+    );
+  }
+  return (
+    <a
+      href={item.photo_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${box} shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={coverImage(item.photo_url, 200)}
+        alt={item.product_name}
+        loading="lazy"
+        className="h-full w-full object-cover"
+      />
+    </a>
   );
 }

@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 
 import { coverImage, fullImage, videoSources, type MediaItem } from "./image";
+import SoldOutMark from "./SoldOutMark";
 
 type Props = {
   items: MediaItem[];
   alt?: string;
   // dims the photos, e.g. for a sold-out item
   dimmed?: boolean;
+  // slides showing something sold out: stamped "Sold out" (colours kept)
+  soldOut?: (index: number) => boolean;
   labels?: { previous: string; next: string };
   // jump to this slide when it changes (e.g. a colour was picked)
   index?: number;
@@ -28,6 +31,7 @@ export default function MediaGallery({
   items,
   alt = "",
   dimmed = false,
+  soldOut,
   labels = { previous: "Previous photo", next: "Next photo" },
   index: wanted,
   onIndexChange,
@@ -141,7 +145,7 @@ export default function MediaGallery({
           {items.map((item, i) => (
             <div
               key={`${item.url}-${i}`}
-              className="flex h-full w-full shrink-0 items-center justify-center px-2"
+              className="relative flex h-full w-full shrink-0 items-center justify-center px-2"
               aria-hidden={i !== index}
             >
               {seen.has(i) &&
@@ -171,6 +175,7 @@ export default function MediaGallery({
                     draggable={false}
                   />
                 ))}
+              {soldOut?.(i) && <SoldOutMark size="lg" />}
             </div>
           ))}
         </div>

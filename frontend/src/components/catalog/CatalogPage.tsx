@@ -25,6 +25,7 @@ import {
 } from "@/hooks/useCatalog";
 import type { CatalogCategory, Cover } from "@/hooks/useCatalog";
 import { useDebounced } from "@/hooks/useDebounced";
+import SoldOutMark from "./SoldOutMark";
 import { coverImage } from "./image";
 import { pcs, priceLabel } from "./format";
 import axiosInstance from "@/lib/axiosInstance";
@@ -382,10 +383,9 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                       alt=""
                       loading={i < 6 ? "eager" : "lazy"}
                       decoding="async"
-                      className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-                        cover.in_stock ? "" : "opacity-50 grayscale"
-                      }`}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                    {!cover.in_stock && <SoldOutMark />}
                     {((cover.media?.length ?? 0) > 1 ||
                       cover.media?.some((m) => m.type === "video")) && (
                       <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">

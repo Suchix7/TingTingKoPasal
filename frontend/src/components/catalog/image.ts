@@ -32,3 +32,29 @@ export type MediaItem = {
   // still picture: the photo itself, or a frame from the video
   poster: string;
 };
+
+// Picture for one stock line of a product: the photo tagged with the line's
+// colour/style when there is one, otherwise the product's cover photo.
+export function linePhoto(
+  product: {
+    photo_url?: string | null;
+    photos?: { poster: string; variant?: string; size_guide?: boolean }[];
+  },
+  batch?: { variant?: string } | null,
+): string | null {
+  return variantPhoto(product, batch) ?? (product.photo_url || null);
+}
+
+// The photo tagged with this line's colour, or null when there is none
+export function variantPhoto(
+  product: { photos?: { poster: string; variant?: string; size_guide?: boolean }[] },
+  batch?: { variant?: string } | null,
+): string | null {
+  const variant = batch?.variant?.trim().toLowerCase();
+  if (!variant) return null;
+  return (
+    product.photos?.find(
+      (p) => !p.size_guide && p.variant?.trim().toLowerCase() === variant,
+    )?.poster ?? null
+  );
+}

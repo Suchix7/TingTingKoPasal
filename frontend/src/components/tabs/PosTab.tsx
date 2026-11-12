@@ -33,6 +33,7 @@ import ReceiptPrinter, { ReceiptData } from "@/components/pos/ReceiptPrinter";
 import { prepareReceiptData } from "@/utils/receiptHelper";
 import { useStore } from "@/hooks/useStoreInfo";
 import Tn from "@/components/layout/Tn";
+import { linePhoto } from "@/components/catalog/image";
 import { useLang } from "@/lib/i18n";
 import { CardGridSkeleton, SlowNotice } from "@/components/layout/Skeleton";
 export type CartItem = {
@@ -47,6 +48,8 @@ export type CartItem = {
   total_price: number;
   batch_id?: string;
   batch_number?: string;
+  // the line's colour photo, or the product's cover
+  photo_url?: string | null;
   cost_price?: number;
   // Optional: price actually charged when lower than the marked unit_price
   sold_price?: number;
@@ -334,6 +337,7 @@ export default function PointOfSalesPage() {
           cost_price: costPrice,
           batch_id: batchId,
           batch_number: selectedBatch?.batch_number,
+          photo_url: linePhoto(product, selectedBatch),
         },
       ];
     });

@@ -267,4 +267,5 @@ export const zhModals1: Record<string, string> = {
   "Set a selling and cost price for each colour or model. Leave a box empty to use the product's price.": "为每种颜色或型号设置售价和成本价。留空则使用商品价格。",
   "This cover comes in colours / styles": "此手机壳有多种颜色 / 款式",
   "One product with a photo per colour, and stock for each colour and phone model.": "一个商品，每种颜色一张照片，按颜色和手机型号分别记录库存。",
+  "Colours": "颜色",
 };

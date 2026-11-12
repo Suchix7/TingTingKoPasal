@@ -6,6 +6,7 @@ import {
 } from "../services/saleService.js";
 import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 import { logActivity } from "../utils/activityLog.js";
+import { attachItemPhotos, attachSalePhotos } from "../utils/saleItemPhotos.js";
 
 const rs = (n) => `Rs. ${Number(n || 0).toLocaleString("en-NP")}`;
 
@@ -104,7 +105,7 @@ export const getSales = async (req, res) => {
     return res.status(200).json({
       success: true,
       totalCount,
-      data: sales.map(serializeSale),
+      data: await attachSalePhotos(sales.map(serializeSale)),
       stats: {
         totalProfit: Number(stats.totalProfit) || 0,
         totalPaid: Number(stats.totalPaid) || 0,
@@ -127,7 +128,8 @@ export const getSaleById = async (req, res) => {
     if (!sale) {
       return res.status(404).json({ success: false, message: "Sale not found" });
     }
-    return res.status(200).json({ success: true, data: serializeSale(sale) });
+    const [data] = await attachSalePhotos([serializeSale(sale)]);
+    return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get sale by ID error:", error.message);
     return res.status(500).json({ success: false, message: "Internal server error" });
@@ -269,6 +271,7 @@ export const getSaleItems = async (req, res) => {
         });
       }
     }
+    await attachItemPhotos(items);
     return res.status(200).json({ success: true, data: items });
   } catch (error) {
     console.error("Get sale items error:", error.message);

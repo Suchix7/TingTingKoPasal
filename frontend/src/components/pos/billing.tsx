@@ -13,7 +13,9 @@ import {
   Layers,
   FileText,
   Loader2,
+  ImageIcon,
 } from "lucide-react";
+import { coverImage } from "@/components/catalog/image";
 import { ListSkeleton } from "@/components/layout/Skeleton";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -711,10 +713,28 @@ export default function BillingSection({
                       className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
+                        <div className="mr-3 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-white">
+                          {item.photo_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={coverImage(item.photo_url, 160)}
+                              alt=""
+                              loading="lazy"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="h-5 w-5 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 text-sm">
                             <Tn v={item.product_name} />
                           </h3>
+                          {item.batch_number && (
+                            <p className="mt-0.5 text-xs font-medium text-blue-600">
+                              {item.batch_number}
+                            </p>
+                          )}
 
                           {(item.tax_amount ?? 0) > 0 && (
                             <div className="mt-1 flex items-center gap-2">

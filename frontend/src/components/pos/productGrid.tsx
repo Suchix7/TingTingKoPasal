@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import PhotoLightbox from "@/components/layout/PhotoLightbox";
 import type { MediaItem } from "@/components/catalog/image";
-import { coverImage } from "@/components/catalog/image";
+import { coverImage, linePhoto } from "@/components/catalog/image";
 import {
   Edit,
   Package,
@@ -130,7 +130,7 @@ export default function ProductGrid({
           return;
         }
         addToCart(product, scannedBatch.sale_price, scannedBatch.id);
-        showScanConfirmation(product, scannedBatch.batch_number);
+        showScanConfirmation(product, scannedBatch);
       } else if (product.batches && product.batches.length > 0) {
         // Check if product has batches
         setBatchSelectionProduct(product);
@@ -158,7 +158,9 @@ export default function ProductGrid({
 
   // Brief visual confirmation (photo + name) so the operator can catch a
   // mislabeled sticker before it becomes a sale.
-  const showScanConfirmation = (product: Product, model?: string) => {
+  const showScanConfirmation = (product: Product, batch?: ProductBatch) => {
+    const model = batch?.batch_number;
+    const photo = linePhoto(product, batch);
     toast.custom(
       (toastItem) => (
         <div
@@ -167,10 +169,10 @@ export default function ProductGrid({
           }`}
         >
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
-            {product.photo_url ? (
+            {photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={coverImage(product.photo_url, 200)}
+                src={coverImage(photo, 200)}
                 alt={product.product_name}
                 className="h-full w-full object-cover"
               />
@@ -275,7 +277,7 @@ export default function ProductGrid({
         return;
       }
       addToCart(localModelOwner, batch.sale_price, batch.id);
-      showScanConfirmation(localModelOwner, batch.batch_number);
+      showScanConfirmation(localModelOwner, batch);
       setIsBarcodeScannerOpen(false);
     } else if (localProduct) {
       processProduct(localProduct);
@@ -565,6 +567,7 @@ export default function ProductGrid({
         <BatchSelectionModal
           product={batchSelectionProduct}
           onSelect={handleBatchPriceSelect}
+          model={selectedModel}
           onClose={() => setBatchSelectionProduct(null)}
         />
       )}

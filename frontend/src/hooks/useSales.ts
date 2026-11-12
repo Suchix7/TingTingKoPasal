@@ -29,6 +29,10 @@ export type SaleItem = {
   profit_amount?: number;
   cost_price?: number;
   total_price: number;
+  // what was sold, from the server: the colour's photo (else the product's
+  // cover) and the stock line name ("Blue / iPhone 13")
+  photo_url?: string | null;
+  batch_number?: string | null;
   created_at?: string;
 };
 

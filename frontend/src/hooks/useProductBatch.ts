@@ -16,6 +16,10 @@ export type ProductBatch = {
   id: string;
   product_id: string;
   batch_number: string;
+  // colour/style, size and phone model of the line ("" when not split)
+  variant?: string;
+  size?: string;
+  model?: string;
   quantity: number;
   cost_price: number;
   sale_price: number;
