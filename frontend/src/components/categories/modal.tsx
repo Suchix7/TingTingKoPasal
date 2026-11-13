@@ -313,6 +313,21 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
                 />
               </label>
               {(file || (preview && !removeThumb)) && (
+                <label className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900">
+                  <ImagePlus size={14} /> {t("Replace")}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      setFile(e.target.files?.[0] ?? null);
+                      setRemoveThumb(false);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+              {(file || (preview && !removeThumb)) && (
                 <button
                   type="button"
                   onClick={() => {

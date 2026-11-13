@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { coverImage } from "@/components/catalog/image";
-import { ImageOff, Minus, Plus, Trash2, X } from "lucide-react";
+import { ImagePlus, ImageOff, Minus, Plus, Trash2, X } from "lucide-react";
 
 import type { ProductBatch } from "@/hooks/useProducts";
 import { useLang } from "@/lib/i18n";
@@ -218,6 +218,9 @@ type Props = {
   // the product's own prices, used where a colour / size has none
   productPrices?: ProductPrices;
   disabled?: boolean;
+  // a new photo picked for a colour: it replaces that colour's photo (same
+  // spot) or is added and linked to it
+  onNewPhoto?: (colourKey: string, file: File) => void;
 };
 
 export default function VariantStockEditor({
@@ -227,6 +230,7 @@ export default function VariantStockEditor({
   presetSizes,
   productPrices,
   disabled,
+  onNewPhoto,
 }: Props) {
   const { t } = useLang();
   const [newSize, setNewSize] = useState("");
@@ -849,6 +853,27 @@ export default function VariantStockEditor({
                             />
                           </button>
                         ))}
+                        {onNewPhoto && (
+                          <label
+                            className="flex h-14 w-14 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-[10px] font-medium text-blue-700 hover:bg-blue-100"
+                            title={t("Upload a new photo for this colour")}
+                          >
+                            <ImagePlus size={14} />
+                            {c.photoKey ? t("Replace") : t("New photo")}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={disabled}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                e.target.value = "";
+                                if (file) onNewPhoto(c.key, file);
+                                setChoosing(null);
+                              }}
+                            />
+                          </label>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -1061,6 +1086,27 @@ export default function VariantStockEditor({
                         />
                       </button>
                     ))}
+                    {onNewPhoto && (
+                      <label
+                        className="flex h-16 w-16 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 text-[10px] font-medium text-blue-700 hover:bg-blue-100"
+                        title={t("Upload a new photo for this colour")}
+                      >
+                        <ImagePlus size={14} />
+                        {c.photoKey ? t("Replace") : t("New photo")}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={disabled}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            if (file) onNewPhoto(c.key, file);
+                            setChoosing(null);
+                          }}
+                        />
+                      </label>
+                    )}
                     <button
                       type="button"
                       onClick={() => {

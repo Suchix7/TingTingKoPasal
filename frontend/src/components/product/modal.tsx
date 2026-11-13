@@ -183,21 +183,62 @@ export default function ProductModal({
 
   // Swap one photo's file for another, in the same place: it keeps its spot
   // (and so the cover), its colour and, for a photo, the size-guide mark.
+  // a picked file is a photo or video under the size limit
+  const usableFile = (file: File) => {
+    const isVideo = file.type.startsWith("video/");
+    if (!isVideo && !file.type.startsWith("image/")) {
+      toast.error(t("Please select a photo or video."));
+      return false;
+    }
+    if (file.size > (isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB) * 1024 * 1024) {
+      toast.error(isVideo ? t("Videos must be under 100 MB.") : t("Photos must be under 10 MB."));
+      return false;
+    }
+    return true;
+  };
+
   const handleReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     const oldKey = replacingKey;
     setReplacingKey(null);
-    if (!file || !oldKey) return;
+    if (file && oldKey) replaceWithFile(oldKey, file);
+  };
+
+  // A new photo chosen for one colour (in the stock section): it replaces
+  // that colour's photo in place, or is added and linked to the colour.
+  const photoForColour = (colourKey: string, file: File) => {
+    const current = grid.colours.find((c) => c.key === colourKey)?.photoKey;
+    if (current && photos.some((p) => photoKey(p) === current)) {
+      replaceWithFile(current, file);
+      return;
+    }
+    if (!usableFile(file)) return;
+    if (photos.length >= MAX_PHOTOS) {
+      toast.error(t("A product can have at most 10 photos and videos."));
+      return;
+    }
+    const key = `${Date.now()}-${Math.random()}`;
+    setPhotos((prev) => [
+      ...prev,
+      {
+        kind: "new",
+        key,
+        type: file.type.startsWith("video/") ? "video" : "image",
+        file,
+        preview: URL.createObjectURL(file),
+      },
+    ]);
+    setGrid((g) => ({
+      ...g,
+      colours: g.colours.map((c) => (c.key === colourKey ? { ...c, photoKey: key } : c)),
+    }));
+    toast.success(t("Photo added. Save to keep it."));
+  };
+
+  const replaceWithFile = (oldKey: string, file: File) => {
+    if (!usableFile(file)) return;
     const isVideo = file.type.startsWith("video/");
-    if (!isVideo && !file.type.startsWith("image/")) {
-      toast.error(t("Please select a photo or video."));
-      return;
-    }
-    if (file.size > (isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB) * 1024 * 1024) {
-      toast.error(isVideo ? t("Videos must be under 100 MB.") : t("Photos must be under 10 MB."));
-      return;
-    }
     const key = `${Date.now()}-${Math.random()}`;
     const replacement: PhotoItem = {
       kind: "new",
@@ -927,6 +968,7 @@ export default function ProductModal({
                       sale: Number(formData.sale_price) || 0,
                     }}
                     disabled={isSubmitting}
+                    onNewPhoto={photoForColour}
                   />
                 </div>
               )}

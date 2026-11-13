@@ -175,4 +175,7 @@ export const zhFixes: Record<string, string> = {
   "Replace": "替换",
   "Photo replaced. Save to keep it.": "照片已替换。保存后生效。",
   "Tap the arrows on a photo to replace it with another.": "点击照片上的箭头可替换为另一张。",
+  "New photo": "新照片",
+  "Upload a new photo for this colour": "为这个颜色上传新照片",
+  "Photo added. Save to keep it.": "照片已添加。保存后生效。",
 };
