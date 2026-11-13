@@ -27,6 +27,9 @@ export type StockGrid = {
   // own prices per cell; missing = the product's price
   cost: Record<string, number>;
   sale: Record<string, number>;
+  // colour × size / model cells that aren't stocked at all (a cover that
+  // comes in Red for iPhone 15 but not for iPhone 13); no line is saved
+  off: Record<string, true>;
 };
 // cost_price / sale_price: null = use the product's price
 export type StockLine = {
@@ -55,7 +58,19 @@ export const emptyGrid = (sizes: string[] = []): StockGrid => ({
   usePrices: false,
   cost: {},
   sale: {},
+  off: {},
 });
+
+// A grid for a mobile cover: stock per phone model, optionally by colour
+export const coverGrid = (models: string[] = []): StockGrid => ({
+  ...emptyGrid(),
+  models: true,
+  useSizes: true,
+  sizes: models,
+});
+
+// a cell only counts as "off" when both colours and sizes / models are in use
+const isOff = (g: StockGrid, key: string) => g.useColours && g.useSizes && !!g.off?.[key];
 
 export const gridActive = (g: StockGrid) => g.useSizes || g.useColours;
 
@@ -65,7 +80,7 @@ export function gridToLines(g: StockGrid): StockLine[] {
   const colours = g.useColours ? g.colours : [{ key: NO_COLOUR, name: "", photoKey: null }];
   const sizes = g.useSizes ? g.sizes : [""];
   return colours.flatMap((c) =>
-    sizes.map((s) => ({
+    sizes.filter((s) => !isOff(g, cell(c.key, s))).map((s) => ({
       variant: c.name.trim(),
       size: g.models ? "" : s.trim(),
       model: g.models ? s.trim() : "",
@@ -94,6 +109,14 @@ export function gridProblem(
     const names = g.colours.map((c) => c.name.trim().toLowerCase());
     if (new Set(names).size !== names.length) return t("Each colour / style can only be listed once.");
     if (g.colours.some((c) => c.name.includes("/"))) return t('Colour names cannot contain "/".');
+    if (g.useSizes) {
+      const empty = g.sizes.find((s) => g.colours.every((c) => isOff(g, cell(c.key, s))));
+      if (empty) {
+        return g.models
+          ? `${empty}: ${t("pick at least one colour, or remove this phone model.")}`
+          : `${empty}: ${t("pick at least one colour, or remove this size.")}`;
+      }
+    }
   }
   if (g.usePrices && product) {
     const bad = gridToLines(g).find(
@@ -114,11 +137,13 @@ export function gridFromProduct(
   presetSizes: string[],
   // a line priced like the product follows it; any other price is its own
   product?: ProductPrices,
+  // lines named only by their batch number are phone models (old covers)
+  forceModels = false,
 ): StockGrid {
   const own = (price: number, base?: number) =>
     base === undefined || Number(price) === Number(base) ? undefined : Number(price);
   // colours split by phone model (a cover): the grid's sizes are models
-  const models = batches.some((b) => b.model && b.variant);
+  const models = forceModels || batches.some((b) => b.model);
   const lines = batches.map((b) => ({
     variant: b.variant || "",
     // size-only lines saved before colours existed are named after the size
@@ -158,8 +183,28 @@ export function gridFromProduct(
     if (l.cost !== undefined) cost[cell(colour, size)] = l.cost;
     if (l.sale !== undefined) sale[cell(colour, size)] = l.sale;
   }
+  // colour × size / model pairs that have no line aren't stocked
+  const off: Record<string, true> = {};
+  if (useColours && sizes.length) {
+    for (const c of colours) {
+      for (const s of sizes) {
+        if (!lines.some((l) => same(l.variant, c.name) && same(l.size, s))) off[cell(c.key, s)] = true;
+      }
+    }
+  }
   const usePrices = Object.keys(cost).length + Object.keys(sale).length > 0;
-  return { models, useSizes: sizes.length > 0, useColours, sizes, colours, qty, usePrices, cost, sale };
+  return {
+    models,
+    useSizes: models || sizes.length > 0,
+    useColours,
+    sizes,
+    colours,
+    qty,
+    usePrices,
+    cost,
+    sale,
+    off,
+  };
 }
 
 type Props = {
@@ -186,6 +231,10 @@ export default function VariantStockEditor({
   const [newSize, setNewSize] = useState("");
   // colour whose photo chooser is open
   const [choosing, setChoosing] = useState<string | null>(null);
+  // phone model just added (or already there), shown under the box
+  const [justAdded, setJustAdded] = useState("");
+  // phone models whose colours get prices of their own
+  const [openPrices, setOpenPrices] = useState<string[]>([]);
 
   const set = (patch: Partial<StockGrid>) => onChange({ ...g, ...patch });
 
@@ -201,6 +250,7 @@ export default function VariantStockEditor({
   };
   // the price all `cells` share, "" when they differ or have none
   const sharedPrice = (kind: "cost" | "sale", cells: string[]) => {
+    if (!cells.length) return "";
     const values = cells.map((c) => g[kind][c]);
     return values.every((v) => v !== undefined && v === values[0]) ? String(values[0]) : "";
   };
@@ -240,22 +290,71 @@ export default function VariantStockEditor({
     set({ sizes: [...g.sizes, size] });
   };
   const removeSize = (size: string) => set({ sizes: g.sizes.filter((s) => s !== size) });
+  // a colour is / isn't stocked for one size / phone model
+  const setOff = (colour: string, size: string, isOffNow: boolean) => {
+    const off = { ...g.off };
+    if (isOffNow) off[cell(colour, size)] = true;
+    else delete off[cell(colour, size)];
+    set({ off });
+  };
 
   const toggleSizes = (on: boolean) =>
     set({ useSizes: on, sizes: on && g.sizes.length === 0 ? [...presetSizes] : g.sizes });
 
   const toggleColours = (on: boolean) => {
-    if (on && g.colours.length === 0) {
+    const sizeList = g.useSizes ? g.sizes : [""];
+    const hasAny = (colour: string) =>
+      sizeList.some((s) => {
+        const k = cell(colour, s);
+        return (g.qty[k] || 0) > 0 || g.cost[k] !== undefined || g.sale[k] !== undefined;
+      });
+    if (on) {
       // start with one colour per photo, so the usual case is one tap
-      const colours = (photos.length ? photos : [null]).map((p, i) => ({
-        key: newKey(),
-        name: photos.length > 1 ? `${t("Colour")} ${i + 1}` : "",
-        photoKey: p?.key ?? null,
-      }));
-      set({ useColours: true, colours });
+      const colours = g.colours.length
+        ? g.colours
+        : (photos.length ? photos : [null]).map((p, i) => ({
+            key: newKey(),
+            name: photos.length > 1 ? `${t("Colour")} ${i + 1}` : "",
+            photoKey: p?.key ?? null,
+          }));
+      // stock and prices typed before colours were turned on move to the
+      // first colour instead of being lost
+      const qty = { ...g.qty };
+      const cost = { ...g.cost };
+      const sale = { ...g.sale };
+      const off = { ...g.off };
+      if (hasAny(NO_COLOUR) && !colours.some((c) => hasAny(c.key))) {
+        const first = colours[0].key;
+        for (const s of sizeList) {
+          const from = cell(NO_COLOUR, s);
+          const to = cell(first, s);
+          if (g.qty[from]) qty[to] = g.qty[from];
+          if (g.cost[from] !== undefined) cost[to] = g.cost[from];
+          if (g.sale[from] !== undefined) sale[to] = g.sale[from];
+          delete off[to];
+        }
+      }
+      set({ useColours: true, colours, qty, cost, sale, off });
       return;
     }
-    set({ useColours: on });
+    // colours turned off: each size / model keeps the stock of all its colours
+    const qty = { ...g.qty };
+    const cost = { ...g.cost };
+    const sale = { ...g.sale };
+    if (!hasAny(NO_COLOUR)) {
+      for (const s of sizeList) {
+        const stocked = g.colours.filter((c) => !isOff(g, cell(c.key, s)));
+        const sum = stocked.reduce((n, c) => n + (g.qty[cell(c.key, s)] || 0), 0);
+        if (sum) qty[cell(NO_COLOUR, s)] = sum;
+        const priced = (kind: "cost" | "sale") =>
+          stocked.map((c) => g[kind][cell(c.key, s)]).find((v) => v !== undefined);
+        const c0 = priced("cost");
+        const s0 = priced("sale");
+        if (c0 !== undefined) cost[cell(NO_COLOUR, s)] = c0;
+        if (s0 !== undefined) sale[cell(NO_COLOUR, s)] = s0;
+      }
+    }
+    set({ useColours: false, qty, cost, sale });
   };
 
   const updateColour = (key: string, patch: Partial<StockColour>) =>
@@ -401,6 +500,395 @@ export default function VariantStockEditor({
     ) : (
       <div className="max-w-40">{stepper(colour, "", t("Quantity"))}</div>
     );
+
+  if (g.models) {
+    const words = newSize.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const notAdded = IPHONE_MODELS.filter((m) => !g.sizes.some((s) => same(s, m)));
+    // typing: matching models; empty box: the newest ones, one tap each
+    const suggestions = words.length
+      ? notAdded.filter((m) => words.every((w) => m.toLowerCase().includes(w))).slice(0, 12)
+      : notAdded.slice(0, 8);
+    const exact = IPHONE_MODELS.some((m) => same(m, newSize)) || g.sizes.some((s) => same(s, newSize));
+    const addModel = (raw: string) => {
+      const m = raw.trim().replace(/\//g, "-");
+      if (!m) return;
+      if (g.sizes.some((s) => same(s, m))) {
+        setJustAdded(`${m} ${t("is already added")}`);
+      } else {
+        addSize(m);
+        setJustAdded(`✓ ${m} ${t("added")}`);
+      }
+      setNewSize("");
+    };
+    const models = [...g.sizes].sort(compareModels);
+    const colourList = g.useColours ? g.colours : [{ key: NO_COLOUR, name: "", photoKey: null }];
+    const modelTotal = (m: string) =>
+      colourList
+        .filter((c) => !isOff(g, cell(c.key, m)))
+        .reduce((sum, c) => sum + (g.qty[cell(c.key, m)] || 0), 0);
+    const removeModel = (m: string) => {
+      const n = modelTotal(m);
+      if (n > 0 && !window.confirm(`${t("Remove")} ${m}? ${t("Its stock")} (${n}) ${t("will be removed when you save.")}`)) return;
+      removeSize(m);
+    };
+    // quantity box with - and + (no prices)
+    const qtyBox = (colour: string, m: string, label: string) => {
+      const k = cell(colour, m);
+      const n = g.qty[k] || 0;
+      return (
+        <div className="flex h-10 shrink-0 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <button
+            type="button"
+            disabled={disabled || n <= 0}
+            onClick={() => setQty(colour, m, n - 1)}
+            className="flex w-10 items-center justify-center text-slate-600 active:bg-slate-100 disabled:opacity-30"
+            aria-label={`${t("Fewer")} ${label}`}
+          >
+            <Minus size={14} />
+          </button>
+          <input
+            type="number"
+            min="0"
+            inputMode="numeric"
+            value={String(n)}
+            disabled={disabled}
+            onFocus={(e) => e.currentTarget.select()}
+            onWheel={(e) => e.currentTarget.blur()}
+            onChange={(e) => setQty(colour, m, e.target.value === "" ? 0 : parseInt(e.target.value, 10))}
+            className="w-12 border-x border-slate-200 text-center text-sm font-semibold outline-none focus:bg-slate-50"
+            aria-label={`${t("Quantity for")} ${label}`}
+          />
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setQty(colour, m, n + 1)}
+            className="flex w-10 items-center justify-center text-slate-600 active:bg-slate-100 disabled:opacity-30"
+            aria-label={`${t("Add one")} ${label}`}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      );
+    };
+    // some colours of this model have prices of their own
+    const pricesDiffer = (cells: string[]) =>
+      (["sale", "cost"] as const).some(
+        (kind) => cells.some((c) => g[kind][c] !== undefined) && sharedPrice(kind, cells) === "",
+      );
+
+    return (
+      <div className="space-y-4">
+        {/* add a phone model: tap one of the list or type any other phone */}
+        <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t("Add phone model")}</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newSize}
+              onChange={(e) => {
+                setNewSize(e.target.value);
+                setJustAdded("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (newSize.trim()) addModel(words.length && suggestions.length === 1 && !exact ? suggestions[0] : newSize);
+                }
+              }}
+              disabled={disabled}
+              enterKeyHint="done"
+              autoCapitalize="words"
+              placeholder={t("Search or type a phone (e.g. 15 pro, Samsung S24)")}
+              className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-base outline-none focus:border-slate-400 sm:text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => addModel(newSize)}
+              disabled={disabled || !newSize.trim()}
+              className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:bg-slate-300"
+            >
+              <Plus size={14} /> {t("Add")}
+            </button>
+          </div>
+          {justAdded && <p className="text-xs font-medium text-emerald-700">{justAdded}</p>}
+          {suggestions.length > 0 && (
+            <>
+              {!words.length && <p className="text-[11px] text-slate-500">{t("Tap to add:")}</p>}
+              <div className="flex flex-wrap gap-1.5">
+                {suggestions.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => addModel(m)}
+                    className="inline-flex h-9 items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 active:bg-slate-100"
+                  >
+                    <Plus size={11} /> {m}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {words.length > 0 && !exact && suggestions.length === 0 && (
+            <p className="text-xs text-slate-500">{t("Not in the list. Tap Add to add it as a new phone model.")}</p>
+          )}
+        </div>
+
+        {models.length === 0 ? (
+          <p className="text-xs text-slate-500">{t("Add phone models above.")}</p>
+        ) : (
+          <div className="space-y-3">
+            {models.map((m) => {
+              const onColours = g.useColours ? g.colours.filter((c) => !isOff(g, cell(c.key, m))) : [];
+              const offColours = g.useColours ? g.colours.filter((c) => isOff(g, cell(c.key, m))) : [];
+              const modelCells = g.useColours ? onColours.map((c) => cell(c.key, m)) : [cell(NO_COLOUR, m)];
+              const perColour =
+                g.usePrices && onColours.length > 1 && (openPrices.includes(m) || pricesDiffer(modelCells));
+              return (
+                <div key={m} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">{m}</span>
+                    {g.useColours && (
+                      <span className="shrink-0 text-xs text-slate-500">
+                        {t("stock")} <span className="font-semibold text-slate-700">{modelTotal(m)}</span>
+                      </span>
+                    )}
+                    {!g.useColours && qtyBox(NO_COLOUR, m, m)}
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => removeModel(m)}
+                      className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label={`${t("Remove model")} ${m}`}
+                      title={t("Remove model")}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  {g.usePrices && modelCells.length > 0 && (
+                    <div className="mt-2 rounded-lg bg-slate-50 p-2">
+                      {perColour && (
+                        <p className="mb-1 text-[11px] font-medium text-slate-500">{t("Same price for all colours")}</p>
+                      )}
+                      <div className="flex gap-2">
+                        {priceInput("sale", modelCells, t("Sell"))}
+                        {priceInput("cost", modelCells, t("Cost"))}
+                      </div>
+                      {onColours.length > 1 && !perColour && (
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setOpenPrices([...openPrices, m])}
+                          className="mt-1.5 text-xs font-medium text-blue-600"
+                        >
+                          {t("Different price for each colour")}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {g.useColours && (
+                    <div className="mt-2 space-y-2">
+                      {onColours.map((c) => {
+                        const photo = photoOf(c.photoKey);
+                        const k = cell(c.key, m);
+                        const name = c.name.trim() || `${t("Colour")} ${g.colours.indexOf(c) + 1}`;
+                        return (
+                          <div key={c.key}>
+                            <div className="flex items-center gap-2">
+                              {photo && (
+                                <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-slate-200">
+                                  <Image
+                                    src={photo.preview}
+                                    alt=""
+                                    width={72}
+                                    height={72}
+                                    unoptimized={photo.local}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </span>
+                              )}
+                              <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{name}</span>
+                              {qtyBox(c.key, m, `${name} ${m}`)}
+                              <button
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => setOff(c.key, m, true)}
+                                className="shrink-0 rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label={`${t("Not in this colour")} ${name}`}
+                                title={t("Not in this colour")}
+                              >
+                                <X size={15} />
+                              </button>
+                            </div>
+                            {perColour && (
+                              <div className="mt-1 flex gap-2 pl-2">
+                                {priceInput("sale", [k], t("Sell"))}
+                                {priceInput("cost", [k], t("Cost"))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {onColours.length === 0 && (
+                        <p className="text-xs text-amber-700">{t("Pick at least one colour for this phone model.")}</p>
+                      )}
+                      {offColours.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] text-slate-500">{t("Also comes in:")}</span>
+                          {offColours.map((c) => (
+                            <button
+                              key={c.key}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => setOff(c.key, m, false)}
+                              className="inline-flex h-9 items-center gap-1 rounded-full border border-dashed border-slate-300 px-3 text-xs font-medium text-slate-600 active:bg-slate-100"
+                            >
+                              <Plus size={11} /> {c.name.trim() || t("Colour")}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* options: colours (each with its photo) and own prices */}
+        <div className="space-y-3 border-t border-slate-200 pt-4">
+          {toggle(
+            g.useColours,
+            toggleColours,
+            t("This cover comes in colours / styles"),
+            t("Add the colours here, then pick which colours each phone model comes in."),
+          )}
+          {g.useColours && (
+            <div className="space-y-2">
+              {g.colours.map((c, i) => {
+                const photo = photoOf(c.photoKey);
+                return (
+                  <div key={c.key} className="rounded-xl border border-slate-200 bg-white p-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setChoosing(choosing === c.key ? null : c.key)}
+                        className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border ${
+                          choosing === c.key ? "border-blue-500 ring-2 ring-blue-500/30" : "border-slate-200"
+                        } bg-slate-50`}
+                        aria-label={t("Choose photo")}
+                        title={t("Choose photo")}
+                      >
+                        {photo ? (
+                          <Image
+                            src={photo.preview}
+                            alt=""
+                            width={88}
+                            height={88}
+                            unoptimized={photo.local}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-full w-full flex-col items-center justify-center text-[9px] text-slate-400">
+                            <ImageOff size={14} />
+                            {t("Photo")}
+                          </span>
+                        )}
+                      </button>
+                      <input
+                        type="text"
+                        value={c.name}
+                        onChange={(e) => updateColour(c.key, { name: e.target.value })}
+                        disabled={disabled}
+                        autoCapitalize="words"
+                        placeholder={`${t("Colour / style name")} ${i + 1}`}
+                        className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-base font-medium outline-none focus:border-slate-400 sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => removeColour(c.key)}
+                        className="rounded-lg p-2.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        aria-label={t("Remove colour")}
+                        title={t("Remove colour")}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    {choosing === c.key && (
+                      <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                        {photos.map((p) => (
+                          <button
+                            key={p.key}
+                            type="button"
+                            onClick={() => {
+                              updateColour(c.key, { photoKey: p.key });
+                              setChoosing(null);
+                            }}
+                            className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 ${
+                              p.key === c.photoKey ? "border-blue-500" : "border-transparent"
+                            }`}
+                          >
+                            <Image
+                              src={p.preview}
+                              alt=""
+                              width={112}
+                              height={112}
+                              unoptimized={p.local}
+                              className="h-full w-full object-cover"
+                            />
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateColour(c.key, { photoKey: null });
+                            setChoosing(null);
+                          }}
+                          className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-[10px] text-slate-500"
+                        >
+                          <ImageOff size={14} />
+                          {t("No photo")}
+                        </button>
+                        {photos.length === 0 && (
+                          <p className="self-center text-xs text-slate-500">{t("Add photos at the top first.")}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={addColour}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-sm font-medium text-slate-600 hover:bg-white"
+              >
+                <Plus size={16} /> {t("Add colour / style")}
+              </button>
+            </div>
+          )}
+
+          {toggle(
+            g.usePrices,
+            (on) => set({ usePrices: on }),
+            t("Different prices for some phone models / colours"),
+            t("Set a selling and cost price for each phone model (or colour). Leave a box empty to use the product's price."),
+          )}
+        </div>
+
+        <p className="text-xs text-slate-500">
+          {g.useColours && `${g.colours.length} ${t("colours")} · `}
+          {`${g.sizes.length} ${t("models")} · `}
+          {t("total stock")} <span className="font-semibold text-slate-700">{total}</span>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

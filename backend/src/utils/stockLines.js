@@ -75,11 +75,12 @@ function iphoneRank(name) {
 // Other phones: same brand by number, then plain < Plus < Pro < Pro Max
 const MODEL_TIER = ["", "mini", "e", "plus", "pro", "pro max", "ultra"];
 
-// iPhones oldest to newest, then other phones, then anything else A-Z
+// iPhones newest to oldest (17 Pro Max, 17 Pro, 17 ... X), then other phones
+// newest first, then anything else A-Z
 export function compareModels(a, b) {
   const ra = iphoneRank(a);
   const rb = iphoneRank(b);
-  if (ra !== null && rb !== null && ra !== rb) return ra - rb;
+  if (ra !== null && rb !== null && ra !== rb) return rb - ra;
   if (ra !== null && rb === null) return -1;
   if (ra === null && rb !== null) return 1;
   if (ra === null && rb === null) {
@@ -92,10 +93,10 @@ export function compareModels(a, b) {
     const pa = parse(a);
     const pb = parse(b);
     if (pa && pb && pa.brand === pb.brand) {
-      if (pa.n !== pb.n) return pa.n - pb.n;
+      if (pa.n !== pb.n) return pb.n - pa.n;
       const ta = MODEL_TIER.indexOf(pa.tier);
       const tb = MODEL_TIER.indexOf(pb.tier);
-      if (ta !== -1 && tb !== -1 && ta !== tb) return ta - tb;
+      if (ta !== -1 && tb !== -1 && ta !== tb) return tb - ta;
     }
   }
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });

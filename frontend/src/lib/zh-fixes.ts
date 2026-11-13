@@ -59,4 +59,28 @@ export const zhFixes: Record<string, string> = {
   "Add one": "加一个",
   "Add more items": "继续添加商品",
   pcs: "件",
+  // mobile covers: phone models with their own colours and prices
+  stock: "库存",
+  "Add the phone models it fits, with stock, colours and price for each. Leave unticked for normal products.":
+    "添加适配的手机型号，并设置每个型号的库存、颜色和价格。普通商品请勿勾选。",
+  "Add the colours here, then pick which colours each phone model comes in.":
+    "先在这里添加颜色，再为每个手机型号选择有哪些颜色。",
+  "Different prices for some phone models / colours": "部分手机型号 / 颜色单独定价",
+  "Set a selling and cost price for each phone model (or colour). Leave a box empty to use the product's price.":
+    "为每个手机型号（或颜色）设置售价和成本价。留空则使用商品价格。",
+  "Add phone model": "添加手机型号",
+  "Search or type a phone (e.g. 15 pro, Samsung S24)": "搜索或输入手机型号（如 15 pro、Samsung S24）",
+  "Not in the list. Tap Add to add it as a new phone model.": "列表中没有。点击“添加”将其作为新手机型号。",
+  "Same price for all colours": "所有颜色同一价格",
+  "Not in this colour": "没有这个颜色",
+  "Pick at least one colour for this phone model.": "请为此手机型号至少选择一种颜色。",
+  "pick at least one colour, or remove this phone model.": "请至少选择一种颜色，或删除此手机型号。",
+  "pick at least one colour, or remove this size.": "请至少选择一种颜色，或删除此尺码。",
+  "is already added": "已添加过",
+  added: "已添加",
+  "Its stock": "其库存",
+  "will be removed when you save.": "将在保存时删除。",
+  "Tap to add:": "点击添加：",
+  "Different price for each colour": "每种颜色单独定价",
+  "Also comes in:": "还有颜色：",
 };

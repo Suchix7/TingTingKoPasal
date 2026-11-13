@@ -16,8 +16,8 @@ import {
 } from "@/components/tabs/ProductTab";
 import type { ProductBatch } from "@/hooks/useProducts";
 import { useDebounced } from "@/hooks/useDebounced";
-import PhoneModelPicker from "./PhoneModelPicker";
 import VariantStockEditor, {
+  coverGrid,
   emptyGrid,
   gridActive,
   gridFromProduct,
@@ -48,14 +48,10 @@ type PhotoItem =
       preview: string;
     };
 
-// Live stock lines of a cover kept per phone model only (no colour / size);
-// empty for any other product
-function plainCoverLines(batches: ProductBatch[]): ProductBatch[] {
-  const live = batches.filter((b) => !b.is_deleted);
-  return live.length > 0 && live.every((b) => b.model && !b.variant && !b.size)
-    ? live
-    : [];
-}
+// Stock lines saved without colour / size / model parts (covers made before
+// phone models were kept apart are named only by their batch number)
+const partless = (batches: ProductBatch[]) =>
+  batches.length > 0 && batches.every((b) => !b.model && !b.variant && !b.size);
 
 const photoKey = (p: PhotoItem) => (p.kind === "saved" ? p.id : p.key);
 
@@ -95,9 +91,8 @@ export default function ProductModal({
   const [originalCostPrice, setOriginalCostPrice] = useState<number>(0);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
-  // Stock is one number, split by size and/or colour (clothes, gloves: the
-  // grid), or per phone model (mobile covers: formData.variants).
-  const [variantMode, setVariantMode] = useState<"none" | "cover">("none");
+  // Stock is one number, or split by size / phone model and/or colour (the
+  // grid: clothes, gloves, mobile covers)
   const [grid, setGrid] = useState<StockGrid>(() => emptyGrid());
   // photo that is the size chart (shown to customers as "Size guide")
   const [sizeGuideKey, setSizeGuideKey] = useState<string | null>(null);
@@ -105,7 +100,6 @@ export default function ProductModal({
   useEffect(() => {
     setNameZh(selectedProduct?.product_name_zh || "");
     if (selectedProduct) {
-      const coverLines = plainCoverLines(selectedProduct.batches ?? []);
       setFormData({
         product_name: selectedProduct.product_name || "",
         barcode: selectedProduct.barcode || "",
@@ -116,16 +110,11 @@ export default function ProductModal({
         cost_price: selectedProduct.cost_price || 0,
         sale_price: selectedProduct.sale_price || 0,
         stock_quantity: selectedProduct.stock_quantity || 0,
-        variants: coverLines.map((b) => ({
-          model: b.model || "",
-          quantity: Number(b.quantity) || 0,
-        })),
+        variants: [],
       });
-      setVariantMode(coverLines.length ? "cover" : "none");
-      // Existing colours / sizes, so they can be edited here (a plain cover's
-      // phone models are edited in the model picker instead)
+      // Existing colours / sizes / phone models, so they can be edited here
       setGrid(
-        coverLines.length ? emptyGrid() : gridFromProduct(
+        gridFromProduct(
           (selectedProduct.batches ?? []).filter((b) => !b.is_deleted),
           selectedProduct.photos ?? [],
           [],
@@ -142,7 +131,6 @@ export default function ProductModal({
       setPhotos(savedPhotos(selectedProduct));
     } else {
       setFormData(initialFormData);
-      setVariantMode("none");
       setGrid(emptyGrid());
       setSizeGuideKey(null);
       setOriginalCostPrice(0);
@@ -276,9 +264,14 @@ export default function ProductModal({
   // Sizes can be edited here when the product has none yet, or when its
   // category has preset sizes (gloves, clothes). Phone models and purchase
   // batches are still managed on the Product Batches page.
-  // A cover saved per phone model only (no colours): its models can be
-  // edited here in the model picker
-  const savedCover = isEditMode && plainCoverLines(savedBatches).length > 0;
+  // A cover: its phone models (and colours / prices) are edited here
+  const categoryLabel =
+    categories.find((c) => String(c.id) === String(formData.category_id))
+      ?.category_name ?? "";
+  const oldCover =
+    isEditMode && partless(savedBatches) && /cover|case/i.test(categoryLabel);
+  const savedCover =
+    isEditMode && (savedBatches.some((b) => b.model) || oldCover);
   const editSizes =
     isEditMode &&
     (savedBatches.length === 0 ||
@@ -291,42 +284,35 @@ export default function ProductModal({
     !editSizes &&
     savedBatches.length > 0 &&
     Number(selectedProduct?.stock_quantity ?? 0) === 0;
-  const coverMode = variantMode === "cover" && (!isEditMode || editSizes);
   const gridMode = gridActive(grid) && (!isEditMode || editSizes);
   // stock is kept on lines (sizes / colours / phone models), not one number
-  const modelMode = coverMode || gridMode;
+  const modelMode = gridMode;
 
-  const setCoverMode = (on: boolean) => {
-    setVariantMode(on ? "cover" : "none");
-    setFormData((prev) => ({ ...prev, variants: [] }));
-    if (on) setGrid(emptyGrid());
-  };
+  // An old cover's lines are its phone models: load them once the category
+  // shows it is a cover
+  const oldCoverLoaded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!oldCover || !selectedProduct) return;
+    if (oldCoverLoaded.current === selectedProduct.id) return;
+    oldCoverLoaded.current = selectedProduct.id;
+    setGrid(
+      gridFromProduct(
+        (selectedProduct.batches ?? []).filter((b) => !b.is_deleted),
+        selectedProduct.photos ?? [],
+        [],
+        {
+          cost: Number(selectedProduct.cost_price) || 0,
+          sale: Number(selectedProduct.sale_price) || 0,
+        },
+        true,
+      ),
+    );
+  }, [oldCover, selectedProduct]);
 
-  // A cover sold in several colours: stock per colour x phone model, keeping
-  // the models already ticked
-  const coverToColours = () => {
-    const usable = photos.filter((p) => photoKey(p) !== sizeGuideKey);
-    const colours = (usable.length ? usable : [null]).map((p, i) => ({
-      key: `c${Date.now().toString(36)}${i}`,
-      name: usable.length > 1 ? `${t("Colour")} ${i + 1}` : "",
-      photoKey: p ? photoKey(p) : null,
-    }));
-    setGrid({
-      ...emptyGrid(),
-      models: true,
-      useSizes: true,
-      sizes: formData.variants.map((v) => v.model),
-      useColours: true,
-      colours,
-    });
-    setVariantMode("none");
-    setFormData((prev) => ({ ...prev, variants: [] }));
-  };
+  // A mobile cover keeps stock per phone model, optionally by colour
+  const setCoverMode = (on: boolean) => setGrid(on ? coverGrid() : emptyGrid());
 
-  const changeGrid = (next: StockGrid) => {
-    setGrid(next);
-    if (gridActive(next)) setVariantMode("none");
-  };
+  const changeGrid = (next: StockGrid) => setGrid(next);
 
   // product photos a colour can be linked to (not the size guide)
   const gridPhotos = photos
@@ -364,34 +350,6 @@ export default function ProductModal({
       }
     }
 
-    if (coverMode && formData.variants.length === 0) {
-      toast.error(t('Tick at least one phone model, or untick "mobile cover".'));
-      return false;
-    }
-
-    if (coverMode && formData.variants.length > 0) {
-      const names = formData.variants.map((v) => v.model.trim().toLowerCase());
-      if (names.some((n) => !n)) {
-        toast.error(
-          t("Enter a phone model name for every row, or remove the row."),
-        );
-        return false;
-      }
-      if (new Set(names).size !== names.length) {
-        toast.error(t("Each size or phone model can only be listed once."));
-        return false;
-      }
-      if (
-        formData.variants.some(
-          (v) =>
-            !Number.isInteger(Number(v.quantity)) || Number(v.quantity) < 0,
-        )
-      ) {
-        toast.error(t("Quantities must be whole numbers, 0 or more."));
-        return false;
-      }
-    }
-
     if (Number(formData.cost_price) < 0) {
       toast.error(t("Cost price cannot be negative."));
       return false;
@@ -419,24 +377,14 @@ export default function ProductModal({
   // lines, so they're only sent when editable here; other products' batches
   // are left alone.
   const withSizes = <T extends { variants: unknown }>(payload: T) => {
-    const { variants, ...rest } = payload;
+    const { variants: _variants, ...rest } = payload;
     if (!isEditMode) {
       return gridMode
         ? { ...rest, variants: [], stock_lines: gridToLines(grid) }
-        : { ...rest, variants: coverMode ? variants : [] };
+        : { ...rest, variants: [] };
     }
     if (!editSizes) return rest;
     if (gridMode) return { ...rest, stock_lines: gridToLines(grid) };
-    // a cover's phone models replace its saved lines
-    if (coverMode) {
-      return {
-        ...rest,
-        stock_lines: formData.variants.map((v) => ({
-          model: v.model.trim(),
-          quantity: Number(v.quantity),
-        })),
-      };
-    }
     // Sizes/colours unticked on a product that had them: remove them
     return savedBatches.length > 0 ? { ...rest, stock_lines: [] } : rest;
   };
@@ -771,14 +719,12 @@ export default function ProductModal({
                         setGrid({ ...grid, useSizes: true, sizes: [...sizes] });
                       }
                       variants = [];
-                      setVariantMode("none");
                     } else if (
                       !isEditMode &&
-                      /cover|case/i.test(option?.label ?? "")
+                      /cover|case/i.test(option?.label ?? "") &&
+                      !grid.models
                     ) {
-                      if (variantMode !== "cover") variants = [];
-                      setVariantMode("cover");
-                      setGrid(emptyGrid());
+                      setGrid(coverGrid());
                     }
                     setFormData({
                       ...formData,
@@ -888,26 +834,12 @@ export default function ProductModal({
 
               {(!isEditMode || editSizes) && (
                 <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2 sm:p-4">
-                  {!coverMode && (
-                    <VariantStockEditor
-                      value={grid}
-                      onChange={changeGrid}
-                      photos={gridPhotos}
-                      presetSizes={categorySizes(formData.category_id)}
-                      productPrices={{
-                        cost: Number(formData.cost_price) || 0,
-                        sale: Number(formData.sale_price) || 0,
-                      }}
-                      disabled={isSubmitting}
-                    />
-                  )}
-
-                  {!gridActive(grid) &&
-                    (!isEditMode || coverMode || savedBatches.length === 0) && (
+                  {(!gridActive(grid) || grid.models) &&
+                    (!isEditMode || grid.models || savedBatches.length === 0) && (
                     <label className="flex min-h-11 cursor-pointer items-start gap-3">
                       <input
                         type="checkbox"
-                        checked={coverMode}
+                        checked={grid.models}
                         onChange={(e) => setCoverMode(e.target.checked)}
                         disabled={isSubmitting}
                         className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
@@ -917,41 +849,23 @@ export default function ProductModal({
                           {t("This is a mobile cover")}
                         </span>
                         <span className="block text-xs text-slate-500">
-                          {t("Tick the phone models it fits and set the quantity for each. Leave unticked for normal products.")}
+                          {t("Add the phone models it fits, with stock, colours and price for each. Leave unticked for normal products.")}
                         </span>
                       </span>
                     </label>
                   )}
 
-                  {coverMode && (
-                    <PhoneModelPicker
-                      value={formData.variants}
-                      onChange={(variants) =>
-                        setFormData((prev) => ({ ...prev, variants }))
-                      }
-                      disabled={isSubmitting}
-                    />
-                  )}
-
-                  {coverMode && (
-                    <label className="flex min-h-11 cursor-pointer items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={false}
-                        onChange={coverToColours}
-                        disabled={isSubmitting}
-                        className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300"
-                      />
-                      <span>
-                        <span className="block text-sm font-medium text-slate-700">
-                          {t("This cover comes in colours / styles")}
-                        </span>
-                        <span className="block text-xs text-slate-500">
-                          {t("One product with a photo per colour, and stock for each colour and phone model.")}
-                        </span>
-                      </span>
-                    </label>
-                  )}
+                  <VariantStockEditor
+                    value={grid}
+                    onChange={changeGrid}
+                    photos={gridPhotos}
+                    presetSizes={categorySizes(formData.category_id)}
+                    productPrices={{
+                      cost: Number(formData.cost_price) || 0,
+                      sale: Number(formData.sale_price) || 0,
+                    }}
+                    disabled={isSubmitting}
+                  />
                 </div>
               )}
 
