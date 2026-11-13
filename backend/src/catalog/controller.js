@@ -36,7 +36,7 @@ const baseFilter = () => ({
 // shown under a colour.
 async function loadModelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
-    .select("productId batchNumber variant size model quantity salePrice costPrice")
+    .select("productId batchNumber variant size model position quantity salePrice costPrice")
     .lean();
 
   const map = new Map();
@@ -56,12 +56,23 @@ async function loadModelsByProduct() {
       quantity: Math.max(Number(b.quantity) || 0, 0),
       price: Number(b.salePrice) || 0,
       cost: Number(b.costPrice) || 0,
+      // order set in the stock editor (null for lines saved before it)
+      position: b.position ?? null,
     });
+  }
+  // lines in the order set in the stock editor, when the product has one
+  for (const entries of map.values()) {
+    if (byHand(entries)) entries.sort((a, b) => a.position - b.position);
   }
   return map;
 }
 
 const inStockOnly = (entries = []) => entries.filter((m) => m.quantity > 0);
+
+// every line has a place in an order set by hand (the entries are then
+// already in that order)
+const byHand = (entries = []) =>
+  entries.length > 0 && entries.every((e) => e.position !== null && e.position !== undefined);
 
 // ids of products that have something to sell, from phone models or own stock
 async function loadInStockProductIds(modelMap) {
@@ -120,14 +131,15 @@ const publicCache = (req, res) => {
 };
 
 // Colours/styles of a product with the sizes (or phone models) left in each.
-// Colour order follows the photos; each points at its photo in `media` (-1
-// if none).
+// Colours (and the sizes in each) follow the order set in the stock editor,
+// or else the photos; each points at its photo in `media` (-1 if none).
 function variantsOf(media, entries) {
+  const ordered = byHand(entries);
   const names = [];
   const add = (n) => {
     if (n && !names.some((x) => x.toLowerCase() === n.toLowerCase())) names.push(n);
   };
-  media.forEach((m) => add(m.variant));
+  if (!ordered) media.forEach((m) => add(m.variant));
   entries.forEach((e) => add(e.variant));
 
   return names
@@ -145,9 +157,12 @@ function variantsOf(media, entries) {
           bySize.set(key, s);
         }
       }
-      const sizes = [...bySize.values()].sort((a, b) =>
-        mine.some((e) => e.size) ? compareSizes(a.size, b.size) : compareModels(a.size, b.size),
-      );
+      const sizes = [...bySize.values()];
+      if (!ordered) {
+        sizes.sort((a, b) =>
+          mine.some((e) => e.size) ? compareSizes(a.size, b.size) : compareModels(a.size, b.size),
+        );
+      }
       return {
         name,
         media_index: media.findIndex(
@@ -233,10 +248,12 @@ const toCover = (product, entries = [], prices = false) => {
     }
   }
   const sized = entries.some((e) => e.size);
+  // in stock first, then in the order set in the stock editor (or by name)
+  const ordered = byHand(entries);
   const models = [...merged.values()].sort(
     (a, b) =>
       Number(b.quantity > 0) - Number(a.quantity > 0) ||
-      (sized ? compareSizes(a.model, b.model) : compareModels(a.model, b.model)),
+      (ordered ? 0 : sized ? compareSizes(a.model, b.model) : compareModels(a.model, b.model)),
   );
   const own = Math.max(Number(product.stock?.currentStock) || 0, 0);
   const quantity = own + entries.reduce((sum, m) => sum + m.quantity, 0);

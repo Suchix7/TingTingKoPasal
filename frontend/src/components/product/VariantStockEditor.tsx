@@ -3,7 +3,20 @@
 import { useState } from "react";
 import Image from "next/image";
 import { coverImage } from "@/components/catalog/image";
-import { ImagePlus, ImageOff, Minus, Plus, Trash2, X } from "lucide-react";
+import {
+  ArrowDownUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ImagePlus,
+  ImageOff,
+  Minus,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import type { ProductBatch } from "@/hooks/useProducts";
 import { useLang } from "@/lib/i18n";
@@ -152,7 +165,12 @@ export function gridFromProduct(
     base === undefined || Number(price) === Number(base) ? undefined : Number(price);
   // colours split by phone model (a cover): the grid's sizes are models
   const models = forceModels || batches.some((b) => b.model);
-  const lines = batches.map((b) => ({
+  // saved in an order set here: keep it (colours, then sizes / models)
+  const byHand = batches.length > 0 && batches.every((b) => b.position != null);
+  const inOrder = byHand
+    ? [...batches].sort((a, b) => Number(a.position) - Number(b.position))
+    : batches;
+  const lines = inOrder.map((b) => ({
     variant: b.variant || "",
     // size-only lines saved before colours existed are named after the size
     size: b.size || b.model || (b.variant ? "" : b.batch_number),
@@ -166,13 +184,15 @@ export function gridFromProduct(
   const useColours = lines.some((l) => l.variant);
   const sizes: string[] = [];
   for (const l of lines) if (l.size && !sizes.some((s) => same(s, l.size))) sizes.push(l.size);
-  sizes.sort(order);
+  if (!byHand) sizes.sort(order);
 
   const colours: StockColour[] = [];
   if (useColours) {
-    // photo order first, then any colour without a photo
+    // the order set here; else photo order first, then any colour without a photo
     const names: string[] = [];
-    for (const p of photos) if (p.variant && lines.some((l) => same(l.variant, p.variant!))) names.push(p.variant);
+    if (!byHand) {
+      for (const p of photos) if (p.variant && lines.some((l) => same(l.variant, p.variant!))) names.push(p.variant);
+    }
     for (const l of lines) if (l.variant) names.push(l.variant);
     for (const name of names) {
       if (colours.some((c) => same(c.name, name))) continue;
@@ -215,6 +235,126 @@ export function gridFromProduct(
   };
 }
 
+// A name that turns into a text box when tapped; Enter or leaving the box
+// saves it, Escape cancels. `onSave` answers with a problem, or null.
+function NameEdit({
+  value,
+  onSave,
+  disabled,
+  label,
+  className = "",
+}: {
+  value: string;
+  onSave: (next: string) => string | null;
+  disabled?: boolean;
+  label: string;
+  className?: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  if (draft === null) {
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          setDraft(value);
+          setError("");
+        }}
+        className={`group flex min-w-0 flex-1 items-center gap-1.5 text-left ${className}`}
+        title={label}
+        aria-label={`${label}: ${value}`}
+      >
+        <span className="truncate">{value}</span>
+        <Pencil size={11} className="shrink-0 text-slate-300 group-hover:text-slate-500" />
+      </button>
+    );
+  }
+  const commit = () => {
+    const problem = onSave(draft);
+    if (problem) setError(problem);
+    else setDraft(null);
+  };
+  return (
+    <span className="min-w-0 flex-1">
+      <input
+        type="text"
+        autoFocus
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          setError("");
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setDraft(null);
+          }
+        }}
+        onBlur={commit}
+        enterKeyHint="done"
+        aria-label={label}
+        className="h-9 w-full rounded-md border border-blue-400 bg-white px-2 text-base text-slate-800 outline-none ring-2 ring-blue-400/20 sm:text-sm"
+      />
+      {error && <span className="mt-0.5 block text-[11px] text-red-600">{error}</span>}
+    </span>
+  );
+}
+
+// Two small buttons that move something up / down (or left / right)
+function MoveButtons({
+  onBack,
+  onForward,
+  canBack,
+  canForward,
+  disabled,
+  backLabel,
+  forwardLabel,
+  sideways = false,
+}: {
+  onBack: () => void;
+  onForward: () => void;
+  canBack: boolean;
+  canForward: boolean;
+  disabled?: boolean;
+  backLabel: string;
+  forwardLabel: string;
+  sideways?: boolean;
+}) {
+  const Back = sideways ? ChevronLeft : ChevronUp;
+  const Forward = sideways ? ChevronRight : ChevronDown;
+  const btn =
+    "flex items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-25 disabled:hover:bg-transparent";
+  return (
+    <span className={`flex shrink-0 ${sideways ? "flex-row gap-1" : "flex-col"}`}>
+      <button
+        type="button"
+        disabled={disabled || !canBack}
+        onClick={onBack}
+        className={`${btn} ${sideways ? "h-9 w-9" : "h-5 w-7"}`}
+        aria-label={backLabel}
+        title={backLabel}
+      >
+        <Back size={sideways ? 18 : 16} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled || !canForward}
+        onClick={onForward}
+        className={`${btn} ${sideways ? "h-9 w-9" : "h-5 w-7"}`}
+        aria-label={forwardLabel}
+        title={forwardLabel}
+      >
+        <Forward size={sideways ? 18 : 16} />
+      </button>
+    </span>
+  );
+}
+
 type Props = {
   value: StockGrid;
   onChange: (next: StockGrid) => void;
@@ -249,6 +389,8 @@ export default function VariantStockEditor({
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   // colours whose phone models get prices of their own
   const [openPrices, setOpenPrices] = useState<string[]>([]);
+  // size chip tapped to be renamed / moved
+  const [editingSize, setEditingSize] = useState<string | null>(null);
 
   const set = (patch: Partial<StockGrid>) => onChange({ ...g, ...patch });
 
@@ -309,6 +451,52 @@ export default function VariantStockEditor({
     set({ sizes: [...g.sizes, size] });
   };
   const removeSize = (size: string) => set({ sizes: g.sizes.filter((s) => s !== size) });
+
+  // rename a size / phone model: its stock, prices and colours go with it
+  const renameSize = (from: string, raw: string): string | null => {
+    const to = cleanSize(raw);
+    if (!to) return t("The name can't be empty.");
+    if (to === from) return null;
+    if (g.sizes.some((s) => s !== from && same(s, to))) return `${to} ${t("is already added")}`;
+    const keys = [NO_COLOUR, ...g.colours.map((c) => c.key)];
+    const carry = <T,>(rec: Record<string, T>) => {
+      const next = { ...rec };
+      for (const k of keys) {
+        const old = cell(k, from);
+        if (old in next) {
+          next[cell(k, to)] = next[old];
+          delete next[old];
+        }
+      }
+      return next;
+    };
+    set({
+      sizes: g.sizes.map((s) => (s === from ? to : s)),
+      qty: carry(g.qty),
+      cost: carry(g.cost),
+      sale: carry(g.sale),
+      off: carry(g.off),
+    });
+    return null;
+  };
+  const moveInList = <T,>(list: T[], from: number, to: number) => {
+    if (to < 0 || to >= list.length || from === to) return list;
+    const next = [...list];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    return next;
+  };
+  // the order set here is the order customers and the POS see
+  const moveSize = (from: number, to: number) => set({ sizes: moveInList(g.sizes, from, to) });
+  // put `size` just before / after `other` (a colour lists only some models)
+  const placeSize = (size: string, other: string, after: boolean) => {
+    const rest = g.sizes.filter((s) => s !== size);
+    rest.splice(rest.indexOf(other) + (after ? 1 : 0), 0, size);
+    set({ sizes: rest });
+  };
+  const moveColour = (from: number, to: number) => set({ colours: moveInList(g.colours, from, to) });
+  // back to the usual order: S, M, L... or newest phone first
+  const sortSizes = () => set({ sizes: [...g.sizes].sort(g.models ? compareModels : compareSizes) });
   // a colour is / isn't stocked for one size / phone model
   const setOff = (colour: string, size: string, isOffNow: boolean) => {
     const off = { ...g.off };
@@ -527,9 +715,8 @@ export default function VariantStockEditor({
 
   if (g.models) {
     const colourList = g.useColours ? g.colours : [{ key: NO_COLOUR, name: "", photoKey: null }];
-    // phone models one colour comes in, newest first
-    const modelsOf = (colour: string) =>
-      [...g.sizes].filter((m) => !isOff(g, cell(colour, m))).sort(compareModels);
+    // phone models one colour comes in, in the order set here
+    const modelsOf = (colour: string) => g.sizes.filter((m) => !isOff(g, cell(colour, m)));
 
     // add a phone model inside one colour
     const addModelTo = (colour: string, raw: string) => {
@@ -730,12 +917,30 @@ export default function VariantStockEditor({
               )}
             </div>
           )}
-          {mine.map((m) => {
+          {mine.map((m, j) => {
             const label = g.useColours ? `${colourName(colour)} ${m}` : m;
             return (
               <div key={m}>
                 <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{m}</span>
+                  {mine.length > 1 && (
+                    <MoveButtons
+                      onBack={() => placeSize(m, mine[j - 1], false)}
+                      onForward={() => placeSize(m, mine[j + 1], true)}
+                      canBack={j > 0}
+                      canForward={j < mine.length - 1}
+                      disabled={disabled}
+                      backLabel={`${t("Move up")} ${m}`}
+                      forwardLabel={`${t("Move down")} ${m}`}
+                    />
+                  )}
+                  {/* renaming a model renames it in every colour */}
+                  <NameEdit
+                    value={m}
+                    onSave={(next) => renameSize(m, next)}
+                    disabled={disabled}
+                    label={t("Rename model")}
+                    className="text-sm font-medium text-slate-800"
+                  />
                   {qtyBox(colour, m, label)}
                   <button
                     type="button"
@@ -885,6 +1090,17 @@ export default function VariantStockEditor({
                     <span className="shrink-0 text-xs text-slate-500">
                       {t("stock")} <span className="font-semibold text-slate-700">{stock}</span>
                     </span>
+                    {g.colours.length > 1 && (
+                      <MoveButtons
+                        onBack={() => moveColour(i, i - 1)}
+                        onForward={() => moveColour(i, i + 1)}
+                        canBack={i > 0}
+                        canForward={i < g.colours.length - 1}
+                        disabled={disabled}
+                        backLabel={t("Move colour up")}
+                        forwardLabel={t("Move colour down")}
+                      />
+                    )}
                     <button
                       type="button"
                       disabled={disabled}
@@ -924,11 +1140,23 @@ export default function VariantStockEditor({
           t("Set a selling and cost price for each colour or phone model. Leave a box empty to use the product's price."),
         )}
 
-        <p className="text-xs text-slate-500">
-          {g.useColours && `${g.colours.length} ${t("colours")} · `}
-          {`${g.sizes.length} ${t("models")} · `}
-          {t("total stock")} <span className="font-semibold text-slate-700">{total}</span>
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-slate-500">
+            {g.useColours && `${g.colours.length} ${t("colours")} · `}
+            {`${g.sizes.length} ${t("models")} · `}
+            {t("total stock")} <span className="font-semibold text-slate-700">{total}</span>
+          </p>
+          {g.sizes.length > 1 && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={sortSizes}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+            >
+              <ArrowDownUp size={13} /> {t("Sort models newest first")}
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -949,9 +1177,21 @@ export default function VariantStockEditor({
             {g.sizes.map((s) => (
               <span
                 key={s}
-                className="inline-flex h-9 items-center gap-1 rounded-full bg-slate-900 pl-3 pr-1 text-sm font-semibold text-white"
+                className={`inline-flex h-9 items-center gap-1 rounded-full pr-1 text-sm font-semibold text-white ${
+                  editingSize === s ? "bg-blue-600 ring-2 ring-blue-600/30" : "bg-slate-900"
+                }`}
               >
-                {s}
+                {/* tap a size to rename it or move it */}
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setEditingSize(editingSize === s ? null : s)}
+                  className="h-full rounded-l-full pl-3 pr-0.5"
+                  aria-pressed={editingSize === s}
+                  title={t("Rename or move")}
+                >
+                  {s}
+                </button>
                 <button
                   type="button"
                   disabled={disabled}
@@ -975,6 +1215,52 @@ export default function VariantStockEditor({
               </button>
             ))}
           </div>
+          {editingSize && g.sizes.includes(editingSize) && (() => {
+            const at = g.sizes.indexOf(editingSize);
+            return (
+              <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-2">
+                <MoveButtons
+                  sideways
+                  onBack={() => moveSize(at, at - 1)}
+                  onForward={() => moveSize(at, at + 1)}
+                  canBack={at > 0}
+                  canForward={at < g.sizes.length - 1}
+                  disabled={disabled}
+                  backLabel={`${t("Move left")} ${editingSize}`}
+                  forwardLabel={`${t("Move right")} ${editingSize}`}
+                />
+                <NameEdit
+                  key={editingSize}
+                  value={editingSize}
+                  onSave={(next) => {
+                    const problem = renameSize(editingSize, next);
+                    if (!problem) setEditingSize(cleanSize(next));
+                    return problem;
+                  }}
+                  disabled={disabled}
+                  label={t("Rename size")}
+                  className="h-9 rounded-md bg-white px-2 text-sm font-semibold text-slate-800"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditingSize(null)}
+                  className="h-9 shrink-0 rounded-md px-3 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                >
+                  {t("Done")}
+                </button>
+              </div>
+            );
+          })()}
+          {g.sizes.length > 1 && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={sortSizes}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+            >
+              <ArrowDownUp size={13} /> {t("Sort sizes S, M, L...")}
+            </button>
+          )}
           <div className="flex gap-2">
             <input
               type="text"
@@ -1062,6 +1348,17 @@ export default function VariantStockEditor({
                     placeholder={`${t("Colour / style name")} ${i + 1}`}
                     className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm font-medium outline-none focus:border-slate-400"
                   />
+                  {g.colours.length > 1 && (
+                    <MoveButtons
+                      onBack={() => moveColour(i, i - 1)}
+                      onForward={() => moveColour(i, i + 1)}
+                      canBack={i > 0}
+                      canForward={i < g.colours.length - 1}
+                      disabled={disabled}
+                      backLabel={t("Move colour up")}
+                      forwardLabel={t("Move colour down")}
+                    />
+                  )}
                   <button
                     type="button"
                     disabled={disabled}

@@ -133,9 +133,22 @@ export function compareSizes(a, b) {
   return String(a).localeCompare(String(b), undefined, { numeric: true });
 }
 
-// Serialized stock lines in a sensible order: colours in the order they were
-// added, and inside each colour sizes S, M, L, XL... or phone models in order
+// every line has a place in an order set by hand in the stock editor
+// (removed lines don't count)
+const placed = (l) => l.position !== null && l.position !== undefined;
+export const hasPositions = (lines) => {
+  const live = lines.filter((l) => !l.is_deleted && !l.isDeleted);
+  return live.length > 0 && live.every(placed);
+};
+
+// Serialized stock lines in a sensible order: the order set in the stock
+// editor when there is one; otherwise colours in the order they were added,
+// and inside each colour sizes S, M, L, XL... or phone models in order
 export function sortLines(lines) {
+  if (hasPositions(lines)) {
+    const at = (l) => (placed(l) ? l.position : Infinity);
+    return [...lines].sort((a, b) => at(a) - at(b) || 0);
+  }
   const byAge = [...lines].sort(
     (a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0),
   );
@@ -177,7 +190,7 @@ export function parseStockLines(raw) {
     return { error: "A stock line has a size or a phone model, not both" };
   }
   const lines = raw
-    .map((l) => {
+    .map((l, i) => {
       const variant = String(l?.variant ?? "").trim();
       const size = cleanSize(l?.size);
       const model = cleanSize(l?.model);
@@ -187,6 +200,8 @@ export function parseStockLines(raw) {
         model,
         name: lineName(variant, size || model),
         quantity: Number(l?.quantity ?? 0),
+        // lines come in the order shown in the stock editor
+        position: i,
         costPrice: linePrice(l?.cost_price),
         salePrice: linePrice(l?.sale_price),
       };
@@ -238,6 +253,7 @@ export async function syncStockLines(product, lines, referenceType = "ADJUSTMENT
         variant: l.variant,
         size: l.size,
         model: l.model,
+        position: l.position,
         quantity: l.quantity,
         costPrice: l.costPrice ?? product.costPrice,
         salePrice: l.salePrice ?? product.salePrice,
@@ -254,6 +270,7 @@ export async function syncStockLines(product, lines, referenceType = "ADJUSTMENT
     batch.variant = l.variant;
     batch.size = l.size;
     batch.model = l.model;
+    batch.position = l.position;
     batch.quantity = l.quantity;
     if (l.costPrice !== undefined) batch.costPrice = l.costPrice ?? product.costPrice;
     if (l.salePrice !== undefined) batch.salePrice = l.salePrice ?? product.salePrice;

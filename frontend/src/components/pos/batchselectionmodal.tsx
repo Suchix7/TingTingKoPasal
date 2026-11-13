@@ -24,8 +24,11 @@ const lineModel = (b: ProductBatch) =>
   b.model || b.size || (b.variant ? "" : b.batch_number);
 
 // phone models / sizes in one straight line (iPhone 11, 11 Pro, 12... or S, M, L)
+// the order set in the stock editor, or else by name (S, M, L / iPhone 11, 12...)
 const byLine = (a: ProductBatch, b: ProductBatch) =>
-  compareModelOrSize(lineModel(a) || a.batch_number, lineModel(b) || b.batch_number);
+  a.position != null && b.position != null
+    ? a.position - b.position
+    : compareModelOrSize(lineModel(a) || a.batch_number, lineModel(b) || b.batch_number);
 
 export default function BatchSelectionModal({
   product,

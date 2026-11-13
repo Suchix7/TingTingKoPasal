@@ -16,6 +16,10 @@ const productBatchSchema = new mongoose.Schema(
     size: { type: String, default: "", trim: true },
     // phone model a cover line fits ("iPhone 15 Pro Max")
     model: { type: String, default: "", trim: true },
+    // where the line sits in the order set in the stock editor (colours,
+    // then sizes / phone models); null for lines saved before that existed,
+    // which are put in order by name
+    position: { type: Number, default: null },
     quantity: { type: Number, required: true, default: 0 },
     costPrice: { type: Number, required: true, min: 0 },
     salePrice: { type: Number, required: true, min: 0 },

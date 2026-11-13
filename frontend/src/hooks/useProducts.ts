@@ -18,6 +18,8 @@ export type ProductBatch = {
   size?: string;
   // phone model of a colour × model cover line ("" otherwise)
   model?: string;
+  // place in the order set in the stock editor (null: ordered by name)
+  position?: number | null;
   barcode?: string | null;
   quantity: number;
   cost_price: number;

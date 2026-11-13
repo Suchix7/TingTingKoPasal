@@ -20,6 +20,8 @@ export type ProductBatch = {
   variant?: string;
   size?: string;
   model?: string;
+  // place in the order set in the stock editor (null: ordered by name)
+  position?: number | null;
   quantity: number;
   cost_price: number;
   sale_price: number;

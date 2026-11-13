@@ -54,6 +54,7 @@ export function serializeBatch(doc, extra = {}) {
     variant: obj.variant || "",
     size: obj.size || "",
     model: obj.model || "",
+    position: obj.position ?? null,
     barcode: obj.barcode || null,
     quantity: obj.quantity,
     cost_price: obj.costPrice,

@@ -29,7 +29,7 @@ import VariantStockEditor, {
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
-import { ImagePlus, Play, RefreshCw, Ruler, Star, X } from "lucide-react";
+import { GripHorizontal, ImagePlus, Play, RefreshCw, Ruler, Star, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
 const MAX_PHOTOS = 10;
@@ -260,6 +260,34 @@ export default function ProductModal({
   const removePhoto = (key: string) => {
     setPhotos((prev) => prev.filter((p) => photoKey(p) !== key));
     if (key === sizeGuideKey) setSizeGuideKey(null);
+  };
+
+  // Photos are put in order by dragging their handle (mouse or finger): the
+  // photo jumps to the spot under the pointer. The first one is the cover.
+  const [dragPhoto, setDragPhoto] = useState<string | null>(null);
+  const photoTiles = useRef(new Map<string, HTMLDivElement>());
+  const onPhotoDrag = (e: React.PointerEvent) => {
+    if (!dragPhoto) return;
+    let target: string | null = null;
+    let best = Infinity;
+    for (const [key, el] of photoTiles.current) {
+      const r = el.getBoundingClientRect();
+      const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+      if (d < best) {
+        best = d;
+        target = key;
+      }
+    }
+    if (!target || target === dragPhoto) return;
+    setPhotos((prev) => {
+      const from = prev.findIndex((p) => photoKey(p) === dragPhoto);
+      const to = prev.findIndex((p) => photoKey(p) === target);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   };
 
   const makeCover = (key: string) =>
@@ -614,16 +642,45 @@ export default function ProductModal({
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   {t("Photos & Videos")}
                 </label>
-                <div className="grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
+                <div
+                  className={`grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap sm:gap-3 ${dragPhoto ? "select-none" : ""}`}
+                >
                   {photos.map((photo, i) => (
                     <div
                       key={photoKey(photo)}
+                      ref={(el) => {
+                        if (el) photoTiles.current.set(photoKey(photo), el);
+                        else photoTiles.current.delete(photoKey(photo));
+                      }}
                       className={`relative aspect-square w-full shrink-0 overflow-hidden rounded-xl border bg-slate-50 sm:h-28 sm:w-28 ${
                         i === 0
                           ? "border-blue-500 ring-2 ring-blue-500/30"
                           : "border-slate-200"
-                      }`}
+                      } ${dragPhoto === photoKey(photo) ? "z-10 scale-105 opacity-80 shadow-xl" : ""}`}
                     >
+                      {photos.length > 1 && (
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            setDragPhoto(photoKey(photo));
+                          }}
+                          onPointerMove={onPhotoDrag}
+                          onPointerUp={() => setDragPhoto(null)}
+                          onPointerCancel={() => setDragPhoto(null)}
+                          // a finger drags the photo instead of scrolling the form
+                          style={{ touchAction: "none" }}
+                          title={t("Drag to move")}
+                          aria-label={t("Drag to move")}
+                          className={`absolute left-1/2 top-1 z-10 -translate-x-1/2 rounded-full bg-black/55 px-2 py-1 text-white hover:bg-black/75 disabled:opacity-50 ${
+                            dragPhoto === photoKey(photo) ? "cursor-grabbing" : "cursor-grab"
+                          }`}
+                        >
+                          <GripHorizontal size={14} />
+                        </button>
+                      )}
                       {photo.type === "video" && photo.kind === "new" ? (
                         <video
                           src={coverImage(photo.preview, 320)}
@@ -759,7 +816,8 @@ export default function ProductModal({
                 <p className="mt-2 text-xs text-slate-500">
                   {t("Up to 10 photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.")}{" "}
                   {t("Tap the ruler on the size chart photo to show it as the size guide.")}{" "}
-                  {t("Tap the arrows on a photo to replace it with another.")}
+                  {t("Tap the arrows on a photo to replace it with another.")}{" "}
+                  {photos.length > 1 && t("Drag the handle at the top of a photo to change the order.")}
                 </p>
               </div>
 
