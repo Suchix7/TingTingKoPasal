@@ -333,7 +333,7 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                     type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder={t("Search design or phone, e.g. Hello Kitty, iPhone 14")}
+                    placeholder={t("Search")}
                     className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-10 text-sm outline-none focus:border-gray-400 focus:bg-white"
                     enterKeyHint="search"
                   />

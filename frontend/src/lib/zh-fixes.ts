@@ -90,6 +90,7 @@ export const zhFixes: Record<string, string> = {
   "Back to categories": "返回分类",
   Items: "商品",
   "Search design or phone, e.g. Hello Kitty, iPhone 14": "搜索款式或手机型号，如 Hello Kitty、iPhone 14",
+  "Search": "搜索",
   "Clear search": "清除搜索",
   Filter: "筛选",
   "No exact match for": "没有完全匹配",
