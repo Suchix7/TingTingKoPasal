@@ -12,6 +12,7 @@ export type Store = {
   address: string;
   phone: string;
   map_url?: string;
+  instagram?: string;
   pan_vat_number: string;
   created_at?: string;
   updated_at?: string;
@@ -22,6 +23,7 @@ export type StorePayload = {
   address: string;
   phone: string;
   map_url?: string;
+  instagram?: string;
   pan_vat_number: string;
 };
 

@@ -31,6 +31,7 @@ import { coverImage } from "./image";
 import { pcs, priceLabel, same, type Tr } from "./format";
 import { useLang } from "@/lib/i18n";
 import { zhColour } from "@/lib/colourNames";
+import InstagramButton from "./InstagramButton";
 import axiosInstance from "@/lib/axiosInstance";
 import CoverViewer from "./CoverViewer";
 import FilterSheet from "./FilterSheet";
@@ -383,7 +384,7 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-3 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4 sm:px-4">
+      <main className="mx-auto max-w-5xl px-3 pb-[max(6rem,env(safe-area-inset-bottom))] pt-4 sm:px-4">
         {showMenu ? (
           <CategoryMenu
             categories={categories}
@@ -595,6 +596,9 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
           </>
         )}
       </main>
+
+      {/* customers can message the shop; the price page is for staff */}
+      {!priceView && store?.instagram && <InstagramButton username={store.instagram} />}
 
       <FilterSheet
         key={String(filterOpen)}

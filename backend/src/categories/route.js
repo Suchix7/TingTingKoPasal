@@ -7,6 +7,8 @@ import {
   deleteCategory,
   uploadCategoryThumbnail,
   removeCategoryThumbnail,
+  getCategoryOrder,
+  saveCategoryOrder,
 } from "./controller.js";
 
 const upload = multer({
@@ -17,6 +19,9 @@ const upload = multer({
 const router = express.Router();
 
 router.get("/", getCategories);
+// the order categories show on the customer shop (before "/:id")
+router.get("/order", getCategoryOrder);
+router.put("/order", saveCategoryOrder);
 router.post("/", createCategory);
 router.put("/:id", updateCategory);
 router.delete("/:id", deleteCategory);

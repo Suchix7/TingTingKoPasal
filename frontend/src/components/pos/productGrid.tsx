@@ -242,6 +242,13 @@ export default function ProductGrid({
       addToCart(product, modelBatch.sale_price, modelBatch.id);
       return;
     }
+    // only one thing to sell (one line in stock, nothing at the product's
+    // own price): add it straight away, no picker
+    const sellable = (product.batches || []).filter((b) => b.quantity > 0);
+    if (sellable.length === 1 && !(Number(product.stock_quantity) > 0)) {
+      addToCart(product, sellable[0].sale_price, sellable[0].id);
+      return;
+    }
     if (product.batches && product.batches.length > 0) {
       setBatchSelectionProduct(product);
     } else {

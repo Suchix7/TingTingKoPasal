@@ -148,6 +148,8 @@ export type CatalogStore = {
   address: string;
   phone: string;
   map_url?: string;
+  // Instagram username for the message button ("" = no button)
+  instagram?: string;
 };
 
 export function useCatalogStore() {

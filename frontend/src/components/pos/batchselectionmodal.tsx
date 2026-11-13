@@ -74,7 +74,12 @@ export default function BatchSelectionModal({
   }
   // colours keep their order; inside each, models / sizes go in a line
   for (const c of colours) c.lines.sort(byLine);
-  const colour = colours.find((c) => c.name === picked);
+  // the product's own price is offered too, unless its stock lives only on lines
+  const showBase = !(product.stock_quantity === 0 && allBatches.length > 0);
+  // only one colour and nothing else to choose: skip straight to its models / sizes
+  const onlyColour =
+    colours.length === 1 && plainLines.length === 0 && !showBase ? colours[0] : null;
+  const colour = colours.find((c) => c.name === picked) ?? onlyColour ?? undefined;
 
   const money = (value?: number | null) =>
     new Intl.NumberFormat("en-NP", {
@@ -146,7 +151,7 @@ export default function BatchSelectionModal({
         {/* Options */}
         <div className="space-y-3 p-6">
           {/* Base Product Price - hidden for products whose stock lives only on models/batches */}
-          {!(product.stock_quantity === 0 && allBatches.length > 0) && (
+          {showBase && (
             <button
               onClick={() => onSelect(product.sale_price)}
               disabled={product.stock_quantity === 0}
@@ -198,14 +203,16 @@ export default function BatchSelectionModal({
             </div>
           ) : colour ? (
             <>
-              <button
-                type="button"
-                onClick={() => setPicked(null)}
-                className="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100"
-              >
-                <ChevronLeft size={16} />
-                {t("Colours")}
-              </button>
+              {!onlyColour && (
+                <button
+                  type="button"
+                  onClick={() => setPicked(null)}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  <ChevronLeft size={16} />
+                  {t("Colours")}
+                </button>
+              )}
               <p className="text-sm font-medium text-slate-500">
                 {colour.lines.some((l) => l.model)
                   ? t("Phone models")

@@ -136,6 +136,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
         job
           .then(() => {
             toast.success(t("Photo uploaded"), { id: toastId });
+            queryClient.invalidateQueries({ queryKey: ["category-order"] });
             return queryClient.invalidateQueries({ queryKey: ["categories"] });
           })
           .catch(() =>

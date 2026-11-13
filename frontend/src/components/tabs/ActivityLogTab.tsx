@@ -22,6 +22,7 @@ const actionStyles: Record<string, string> = {
   PRODUCT_CREATED: "bg-green-100 text-green-700",
   PRODUCT_UPDATED: "bg-blue-100 text-blue-700",
   PRODUCT_DELETED: "bg-red-100 text-red-700",
+  CATEGORY_ORDER_CHANGED: "bg-blue-100 text-blue-700",
 };
 
 const label = (action: string) =>

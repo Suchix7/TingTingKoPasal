@@ -20,6 +20,7 @@ type FormState = {
   address: string;
   phone: string;
   map_url: string;
+  instagram: string;
   pan_vat_number: string;
 };
 
@@ -28,6 +29,8 @@ const initialForm: FormState = {
   address: "",
   phone: "",
   map_url: "",
+  // the shop's Instagram until another is saved
+  instagram: "tingtingkopasal",
   pan_vat_number: "",
 };
 
@@ -51,6 +54,7 @@ export default function StorePage() {
         address: store.address || "",
         phone: store.phone || "",
         map_url: store.map_url || "",
+        instagram: store.instagram ?? "",
         pan_vat_number: store.pan_vat_number || "",
       });
     }
@@ -89,6 +93,7 @@ export default function StorePage() {
       address: form.address.trim(),
       phone: form.phone.trim(),
       map_url: form.map_url.trim(),
+      instagram: form.instagram.trim(),
       pan_vat_number: form.pan_vat_number.trim(),
     };
 
@@ -236,6 +241,39 @@ export default function StorePage() {
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
                 </div>
+              </div>
+
+              {/* Instagram: the "message us" button on the shop */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="instagram"
+                  className="block text-sm font-medium text-neutral-700"
+                >
+                  {t("Instagram")}
+                </label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-sm text-neutral-400">
+                    @
+                  </div>
+                  <input
+                    id="instagram"
+                    type="text"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    value={form.instagram}
+                    onChange={(e) =>
+                      handleInputChange("instagram", e.target.value)
+                    }
+                    placeholder="tingtingkopasal"
+                    className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-9 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
+                  />
+                </div>
+                <p className="text-xs text-neutral-500">
+                  {t(
+                    "Customers tap the Instagram button on the shop to message you. Leave empty to hide it.",
+                  )}
+                </p>
               </div>
 
               {/* Google Maps link */}

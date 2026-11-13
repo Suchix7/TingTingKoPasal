@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 import Category from "../models/Category.js";
 import StoreInfo from "../models/StoreInfo.js";
+import { DEFAULT_INSTAGRAM } from "../store-info/controller.js";
 import { productMedia } from "../utils/media.js";
 import { compareModels, compareSizes, lineParts } from "../utils/stockLines.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
@@ -419,7 +420,7 @@ export const getCategories = async (_req, res) => {
 // Shop name, location and phone for the customer site header
 export const getStore = async (_req, res) => {
   try {
-    const store = await StoreInfo.findOne().select("storeName address phone mapUrl").lean();
+    const store = await StoreInfo.findOne().select("storeName address phone mapUrl instagram").lean();
     return res.json({
       success: true,
       data: {
@@ -427,6 +428,8 @@ export const getStore = async (_req, res) => {
         address: store?.address || "",
         phone: store?.phone || "",
         map_url: store?.mapUrl || "",
+        // "" when the shop turned the button off
+        instagram: store?.instagram ?? DEFAULT_INSTAGRAM,
       },
     });
   } catch (error) {

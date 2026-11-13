@@ -1,11 +1,24 @@
 import StoreInfo from "../models/StoreInfo.js";
 
+// the shop's Instagram until another is saved
+export const DEFAULT_INSTAGRAM = "tingtingkopasal";
+
+// "@name", "name" or an instagram.com link -> "name" ("" when it isn't one)
+export const cleanInstagram = (value) => {
+  let v = String(value ?? "").trim();
+  const link = v.match(/instagram\.com\/([^/?#\s]+)/i);
+  if (link) v = link[1];
+  v = v.replace(/^@/, "");
+  return /^[A-Za-z0-9._]{1,30}$/.test(v) ? v : "";
+};
+
 const toApiStore = (doc) => ({
   id: doc._id.toString(),
   store_name: doc.storeName,
   address: doc.address,
   phone: doc.phone,
   map_url: doc.mapUrl || "",
+  instagram: doc.instagram ?? DEFAULT_INSTAGRAM,
   pan_vat_number: doc.panVatNumber,
   created_at: doc.createdAt,
   updated_at: doc.updatedAt,
@@ -13,7 +26,7 @@ const toApiStore = (doc) => ({
 
 export const createStore = async (req, res) => {
   try {
-    const { store_name, address, phone, pan_vat_number, map_url } = req.body;
+    const { store_name, address, phone, pan_vat_number, map_url, instagram } = req.body;
 
     if (!store_name || !address || !phone) {
       return res.status(400).json({
@@ -49,6 +62,7 @@ export const createStore = async (req, res) => {
       phone: trimmedPhone,
       panVatNumber: trimmedPanVatNumber,
       mapUrl: String(map_url || "").trim(),
+      instagram: instagram === undefined ? DEFAULT_INSTAGRAM : cleanInstagram(instagram),
     });
 
     return res.status(201).json({
@@ -100,7 +114,7 @@ export const getStore = async (req, res) => {
 
 export const updateStore = async (req, res) => {
   try {
-    const { store_name, address, phone, pan_vat_number, map_url } = req.body;
+    const { store_name, address, phone, pan_vat_number, map_url, instagram } = req.body;
 
     const existingStore = await StoreInfo.findOne();
 
@@ -150,6 +164,7 @@ export const updateStore = async (req, res) => {
     existingStore.address = updatedAddress;
     existingStore.phone = updatedPhone;
     if (map_url !== undefined) existingStore.mapUrl = String(map_url || "").trim();
+    if (instagram !== undefined) existingStore.instagram = cleanInstagram(instagram);
     existingStore.panVatNumber = updatedPanVatNumber;
 
     await existingStore.save();

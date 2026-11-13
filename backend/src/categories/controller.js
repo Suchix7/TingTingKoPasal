@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import Category from "../models/Category.js";
+import Product from "../models/Product.js";
+import { logActivity } from "../utils/activityLog.js";
 import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 
 import { escapeRegex } from "../utils/escapeRegex.js";
@@ -276,5 +278,74 @@ export const removeCategoryThumbnail = async (req, res) => {
     console.error("Remove category thumbnail error:", error.message);
 
     return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// The order categories appear in on the customer shop (and the price page):
+// every category, in that order, with its details and how many products it has.
+export const getCategoryOrder = async (req, res) => {
+  try {
+    const [categories, counts] = await Promise.all([
+      Category.find({}).sort({ sortOrder: 1, categoryName: 1 }).lean(),
+      Product.aggregate([
+        { $match: { isDeleted: false } },
+        { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+      ]),
+    ]);
+    const countOf = new Map(counts.map((c) => [String(c._id), c.count]));
+    return res.json({
+      success: true,
+      data: categories.map((c) => ({
+        ...toApiCategory(c),
+        products: countOf.get(String(c._id)) || 0,
+      })),
+    });
+  } catch (error) {
+    console.error("Error loading category order:", error);
+    return res.status(500).json({ success: false, message: "Failed to load the order" });
+  }
+};
+
+// Save a new order: { ids: [first, second, ...] }. Categories left out keep
+// their place after the listed ones.
+export const saveCategoryOrder = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : null;
+    if (!ids || ids.length === 0 || ids.length > 500 || !ids.every((id) => mongoose.isValidObjectId(id))) {
+      return res.status(400).json({ success: false, message: "Send the categories in their new order" });
+    }
+    if (new Set(ids).size !== ids.length) {
+      return res.status(400).json({ success: false, message: "A category is listed twice" });
+    }
+    const listed = await Category.countDocuments({ _id: { $in: ids } });
+    if (listed !== ids.length) {
+      return res.status(400).json({ success: false, message: "Some categories no longer exist. Refresh and try again." });
+    }
+
+    // gaps of 10, so one category can later be slotted in between two others
+    await Category.bulkWrite(
+      ids.map((id, i) => ({
+        updateOne: { filter: { _id: id }, update: { $set: { sortOrder: (i + 1) * 10 } } },
+      })),
+    );
+    // anything not listed goes after, in its current order
+    const rest = await Category.find({ _id: { $nin: ids } }).sort({ sortOrder: 1, categoryName: 1 }).select("_id").lean();
+    if (rest.length) {
+      await Category.bulkWrite(
+        rest.map((c, i) => ({
+          updateOne: { filter: { _id: c._id }, update: { $set: { sortOrder: (ids.length + i + 1) * 10 } } },
+        })),
+      );
+    }
+
+    await logActivity({
+      action: "CATEGORY_ORDER_CHANGED",
+      entityType: "Category",
+      summary: "Changed the order of categories on the shop",
+    });
+    return res.json({ success: true, message: "Order saved" });
+  } catch (error) {
+    console.error("Error saving category order:", error);
+    return res.status(500).json({ success: false, message: "Failed to save the order" });
   }
 };

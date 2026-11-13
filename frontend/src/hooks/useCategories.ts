@@ -77,6 +77,7 @@ export const useCreateCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["category-order"] });
     },
   });
 };
@@ -98,6 +99,7 @@ export const useUpdateCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["category-order"] });
     },
   });
 };
@@ -118,6 +120,7 @@ export const useDeleteCategory = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["category-order"] });
     },
   });
 };
@@ -131,3 +134,32 @@ export const uploadCategoryThumbnail = async (id: string, file: File) => {
 
 export const removeCategoryThumbnail = async (id: string) =>
   (await axiosInstance.delete(`/categories/${id}/thumbnail`)).data;
+
+// Order of the categories on the customer shop
+export type ShopOrderCategory = Category & { products: number };
+
+export const useCategoryOrder = () =>
+  useQuery<ShopOrderCategory[]>({
+    queryKey: ["category-order"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<{ data: ShopOrderCategory[] }>("/categories/order");
+      return res.data.data;
+    },
+    staleTime: 60 * 1000,
+  });
+
+export const useSaveCategoryOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await axiosInstance.put("/categories/order", { ids });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["category-order"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      // the shop and POS read the order too
+      queryClient.invalidateQueries({ queryKey: ["catalog-categories"] });
+    },
+  });
+};
