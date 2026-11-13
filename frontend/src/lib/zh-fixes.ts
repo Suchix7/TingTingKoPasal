@@ -170,4 +170,5 @@ export const zhFixes: Record<string, string> = {
   "You changed the order": "顺序已更改",
   "Instagram": "Instagram",
   "Customers tap the Instagram button on the shop to message you. Leave empty to hide it.": "顾客点击店铺上的 Instagram 按钮即可给您发消息。留空则隐藏按钮。",
+  "Back to top": "回到顶部",
 };

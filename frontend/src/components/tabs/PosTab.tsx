@@ -25,6 +25,7 @@ import BillingSection from "@/components/pos/billing";
 import type { PaymentMethod } from "@/hooks/usePaymentMethods";
 import type { Product } from "@/hooks/useProducts";
 import ProductGrid from "@/components/pos/productGrid";
+import ScrollTopButton from "@/components/pos/ScrollTopButton";
 import { useCategories } from "@/hooks/useCategories";
 import type { SalePayment } from "@/hooks/useSales";
 import toast from "react-hot-toast";
@@ -107,6 +108,8 @@ export default function PointOfSalesPage() {
   // stays in normal document flow - a sticky summary bar just scrolls to
   // it, rather than trying to overlay it as a fixed sheet.
   const billingRef = useRef<HTMLDivElement>(null);
+  // the products section (the "back to top" button watches it scroll)
+  const productsRef = useRef<HTMLDivElement>(null);
   // is the bill on screen? (mobile bar then offers to go back to products)
   const [billInView, setBillInView] = useState(false);
   useEffect(() => {
@@ -590,7 +593,10 @@ export default function PointOfSalesPage() {
     // app header), and the product grid and the bill each scroll on their own.
     <div className="h-auto xl:h-full xl:min-h-0 flex flex-col xl:flex-row gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] xl:pb-4 bg-gray-50 xl:overflow-hidden">
       {/* Products Section */}
-      <div className="flex-1 min-h-0 min-w-0 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div
+        ref={productsRef}
+        className="relative flex-1 min-h-0 min-w-0 flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden"
+      >
         <div className="shrink-0 px-4 py-4 sm:px-6 border-b border-gray-100 space-y-3">
           <div className="flex flex-col lg:flex-row items-left lg:items-center gap-3 justify-between">
             <div>
@@ -783,6 +789,8 @@ export default function PointOfSalesPage() {
             />
           </div>
         )}
+        {/* floating "back to top" for the product list */}
+        <ScrollTopButton area={productsRef} raised={cartItems.length > 0} />
       </div>
 
       {/* Billing Section - normal document flow at every width (stacked

@@ -352,3 +352,15 @@ body:has(.fixed.inset-0) main {
     radial-gradient(circle at 90% 20%, #fdf0d5 0, transparent 35%),
     #fbf8f4;
 }
+
+/* POS "back to top": above the bill bar and the phone tab bar */
+.pos-top-btn { bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
+.pos-top-btn.raised { bottom: calc(4.75rem + env(safe-area-inset-bottom)); }
+@media (max-width: 767px) {
+  .pos-top-btn { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+  .pos-top-btn.raised { bottom: calc(8rem + env(safe-area-inset-bottom)); }
+}
+@media (min-width: 1280px) {
+  /* wide screens: inside the product panel's bottom corner */
+  .pos-top-btn, .pos-top-btn.raised { bottom: 1.25rem; }
+}
