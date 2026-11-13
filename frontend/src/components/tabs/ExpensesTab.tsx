@@ -406,10 +406,10 @@ export default function ExpensesPage() {
             Array.from({ length: 6 }).map((_, r) => (
               <div key={r} className="flex justify-between gap-3 p-4" aria-hidden>
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-gray-200" />
-                  <div className="h-3 w-1/3 animate-pulse rounded bg-gray-200" />
+                  <div className="skeleton h-4 w-2/3 rounded" />
+                  <div className="skeleton h-3 w-1/3 rounded" />
                 </div>
-                <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                <div className="skeleton h-4 w-16 rounded" />
               </div>
             ))
           ) : !expenses.length ? (

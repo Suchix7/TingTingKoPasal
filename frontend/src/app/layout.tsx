@@ -31,6 +31,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* photos come from Cloudinary: open the connection before they're asked for */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body className={`${poppins.variable} antialiased`}>
         <LanguageProvider>
           <QueryProvider>{children}</QueryProvider>

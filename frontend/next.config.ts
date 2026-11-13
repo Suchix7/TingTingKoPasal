@@ -11,6 +11,9 @@ const backendUrl = (
 
 const nextConfig: NextConfig = {
   images: {
+    // photos are resized by Cloudinary itself (components/catalog/image.ts), so
+    // Next's own image server isn't needed: faster, and nothing to attack
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

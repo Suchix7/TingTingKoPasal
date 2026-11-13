@@ -13,6 +13,7 @@ import {
   Package,
   X,
   ShoppingCart,
+  ChevronDown,
 } from "lucide-react";
 import {
   useCustomers,
@@ -26,7 +27,7 @@ import type { PaymentMethod } from "@/hooks/usePaymentMethods";
 import type { Product } from "@/hooks/useProducts";
 import ProductGrid from "@/components/pos/productGrid";
 import ScrollTopButton from "@/components/pos/ScrollTopButton";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategoryOrder } from "@/hooks/useCategories";
 import type { SalePayment } from "@/hooks/useSales";
 import toast from "react-hot-toast";
 import { useDebounced } from "@/hooks/useDebounced";
@@ -86,7 +87,7 @@ const emptyCustomerForm: Omit<Customer, "id" | "created_at" | "updated_at"> = {
 };
 
 export default function PointOfSalesPage() {
-  const { t } = useLang();
+  const { t, tn } = useLang();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 300);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -123,9 +124,10 @@ export default function PointOfSalesPage() {
     return () => io.disconnect();
   }, []);
 
-  const { data: categoriesData } = useCategories();
+  // every category, in the same order as the shop
+  const { data: categoriesData } = useCategoryOrder();
 
-  const categories = categoriesData?.data ?? [];
+  const categories = categoriesData ?? [];
 
   // Phone model chosen inside a category, e.g. "iPhone 13 Pro" under Covers
   const [selectedModel, setSelectedModel] = useState("");
@@ -147,8 +149,7 @@ export default function PointOfSalesPage() {
     setLimit(PAGE_SIZE);
   }
 
-  // the model chips show two rows until "Show all models" is tapped
-  const [showAllModels, setShowAllModels] = useState(false);
+  // phone models (or sizes) in the chosen category, for the model list
   const { data: categoryModels = [] } = useProductModels(
     selectedCategoryId === "all" ? "" : selectedCategoryId,
   );
@@ -629,125 +630,68 @@ export default function PointOfSalesPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select
+          {/* Filters as drop-down lists: on phones each opens the phone's own
+              scrolling picker, so nothing has to be swiped sideways */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <FilterSelect
+              label={t("Category")}
+              value={selectedCategoryId}
+              active={selectedCategoryId !== "all"}
+              onChange={(v) => setSelectedCategoryId(v)}
+              className="col-span-2 sm:w-56"
+            >
+              <option value="all">{t("All Products")}</option>
+              {categories.map((category) => (
+                <option key={category.id} value={String(category.id)}>
+                  {tn(category.category_name)}
+                </option>
+              ))}
+            </FilterSelect>
+
+            {/* phone models (or sizes) in the chosen category, with how many are in stock */}
+            {sortedModels.length > 0 && (
+              <FilterSelect
+                label={t("Phone model")}
+                value={selectedModel}
+                active={!!selectedModel}
+                onChange={(v) => setSelectedModel(v)}
+                className="col-span-2 sm:w-64"
+              >
+                <option value="">{t("All models")}</option>
+                {sortedModels.map((m) => (
+                  <option key={m.model} value={m.model}>
+                    {m.model} · {m.quantity > 0 ? `${m.quantity} ${t("in stock")}` : t("sold out")}
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
+
+            <FilterSelect
+              label={t("Sort")}
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="cursor-pointer rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-              aria-label={t("Sort products")}
+              active={false}
+              onChange={(v) => setSortBy(v as typeof sortBy)}
+              className="sm:w-48"
             >
               <option value="">{t("Newest first")}</option>
               <option value="price_asc">{t("Price: low to high")}</option>
               <option value="price_desc">{t("Price: high to low")}</option>
               <option value="name_asc">{t("Name: A to Z")}</option>
-            </select>
+            </FilterSelect>
 
-            <span className="text-sm text-gray-500">
+            <span className="flex items-center justify-end gap-3 px-1 text-sm text-gray-500 sm:justify-start">
               {totalProducts} {totalProducts === 1 ? t("product") : t("products")}
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="cursor-pointer font-medium text-gray-700 underline-offset-2 hover:underline"
+                >
+                  {t("Clear filters")}
+                </button>
+              )}
             </span>
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="cursor-pointer text-sm font-medium text-gray-700 underline-offset-2 hover:underline"
-              >
-                {t("Clear filters")}
-              </button>
-            )}
           </div>
-        </div>
-
-        {/* Never squeezed by the product grid below; on phones the categories
-            swipe sideways, on bigger screens they wrap onto more lines */}
-        <div className="shrink-0 px-4 py-3 sm:px-6 border-b border-gray-100">
-          <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
-            <button
-              onClick={() => setSelectedCategoryId("all")}
-              className={`cursor-pointer shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                selectedCategoryId === "all"
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {t("All Products")}
-            </button>
-
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategoryId(String(category.id))}
-                className={`cursor-pointer shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  selectedCategoryId === String(category.id)
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                <Tn v={category.category_name} />
-              </button>
-            ))}
-          </div>
-
-          {/* Phone models inside the chosen category (e.g. Covers ->
-              iPhone 13, iPhone 13 Pro...). Wraps and scrolls so a long
-              list stays usable with a mouse, not just by swiping. */}
-          {sortedModels.length > 0 && (
-            <>
-            <div
-              className={`mt-3 flex flex-wrap gap-1.5 ${
-                showAllModels ? "" : "max-h-[4.75rem] overflow-hidden"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedModel("")}
-                className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  selectedModel === ""
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                }`}
-              >
-                {t("All models")}
-              </button>
-              {sortedModels.map((m) => {
-                const active = selectedModel === m.model;
-                return (
-                  <button
-                    key={m.model}
-                    type="button"
-                    onClick={() => setSelectedModel(active ? "" : m.model)}
-                    className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      active
-                        ? "border-gray-900 bg-gray-900 text-white"
-                        : m.quantity > 0
-                          ? "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                          : "border-dashed border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-400"
-                    }`}
-                    title={`${m.product_count} ${t("products")} · ${m.quantity} ${t("in stock")}`}
-                  >
-                    {m.model}
-                    <span
-                      className={`ml-1.5 ${active ? "text-gray-300" : "text-gray-400"}`}
-                    >
-                      {m.quantity}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {sortedModels.length > 8 && (
-              <button
-                type="button"
-                onClick={() => setShowAllModels((v) => !v)}
-                className="mt-1.5 inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
-              >
-                {showAllModels
-                  ? t("Show less")
-                  : `${t("Show all models")} (${sortedModels.length})`}
-              </button>
-            )}
-            </>
-          )}
         </div>
 
         {isLoading ? (
@@ -923,5 +867,42 @@ export default function PointOfSalesPage() {
         />
       )}
     </div>
+  );
+}
+
+// One POS filter: a small label inside the box, the choice below it, and an
+// arrow on the right. A chosen filter gets a dark outline.
+function FilterSelect({
+  label,
+  value,
+  active,
+  onChange,
+  className = "",
+  children,
+}: {
+  label: string;
+  value: string;
+  active: boolean;
+  onChange: (value: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={`relative block min-w-0 ${className}`}>
+      <span className="pointer-events-none absolute left-3.5 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        className={`h-12 w-full cursor-pointer appearance-none truncate rounded-xl border bg-white pb-1.5 pl-3.5 pr-9 pt-[1.15rem] text-sm font-semibold text-gray-900 outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 ${
+          active ? "border-gray-900 ring-1 ring-gray-900" : "border-gray-200 hover:border-gray-300"
+        }`}
+      >
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+    </label>
   );
 }

@@ -33,7 +33,7 @@ const baseFilter = () => ({
 // model, or the size for colour + size lines (so "M" finds every colour in M,
 // "iPhone 13" every colour made for it). `part` is the size or phone model
 // shown under a colour.
-async function modelsByProduct() {
+async function loadModelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
     .select("productId batchNumber variant size model quantity salePrice costPrice")
     .lean();
@@ -60,7 +60,7 @@ async function modelsByProduct() {
 const inStockOnly = (entries = []) => entries.filter((m) => m.quantity > 0);
 
 // ids of products that have something to sell, from phone models or own stock
-async function inStockProductIds(modelMap) {
+async function loadInStockProductIds(modelMap) {
   const ids = new Set(
     [...modelMap].filter(([, e]) => inStockOnly(e).length).map(([id]) => id),
   );
@@ -73,6 +73,47 @@ async function inStockProductIds(modelMap) {
   own.forEach((p) => ids.add(String(p._id)));
   return ids;
 }
+
+// The stock snapshot above is what every catalog page starts from. Reading
+// every stock line on each visit made the shop slow, so it is kept for a
+// minute and dropped the moment anything is saved in the admin
+// (clearCatalogCache, called from app.js after every successful change).
+const SNAPSHOT_MS = 60 * 1000;
+let snapshot = null;
+
+export const clearCatalogCache = () => {
+  snapshot = null;
+};
+
+function stockSnapshot() {
+  if (!snapshot || Date.now() - snapshot.at > SNAPSHOT_MS) {
+    const models = loadModelsByProduct();
+    const inStock = models.then(loadInStockProductIds);
+    const mine = { at: Date.now(), models, inStock };
+    snapshot = mine;
+    // a failed read must not be kept
+    const drop = () => {
+      if (snapshot === mine) snapshot = null;
+    };
+    models.catch(drop);
+    inStock.catch(drop);
+  }
+  return snapshot;
+}
+
+// shared, read-only: callers must not change what they get back
+const modelsByProduct = () => stockSnapshot().models;
+const inStockProductIds = () => stockSnapshot().inStock;
+
+// Answers without prices are the same for every visitor: a CDN may reuse them
+// for a few seconds. Anything asked with ?prices stays
+// private, even when the viewer turned out not to be signed in.
+const publicCache = (req, res) => {
+  if (req.query.prices !== undefined) return noSharedCache(res);
+  // browsers always check (a quick "not changed" when nothing did), so an
+  // admin who just saved sees it at once; a CDN may reuse it for a few seconds
+  res.set("Cache-Control", "public, max-age=0, must-revalidate, s-maxage=15, stale-while-revalidate=30");
+};
 
 // Colours/styles of a product with the sizes (or phone models) left in each.
 // Colour order follows the photos; each points at its photo in `media` (-1
@@ -218,6 +259,7 @@ export const getCovers = async (req, res) => {
 
     const prices = canSeePrices(req);
     if (prices) noSharedCache(res);
+    else publicCache(req, res);
     const modelMap = await modelsByProduct();
 
     const filter = baseFilter();
@@ -324,6 +366,7 @@ export const getCover = async (req, res) => {
     }
     const prices = canSeePrices(req);
     if (prices) noSharedCache(res);
+    else publicCache(req, res);
     const modelMap = await modelsByProduct();
     return res.json({
       success: true,
@@ -339,6 +382,7 @@ export const getCover = async (req, res) => {
 export const getModels = async (req, res) => {
   try {
     const category = String(req.query.category || "");
+    publicCache(req, res);
     const modelMap = await modelsByProduct();
     const filter = { ...baseFilter(), _id: { $in: [...modelMap.keys()] } };
     if (category) {
@@ -369,8 +413,9 @@ export const getModels = async (req, res) => {
 
 // Categories that have at least one listed item, with a count and a sample
 // photo for the menu.
-export const getCategories = async (_req, res) => {
+export const getCategories = async (req, res) => {
   try {
+    publicCache(req, res);
     const modelMap = await modelsByProduct();
     const available = await inStockProductIds(modelMap);
 
@@ -418,8 +463,9 @@ export const getCategories = async (_req, res) => {
 };
 
 // Shop name, location and phone for the customer site header
-export const getStore = async (_req, res) => {
+export const getStore = async (req, res) => {
   try {
+    publicCache(req, res);
     const store = await StoreInfo.findOne().select("storeName address phone mapUrl instagram").lean();
     return res.json({
       success: true,

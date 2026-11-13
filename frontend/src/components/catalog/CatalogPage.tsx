@@ -27,7 +27,7 @@ import {
 import type { CatalogCategory, Cover } from "@/hooks/useCatalog";
 import { useDebounced } from "@/hooks/useDebounced";
 import SoldOutMark from "./SoldOutMark";
-import { coverImage } from "./image";
+import { coverImage, blurBehind, clearBlur, preloadFull } from "./image";
 import { pcs, priceLabel, same, type Tr } from "./format";
 import { useLang } from "@/lib/i18n";
 import { zhColour } from "@/lib/colourNames";
@@ -432,7 +432,7 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div
                       key={i}
-                      className="aspect-[3/4] animate-pulse rounded-2xl bg-gray-200"
+                      className="skeleton aspect-[3/4] rounded-2xl"
                     />
                   ))}
                 </div>
@@ -478,11 +478,15 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                     key={cover.id}
                     type="button"
                     onClick={() => setViewing(i)}
+                    // the full photo starts loading as the finger goes down
+                    onPointerDown={() => preloadFull(cardPhoto(cover, models))}
                     className="group relative aspect-[3/4] overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 active:scale-[0.98]"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={coverImage(cardPhoto(cover, models), 480)}
+                      style={blurBehind(cardPhoto(cover, models))}
+                      onLoad={clearBlur}
                       alt=""
                       loading={i < 6 ? "eager" : "lazy"}
                       decoding="async"
@@ -701,7 +705,7 @@ function CategoryMenu({
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="aspect-square animate-pulse rounded-2xl bg-gray-200"
+              className="skeleton aspect-square rounded-2xl"
             />
           ))}
         </div>
@@ -745,6 +749,8 @@ function CategoryMenu({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={coverImage(c.photo_url, 480)}
+              style={blurBehind(c.photo_url)}
+              onLoad={clearBlur}
               alt=""
               loading="eager"
               decoding="async"

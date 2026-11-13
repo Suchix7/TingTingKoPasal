@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { coverImage } from "@/components/catalog/image";
 import toast from "react-hot-toast";
 import {
   useCreateProduct,
@@ -28,7 +29,7 @@ import VariantStockEditor, {
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
 import BatchModal from "../product-batch/modal";
-import { ImagePlus, Play, Ruler, Star, X } from "lucide-react";
+import { ImagePlus, Play, RefreshCw, Ruler, Star, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
 const MAX_PHOTOS = 10;
@@ -91,6 +92,9 @@ export default function ProductModal({
   const [originalCostPrice, setOriginalCostPrice] = useState<number>(0);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  // "Replace": the photo whose file is being swapped, and its file picker
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const [replacingKey, setReplacingKey] = useState<string | null>(null);
   // Stock is one number, or split by size / phone model and/or colour (the
   // grid: clothes, gloves, mobile covers)
   const [grid, setGrid] = useState<StockGrid>(() => emptyGrid());
@@ -175,6 +179,41 @@ export default function ProductModal({
         preview: URL.createObjectURL(file),
       }));
     if (added.length) setPhotos((prev) => [...prev, ...added]);
+  };
+
+  // Swap one photo's file for another, in the same place: it keeps its spot
+  // (and so the cover), its colour and, for a photo, the size-guide mark.
+  const handleReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const oldKey = replacingKey;
+    setReplacingKey(null);
+    if (!file || !oldKey) return;
+    const isVideo = file.type.startsWith("video/");
+    if (!isVideo && !file.type.startsWith("image/")) {
+      toast.error(t("Please select a photo or video."));
+      return;
+    }
+    if (file.size > (isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB) * 1024 * 1024) {
+      toast.error(isVideo ? t("Videos must be under 100 MB.") : t("Photos must be under 10 MB."));
+      return;
+    }
+    const key = `${Date.now()}-${Math.random()}`;
+    const replacement: PhotoItem = {
+      kind: "new",
+      key,
+      type: isVideo ? "video" : "image",
+      file,
+      preview: URL.createObjectURL(file),
+    };
+    setPhotos((prev) => prev.map((p) => (photoKey(p) === oldKey ? replacement : p)));
+    // the colour this photo showed now points at the new one
+    setGrid((g) => ({
+      ...g,
+      colours: g.colours.map((c) => (c.photoKey === oldKey ? { ...c, photoKey: key } : c)),
+    }));
+    if (sizeGuideKey === oldKey) setSizeGuideKey(isVideo ? null : key);
+    toast.success(t("Photo replaced. Save to keep it."));
   };
 
   const removePhoto = (key: string) => {
@@ -546,7 +585,7 @@ export default function ProductModal({
                     >
                       {photo.type === "video" && photo.kind === "new" ? (
                         <video
-                          src={photo.preview}
+                          src={coverImage(photo.preview, 320)}
                           muted
                           playsInline
                           preload="metadata"
@@ -554,7 +593,7 @@ export default function ProductModal({
                         />
                       ) : (
                         <Image
-                          src={photo.preview}
+                          src={coverImage(photo.preview, 320)}
                           alt={t("Product photo")}
                           width={224}
                           height={224}
@@ -620,6 +659,20 @@ export default function ProductModal({
                           </>
                         );
                       })()}
+                      {/* swap this photo for another file, in the same spot */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplacingKey(photoKey(photo));
+                          replaceInputRef.current?.click();
+                        }}
+                        disabled={isSubmitting}
+                        title={t("Replace")}
+                        aria-label={t("Replace photo")}
+                        className="absolute bottom-1 left-1 flex items-center gap-1 rounded-full bg-black/55 p-1.5 text-white hover:bg-black/75 disabled:opacity-50"
+                      >
+                        <RefreshCw size={12} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => removePhoto(photoKey(photo))}
@@ -645,6 +698,14 @@ export default function ProductModal({
                     </button>
                   )}
                   <input
+                    ref={replaceInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleReplace}
+                    disabled={isSubmitting}
+                    className="hidden"
+                  />
+                  <input
                     ref={photoInputRef}
                     type="file"
                     accept="image/*,video/*"
@@ -656,7 +717,8 @@ export default function ProductModal({
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
                   {t("Up to 10 photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.")}{" "}
-                  {t("Tap the ruler on the size chart photo to show it as the size guide.")}
+                  {t("Tap the ruler on the size chart photo to show it as the size guide.")}{" "}
+                  {t("Tap the arrows on a photo to replace it with another.")}
                 </p>
               </div>
 

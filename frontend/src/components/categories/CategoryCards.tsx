@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { useSaveCategoryOrder, type ShopOrderCategory } from "@/hooks/useCategories";
 import { useLang } from "@/lib/i18n";
 import { Skeleton } from "@/components/layout/Skeleton";
+import { coverImage } from "@/components/catalog/image";
 
 type Props = {
   // every category, in the saved shop order
@@ -218,7 +219,9 @@ export default function CategoryCards({
               {c.thumbnail_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={c.thumbnail_url}
+                  src={coverImage(c.thumbnail_url, 160)}
+                  loading="lazy"
+                  decoding="async"
                   alt=""
                   draggable={false}
                   className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-gray-200 sm:h-16 sm:w-16"

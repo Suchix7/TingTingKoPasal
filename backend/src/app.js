@@ -30,6 +30,8 @@ import singleABCRouter from "./single-abc/route.js";
 import storeRouter from "./store-info/route.js";
 import activityLogRouter from "./activity-log/route.js";
 import catalogRouter from "./catalog/route.js";
+import { clearCatalogCache } from "./catalog/controller.js";
+import compression from "compression";
 
 const isProd = process.env.NODE_ENV === "production";
 const SESSION_DAYS = 30;
@@ -85,6 +87,20 @@ app.use(
   }),
 );
 app.use(express.json());
+// smaller answers over slow mobile data (product lists shrink to a fraction)
+app.use(compression());
+
+// The shop keeps a short-lived stock snapshot (catalog/controller.js); any
+// successful change in the admin or a sale drops it, so the shop is never
+// behind what was just saved.
+app.use("/api/v1", (req, res, next) => {
+  if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    res.on("finish", () => {
+      if (res.statusCode < 400) clearCatalogCache();
+    });
+  }
+  next();
+});
 
 // Public customer catalog: no login needed (read-only, no prices or names)
 app.use("/api/v1/catalog", catalogRouter);

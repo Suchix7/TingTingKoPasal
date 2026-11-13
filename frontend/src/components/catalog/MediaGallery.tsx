@@ -44,6 +44,8 @@ export default function MediaGallery({
   const [dragging, setDragging] = useState(false);
   // slides already shown stay loaded; the rest load when next to the current one
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0, 1]));
+  // full-size photos that have arrived (until then the card-size one shows)
+  const [sharp, setSharp] = useState<Set<number>>(() => new Set());
   const start = useRef<{ x: number; y: number; horizontal: boolean | null } | null>(null);
   const track = useRef<HTMLDivElement | null>(null);
   const thumbs = useRef<HTMLDivElement | null>(null);
@@ -168,15 +170,34 @@ export default function MediaGallery({
                     ))}
                   </video>
                 ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={fullImage(item.url)}
-                    alt={i === index ? alt : ""}
-                    className={`max-h-full max-w-full select-none object-contain ${
-                      dimmed ? "opacity-60 grayscale" : ""
-                    }`}
-                    draggable={false}
-                  />
+                  <>
+                    {/* the card-size photo (usually already loaded) shows at
+                        once; the sharp one fades in over it when it arrives */}
+                    {!sharp.has(i) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={coverImage(item.poster || item.url, 480)}
+                        alt=""
+                        aria-hidden
+                        className={`absolute inset-y-0 left-2 right-2 h-full w-[calc(100%-1rem)] select-none object-contain ${
+                          dimmed ? "opacity-60 grayscale" : ""
+                        }`}
+                        draggable={false}
+                      />
+                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={fullImage(item.url)}
+                      alt={i === index ? alt : ""}
+                      decoding="async"
+                      fetchPriority={i === index ? "high" : "low"}
+                      onLoad={() => setSharp((prev) => new Set(prev).add(i))}
+                      className={`absolute inset-y-0 left-2 right-2 h-full w-[calc(100%-1rem)] select-none object-contain transition-opacity duration-300 ${
+                        sharp.has(i) ? "opacity-100" : "opacity-0"
+                      } ${dimmed ? "!opacity-60 grayscale" : ""}`}
+                      draggable={false}
+                    />
+                  </>
                 ))}
               {soldOut?.(i) && <SoldOutMark size="lg" zh={zh} />}
             </div>

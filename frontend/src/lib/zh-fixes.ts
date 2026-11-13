@@ -171,4 +171,8 @@ export const zhFixes: Record<string, string> = {
   "Instagram": "Instagram",
   "Customers tap the Instagram button on the shop to message you. Leave empty to hide it.": "顾客点击店铺上的 Instagram 按钮即可给您发消息。留空则隐藏按钮。",
   "Back to top": "回到顶部",
+  "Sort": "排序",
+  "Replace": "替换",
+  "Photo replaced. Save to keep it.": "照片已替换。保存后生效。",
+  "Tap the arrows on a photo to replace it with another.": "点击照片上的箭头可替换为另一张。",
 };

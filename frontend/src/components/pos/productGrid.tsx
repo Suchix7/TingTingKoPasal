@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import PhotoLightbox from "@/components/layout/PhotoLightbox";
 import type { MediaItem } from "@/components/catalog/image";
-import { coverImage, linePhoto } from "@/components/catalog/image";
+import { coverImage, linePhoto, blurBehind, clearBlur } from "@/components/catalog/image";
 import {
   Edit,
   Package,
@@ -435,6 +435,8 @@ export default function ProductGrid({
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={coverImage(cardPhoto(product) || product.photo_url, 480)}
+                            style={blurBehind(cardPhoto(product) || product.photo_url)}
+                            onLoad={clearBlur}
                             alt={product.product_name}
                             loading="lazy"
                             decoding="async"

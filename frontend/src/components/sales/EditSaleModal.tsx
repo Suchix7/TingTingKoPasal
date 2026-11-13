@@ -14,6 +14,7 @@ import {
   Package,
 } from "lucide-react";
 import Image from "next/image";
+import { coverImage } from "@/components/catalog/image";
 import toast from "react-hot-toast";
 
 import {
@@ -994,7 +995,7 @@ export default function EditSaleModal({
                         {item.product_id &&
                         productPhotoById[item.product_id] ? (
                           <Image
-                            src={productPhotoById[item.product_id] as string}
+                            src={coverImage(productPhotoById[item.product_id] as string, 160)}
                             alt={item.product_name}
                             width={64}
                             height={64}

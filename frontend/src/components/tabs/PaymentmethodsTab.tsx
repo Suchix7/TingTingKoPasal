@@ -461,7 +461,7 @@ export default function PaymentMethodsPage() {
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="h-72 animate-pulse rounded-2xl bg-neutral-100"
+                className="skeleton h-72 rounded-2xl"
               />
             ))}
           </div>

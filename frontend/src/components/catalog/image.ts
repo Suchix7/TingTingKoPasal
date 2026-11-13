@@ -1,3 +1,5 @@
+import type React from "react";
+
 // Cloudinary can resize on the fly; small thumbnails keep the grid fast on
 // mobile data. Non-Cloudinary URLs are returned untouched.
 export function coverImage(url: string, width: number): string {
@@ -5,11 +7,45 @@ export function coverImage(url: string, width: number): string {
   return url.replace("/upload/", `/upload/w_${width},c_limit,q_auto,f_auto/`);
 }
 
-// Full-screen photos: sharp enough for high-density phone screens, in the
-// best automatic quality.
+// A tiny blurred copy (well under 1 KB) shown behind a photo while it loads,
+// so a card is never an empty grey box. Pass the result as the img's style;
+// clearBlur (onLoad) removes it once the real photo is in, so it can't show
+// through transparent photos.
+export function blurBehind(url: string | null | undefined): React.CSSProperties | undefined {
+  if (!url || !url.includes("/upload/")) return undefined;
+  const tiny = url.replace("/upload/", "/upload/w_32,q_30,e_blur:300,f_auto/");
+  return {
+    backgroundImage: `url("${tiny}")`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  };
+}
+
+export const clearBlur = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.style.backgroundImage = "none";
+};
+
+// Full-screen photos: as wide as this screen can actually show (sharp on
+// high-density phones), in steps of 400px so Cloudinary can reuse what it
+// already made. A phone gets ~1200px instead of 2000, so it opens much faster.
+function fullWidth(): number {
+  if (typeof window === "undefined") return 1600;
+  const px = window.innerWidth * Math.min(window.devicePixelRatio || 1, 3);
+  return Math.min(2000, Math.max(800, Math.ceil(px / 400) * 400));
+}
+
 export function fullImage(url: string): string {
   if (!url.includes("/upload/")) return url;
-  return url.replace("/upload/", "/upload/w_2000,c_limit,q_auto:best,f_auto/");
+  return url.replace("/upload/", `/upload/w_${fullWidth()},c_limit,q_auto,f_auto/`);
+}
+
+// Start fetching a full-screen photo early (e.g. as a card is pressed), so it
+// is already on its way when the viewer opens.
+export function preloadFull(url: string | null | undefined) {
+  if (!url || typeof window === "undefined") return;
+  const img = new Image();
+  img.decoding = "async";
+  img.src = fullImage(url);
 }
 
 // Same rendition the backend asks Cloudinary to prepare right after upload

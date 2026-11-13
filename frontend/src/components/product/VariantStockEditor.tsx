@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { coverImage } from "@/components/catalog/image";
 import { ImageOff, Minus, Plus, Trash2, X } from "lucide-react";
 
 import type { ProductBatch } from "@/hooks/useProducts";
@@ -705,7 +706,7 @@ export default function VariantStockEditor({
                               {photo && (
                                 <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-slate-200">
                                   <Image
-                                    src={photo.preview}
+                                    src={coverImage(photo.preview, 320)}
                                     alt=""
                                     width={72}
                                     height={72}
@@ -790,7 +791,7 @@ export default function VariantStockEditor({
                       >
                         {photo ? (
                           <Image
-                            src={photo.preview}
+                            src={coverImage(photo.preview, 320)}
                             alt=""
                             width={88}
                             height={88}
@@ -839,7 +840,7 @@ export default function VariantStockEditor({
                             }`}
                           >
                             <Image
-                              src={p.preview}
+                              src={coverImage(p.preview, 320)}
                               alt=""
                               width={112}
                               height={112}
@@ -1002,7 +1003,7 @@ export default function VariantStockEditor({
                   >
                     {photo ? (
                       <Image
-                        src={photo.preview}
+                        src={coverImage(photo.preview, 320)}
                         alt=""
                         width={112}
                         height={112}
@@ -1051,7 +1052,7 @@ export default function VariantStockEditor({
                         }`}
                       >
                         <Image
-                          src={p.preview}
+                          src={coverImage(p.preview, 320)}
                           alt=""
                           width={128}
                           height={128}
