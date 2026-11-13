@@ -27,6 +27,7 @@ import toast from "react-hot-toast";
 
 import Tn from "@/components/layout/Tn";
 import { useLang } from "@/lib/i18n";
+import { fitsPhone } from "@/lib/phoneModels";
 // The phone model (or size) a stock line is for: "Blue / iPhone 13" is for
 // iPhone 13, a plain line is named after its model
 const lineModel = (b: ProductBatch) =>
@@ -49,8 +50,13 @@ const cardPhoto = (product: Product) => {
 
 // A product's stock lines for the model picked in the POS chips: one, or one
 // per colour for covers sold in several colours
+// ("iPhone 14" also picks a line made for "iPhone 13/14/15")
 const modelLines = (product: Product, model: string) =>
-  model ? (product.batches ?? []).filter((b) => lineModel(b) === model) : [];
+  model
+    ? (product.batches ?? []).filter(
+        (b) => lineModel(b) === model || (!b.size && fitsPhone(lineModel(b), model)),
+      )
+    : [];
 
 type CartItem = {
   product_id: string;

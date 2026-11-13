@@ -9,6 +9,7 @@ import Category from "../models/Category.js";
 import { serializeProduct, serializeBatch } from "../utils/serialize.js";
 import { totalStockStages } from "../utils/stock.js";
 import { parseStockLines, sortLines, syncStockLines } from "../utils/stockLines.js";
+import { expandModel } from "../utils/phoneFits.js";
 import {
   productMedia,
   videoPoster,
@@ -510,34 +511,34 @@ export const getProductModels = async (req, res) => {
 
     const productIds = await Product.distinct("_id", productFilter);
 
-    const rows = await ProductBatch.aggregate([
-      { $match: { isDeleted: false, productId: { $in: productIds } } },
-      {
-        $group: {
-          _id: {
-            $cond: [
-              { $gt: [{ $strLenCP: { $ifNull: ["$model", ""] } }, 0] },
-              "$model",
-              {
-                $cond: [
-                  { $gt: [{ $strLenCP: { $ifNull: ["$size", ""] } }, 0] },
-                  "$size",
-                  "$batchNumber",
-                ],
-              },
-            ],
-          },
-          products: { $addToSet: "$productId" },
-          quantity: { $sum: "$quantity" },
-        },
-      },
-    ]);
+    const batches = await ProductBatch.find({ isDeleted: false, productId: { $in: productIds } })
+      .select("productId batchNumber size model quantity")
+      .lean();
+
+    // lower-case name -> { model, products, quantity }. A line for
+    // "iPhone 13/14/15" counts under iPhone 13, 14 and 15 (its stock fits
+    // each of them); the combined name is never offered on its own.
+    const rows = new Map();
+    for (const b of batches) {
+      const names = b.model
+        ? expandModel(b.model)
+        : b.size
+          ? [b.size]
+          : expandModel(b.batchNumber);
+      for (const name of names) {
+        const key = name.toLowerCase();
+        const r = rows.get(key) || { model: name, products: new Set(), quantity: 0 };
+        r.products.add(String(b.productId));
+        r.quantity += Number(b.quantity) || 0;
+        rows.set(key, r);
+      }
+    }
 
     return res.status(200).json({
       success: true,
-      data: rows.map((r) => ({
-        model: r._id,
-        product_count: r.products.length,
+      data: [...rows.values()].map((r) => ({
+        model: r.model,
+        product_count: r.products.size,
         quantity: r.quantity,
       })),
     });
@@ -546,6 +547,26 @@ export const getProductModels = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+// Products with a stock line for several phones ("iPhone 13/14/15") where one
+// of those phones passes `test`
+async function productsFittingPhone(test) {
+  const slash = { $regex: "/" };
+  const lines = await ProductBatch.find({
+    isDeleted: false,
+    $or: [{ model: slash }, { batchNumber: slash, size: { $in: [null, ""] } }],
+  })
+    .select("productId batchNumber variant size model")
+    .lean();
+  return lines
+    .filter((b) => {
+      // a colour + phone line keeps the phone in `model`; an old plain line
+      // is named after its phone
+      const phone = b.model || (b.variant ? "" : b.batchNumber);
+      return phone && expandModel(phone).some(test);
+    })
+    .map((b) => b.productId);
+}
 
 export const getProducts = async (req, res) => {
   try {
@@ -567,6 +588,8 @@ export const getProducts = async (req, res) => {
         isDeleted: false,
         $or: [{ batchNumber: regex }, { barcode: regex }],
       });
+      // "iPhone 14 Plus" also finds a cover made for "iPhone 14/15 Plus"
+      modelMatches.push(...(await productsFittingPhone((name) => new RegExp(term, "i").test(name))));
       and.push({
         $or: [
           { productName: regex },
@@ -602,10 +625,13 @@ export const getProducts = async (req, res) => {
 
     // Only products that have this phone model (e.g. covers for "iPhone 13 Pro")
     if (model) {
+      const want = String(model).trim();
       const withModel = await ProductBatch.distinct("productId", {
         isDeleted: false,
-        $or: [{ batchNumber: String(model).trim() }, { model: String(model).trim() }],
+        $or: [{ batchNumber: want }, { model: want }],
       });
+      // "iPhone 14" is also picked from a cover for "iPhone 13/14/15"
+      withModel.push(...(await productsFittingPhone((name) => name.toLowerCase() === want.toLowerCase())));
       and.push({ _id: { $in: withModel } });
     }
 

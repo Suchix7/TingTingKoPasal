@@ -165,6 +165,10 @@ const linePrice = (v) => {
   return Number(v);
 };
 
+// "iPhone 12 \ 13" -> "iPhone 12/13": a size / model may hold "/", but not
+// " / " with spaces, which splits a line's colour from its size / model
+export const cleanSize = (v) => String(v ?? "").trim().replace(/\s*[\\/]\s*/g, "/");
+
 // Body `stock_lines: [{ variant, size | model, quantity, cost_price?,
 // sale_price? }]` -> clean list, or an error
 export function parseStockLines(raw) {
@@ -175,8 +179,8 @@ export function parseStockLines(raw) {
   const lines = raw
     .map((l) => {
       const variant = String(l?.variant ?? "").trim();
-      const size = String(l?.size ?? "").trim();
-      const model = String(l?.model ?? "").trim();
+      const size = cleanSize(l?.size);
+      const model = cleanSize(l?.model);
       return {
         variant,
         size,

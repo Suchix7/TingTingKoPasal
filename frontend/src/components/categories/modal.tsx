@@ -17,6 +17,9 @@ type CategoryForm = {
   description: string;
 };
 
+// "iPhone 12 \ 13" -> "iPhone 12/13" (" / " with spaces splits colour from size)
+const cleanSize = (raw: string) => raw.trim().replace(/\s*[\\/]\s*/g, "/");
+
 const initialForm: CategoryForm = {
   category_name: "",
   description: "",
@@ -39,7 +42,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
   const addSizes = () => {
     const typed = newSize
       .split(",")
-      .map((x) => x.trim())
+      .map(cleanSize)
       .filter(Boolean);
     if (!typed.length) return;
     setSizes((cur) => {
@@ -94,7 +97,7 @@ export default function CategoriesModal({ closeModal, editingCategory }: any) {
 
     const typed = newSize
       .split(",")
-      .map((x) => x.trim())
+      .map(cleanSize)
       .filter(Boolean);
     const allSizes = [...sizes];
     for (const size of typed) {

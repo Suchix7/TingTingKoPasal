@@ -178,4 +178,10 @@ export const zhFixes: Record<string, string> = {
   "New photo": "新照片",
   "Upload a new photo for this colour": "为这个颜色上传新照片",
   "Photo added. Save to keep it.": "照片已添加。保存后生效。",
+  "Different price for each model": "每个型号单独定价",
+  "Add the phone models this colour comes in.": "请添加此颜色适用的手机型号。",
+  "Add phone models below.": "请在下方添加手机型号。",
+  "add the phone models this colour comes in, or remove it.": "请添加此颜色适用的手机型号，或删除此颜色。",
+  "Add a colour first, then the phone models it comes in, with the stock of each.": "先添加颜色，再添加该颜色适用的手机型号及各自库存。",
+  "Set a selling and cost price for each colour or phone model. Leave a box empty to use the product's price.": "为每种颜色或手机型号设置售价和成本价。留空则使用商品价格。",
 };

@@ -7,6 +7,7 @@ import { DEFAULT_INSTAGRAM } from "../store-info/controller.js";
 import { productMedia } from "../utils/media.js";
 import { compareModels, compareSizes, lineParts } from "../utils/stockLines.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
+import { expandModel } from "../utils/phoneFits.js";
 import { canSeePrices } from "../auth/middleware.js";
 
 // Public, read-only catalog for the customer site. It exposes the photos and videos,
@@ -28,7 +29,7 @@ const baseFilter = () => ({
   photoUrl: { $nin: [null, ""] },
 });
 
-// productId -> [{ model, variant, size, phone, part, quantity }] for every
+// productId -> [{ model, fits, variant, size, phone, part, quantity }] for every
 // stock line (even sold out). `model` is what the filters show: the phone
 // model, or the size for colour + size lines (so "M" finds every colour in M,
 // "iPhone 13" every colour made for it). `part` is the size or phone model
@@ -45,6 +46,9 @@ async function loadModelsByProduct() {
     const { variant, size, model } = lineParts(b);
     map.get(key).push({
       model: size || model || b.batchNumber,
+      // the single phones this line fits ("iPhone 13/14/15" fits three);
+      // a size is just itself
+      fits: size ? [size] : expandModel(model || b.batchNumber),
       variant,
       size,
       phone: model,
@@ -130,12 +134,20 @@ function variantsOf(media, entries) {
     .map((name) => {
       const mine = entries.filter((e) => e.variant.toLowerCase() === name.toLowerCase());
       if (!mine.length) return null; // a labelled photo with no stock line
-      const sizes = mine
-        .filter((e) => e.part)
-        .map((e) => ({ size: e.part, quantity: e.quantity }))
-        .sort((a, b) =>
-          mine.some((e) => e.size) ? compareSizes(a.size, b.size) : compareModels(a.size, b.size),
-        );
+      // one entry per size or single phone: a "Blue / iPhone 13/14/15" line
+      // shows as iPhone 13, 14 and 15, each with that line's pieces
+      const bySize = new Map();
+      for (const e of mine.filter((x) => x.part)) {
+        for (const size of e.size ? [e.part] : e.fits) {
+          const key = size.toLowerCase();
+          const s = bySize.get(key) || { size, quantity: 0 };
+          s.quantity += e.quantity;
+          bySize.set(key, s);
+        }
+      }
+      const sizes = [...bySize.values()].sort((a, b) =>
+        mine.some((e) => e.size) ? compareSizes(a.size, b.size) : compareModels(a.size, b.size),
+      );
       return {
         name,
         media_index: media.findIndex(
@@ -163,6 +175,10 @@ function costRange(lines, fallback) {
   return { cost_min: Math.min(...costs), cost_max: Math.max(...costs) };
 }
 
+// a stock line is for this size / single phone ("iPhone 14" is on a line for
+// "iPhone 13/14/15")
+const fitsName = (e, name) => e.fits.some((f) => f.toLowerCase() === name.toLowerCase());
+
 // Selling and cost prices for the price viewer, kept apart so the public site
 // never gets them: one range for the product, and per model / colour / size.
 function withPrices(cover, product, entries) {
@@ -184,7 +200,7 @@ function withPrices(cover, product, entries) {
     ...costRange(priced, ownCost),
     models: cover.models.map((m) => ({
       ...m,
-      ...linePrices(entries.filter((e) => e.model.toLowerCase() === m.model.toLowerCase())),
+      ...linePrices(entries.filter((e) => fitsName(e, m.model))),
     })),
     variants: cover.variants.map((v) => {
       const mine = entries.filter((e) => e.variant.toLowerCase() === v.name.toLowerCase());
@@ -194,7 +210,7 @@ function withPrices(cover, product, entries) {
         ...costRange(mine, ownCost),
         sizes: v.sizes.map((s) => ({
           ...s,
-          ...linePrices(mine.filter((e) => e.part.toLowerCase() === s.size.toLowerCase())),
+          ...linePrices(mine.filter((e) => e.part && fitsName(e, s.size))),
         })),
       };
     }),
@@ -202,13 +218,19 @@ function withPrices(cover, product, entries) {
 }
 
 const toCover = (product, entries = [], prices = false) => {
-  // one entry per phone model / size; a size held in several colours adds up
+  // one entry per single phone / size; a size held in several colours adds
+  // up. A line for several phones ("iPhone 13/14/15 Pro Max") is one piece
+  // that fits each of them: it is listed under every one, and once sold they
+  // all go out of stock together. A separate "iPhone 15 Pro Max" line adds
+  // to the iPhone 15 Pro Max count.
   const merged = new Map();
   for (const e of entries) {
-    const key = e.model.toLowerCase();
-    const m = merged.get(key) || { model: e.model, quantity: 0 };
-    m.quantity += e.quantity;
-    merged.set(key, m);
+    for (const name of e.fits) {
+      const key = name.toLowerCase();
+      const m = merged.get(key) || { model: name, quantity: 0 };
+      m.quantity += e.quantity;
+      merged.set(key, m);
+    }
   }
   const sized = entries.some((e) => e.size);
   const models = [...merged.values()].sort(
@@ -281,15 +303,16 @@ export const getCovers = async (req, res) => {
         scope
           .filter((p) => {
             const available = inStockOnly(modelMap.get(String(p._id)));
-            const models = available.map((m) => m.model);
+            // "iPhone 13/14/15" is searched and picked as iPhone 13, 14 and 15
+            const phones = available.flatMap((m) => m.fits);
             const colours = available.map((m) => m.variant).filter(Boolean);
             const matchesSearch =
               words.length === 0 ||
               modelScore(words, p.productName, isFuzzy) !== null ||
-              [...models, ...colours].some((m) => modelScore(words, m, isFuzzy) !== null);
+              [...phones, ...colours].some((m) => modelScore(words, m, isFuzzy) !== null);
             const matchesPick =
               wanted.length === 0 ||
-              models.some((m) => wanted.includes(m.toLowerCase()));
+              phones.some((m) => wanted.includes(m.toLowerCase()));
             return matchesSearch && matchesPick;
           })
           .map((p) => p._id);
@@ -303,7 +326,7 @@ export const getCovers = async (req, res) => {
       if (words.length > 0 && (fuzzy || !ids.length)) {
         const names = scope.flatMap((p) => [
           p.productName,
-          ...inStockOnly(modelMap.get(String(p._id))).map((m) => m.model),
+          ...inStockOnly(modelMap.get(String(p._id))).flatMap((m) => m.fits),
         ]);
         suggestions = suggestModels(words, names);
       }
@@ -379,6 +402,8 @@ export const getCover = async (req, res) => {
 };
 
 // Phone models that have at least one cover in stock, with how many covers.
+// A cover for "iPhone 13/14/15" counts under iPhone 13, 14 and 15; the
+// combined name is never a filter of its own.
 export const getModels = async (req, res) => {
   try {
     const category = String(req.query.category || "");
@@ -393,18 +418,22 @@ export const getModels = async (req, res) => {
       (await Product.find(filter).select("_id").lean()).map((p) => String(p._id)),
     );
 
+    // lower-case name -> { model, count }
     const counts = new Map();
     for (const [productId, entries] of modelMap) {
       if (!visible.has(productId)) continue;
-      for (const m of new Set(inStockOnly(entries).map((e) => e.model))) {
-        counts.set(m, (counts.get(m) || 0) + 1);
+      const phones = new Map();
+      for (const e of inStockOnly(entries)) {
+        for (const f of e.fits) if (!phones.has(f.toLowerCase())) phones.set(f.toLowerCase(), f);
+      }
+      for (const [key, model] of phones) {
+        const c = counts.get(key) || { model, count: 0 };
+        c.count += 1;
+        counts.set(key, c);
       }
     }
 
-    return res.json({
-      success: true,
-      data: [...counts].map(([model, count]) => ({ model, count })),
-    });
+    return res.json({ success: true, data: [...counts.values()] });
   } catch (error) {
     console.error("Catalog models error:", error);
     return res.status(500).json({ success: false, message: "Failed to load models" });

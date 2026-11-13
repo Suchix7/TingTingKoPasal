@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/layout/Skeleton";
 
 import Tn from "@/components/layout/Tn";
 import { useLang } from "@/lib/i18n";
-import { compareModelOrSize } from "@/lib/phoneModels";
+import { compareModelOrSize, fitsPhone } from "@/lib/phoneModels";
 interface BatchSelectionModalProps {
   product: Product;
   onSelect: (unitPrice: number, batchId?: string) => void;
@@ -50,7 +50,10 @@ export default function BatchSelectionModal({
   // Only models that can actually be sold; sold-out ones aren't listed
   const allBatches = batchesData?.data || [];
   const inStock = allBatches.filter((b) => b.quantity > 0);
-  const forModel = model ? inStock.filter((b) => lineModel(b) === model) : [];
+  // "iPhone 14" also offers a line for "iPhone 13/14/15" (one piece fits all)
+  const forModel = model
+    ? inStock.filter((b) => lineModel(b) === model || (!b.size && fitsPhone(lineModel(b), model)))
+    : [];
   const batches = forModel.length ? forModel : inStock;
 
   // Lines with a colour/style are picked by the colour's photo first, then

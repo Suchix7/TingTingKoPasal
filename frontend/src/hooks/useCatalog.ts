@@ -3,14 +3,15 @@ import axiosInstance from "@/lib/axiosInstance";
 import type { MediaItem } from "@/components/catalog/image";
 
 // `price` and `cost` fields are only sent to the signed-in price viewer
-export type CoverModel = { model: string; quantity: number; price?: number; cost?: number };
+// `fits`: the single phones a line fits ("iPhone 13/14/15" -> 13, 14, 15)
+export type CoverModel = { model: string; fits?: string[]; quantity: number; price?: number; cost?: number };
 
 // A colour/style of a product: its photo and the sizes left in it
 export type CoverVariant = {
   name: string;
   // index into `media`, -1 when no photo is tagged with this colour
   media_index: number;
-  sizes: { size: string; quantity: number; price?: number; cost?: number }[];
+  sizes: { size: string; fits?: string[]; quantity: number; price?: number; cost?: number }[];
   quantity: number;
   price_min?: number;
   price_max?: number;
@@ -50,7 +51,9 @@ export type Cover = {
 export const fitsModels = (v: CoverVariant, models: string[]) =>
   models.length > 0 &&
   v.sizes.some(
-    (s) => s.quantity > 0 && models.some((m) => m.toLowerCase() === s.size.toLowerCase()),
+    (s) =>
+      s.quantity > 0 &&
+      (s.fits ?? [s.size]).some((f) => models.some((m) => m.toLowerCase() === f.toLowerCase())),
   );
 
 export type CatalogModel = { model: string; count: number };
