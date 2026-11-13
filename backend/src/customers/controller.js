@@ -1,5 +1,6 @@
 import Customer from "../models/Customer.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 const toApiCustomer = (doc) => ({
   id: doc._id.toString(),
   name: doc.name,
@@ -109,7 +110,7 @@ export const getCustomers = async (req, res) => {
     const filter = {};
 
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       filter.$or = [{ name: regex }, { phone: regex }, { email: regex }];
     }
 

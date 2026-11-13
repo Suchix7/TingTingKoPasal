@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import PaymentMethodTransaction from "../models/PaymentMethodTransaction.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 export const getPaymentTransactions = async (req, res) => {
   try {
     const {
@@ -146,7 +147,7 @@ export const getPaymentTransactions = async (req, res) => {
     ];
 
     if (normalizedSearch) {
-      const regex = new RegExp(normalizedSearch, "i");
+      const regex = new RegExp(escapeRegex(normalizedSearch), "i");
       basePipeline.push({
         $match: {
           $or: [

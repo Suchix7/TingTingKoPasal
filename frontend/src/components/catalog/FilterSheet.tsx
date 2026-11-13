@@ -5,6 +5,7 @@ import { Check, Search, X } from "lucide-react";
 
 import { compareModelOrSize } from "@/lib/phoneModels";
 import type { CatalogModel } from "@/hooks/useCatalog";
+import { same, type Tr } from "./format";
 
 type Props = {
   open: boolean;
@@ -12,6 +13,7 @@ type Props = {
   models: CatalogModel[];
   selectedModels: string[];
   onApply: (models: string[]) => void;
+  t?: Tr;
 };
 
 // Bottom sheet on phones: tick phone models.
@@ -21,6 +23,7 @@ export default function FilterSheet({
   models,
   selectedModels,
   onApply,
+  t = same,
 }: Props) {
   const [draftModels, setDraftModels] = useState<string[]>(selectedModels);
   const [search, setSearch] = useState("");
@@ -53,18 +56,18 @@ export default function FilterSheet({
     <div className="fixed inset-0 z-50 flex items-end bg-black/50 sm:items-center sm:justify-center">
       <button
         type="button"
-        aria-label="Close filters"
+        aria-label={t("Close filters")}
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
       <div className="relative flex max-h-[88dvh] w-full flex-col rounded-t-3xl bg-white sm:max-w-md sm:rounded-3xl">
         <div className="flex items-center justify-between px-5 pb-2 pt-4">
-          <h2 className="text-base font-semibold text-gray-900">Filter</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t("Filter")}</h2>
           <button
             type="button"
             onClick={onClose}
             className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
-            aria-label="Close"
+            aria-label={t("Close")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -73,14 +76,14 @@ export default function FilterSheet({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Phone model
+              {t("Phone model")}
             </h3>
             <div className="relative mb-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Find a model"
+                placeholder={t("Find a model")}
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-gray-400"
               />
             </div>
@@ -113,7 +116,7 @@ export default function FilterSheet({
               })}
               {visible.length === 0 && (
                 <li className="py-6 text-center text-sm text-gray-500">
-                  No models found
+                  {t("No models found")}
                 </li>
               )}
             </ul>
@@ -128,7 +131,7 @@ export default function FilterSheet({
             }}
             className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700"
           >
-            Clear
+            {t("Clear")}
           </button>
           <button
             type="button"
@@ -138,7 +141,7 @@ export default function FilterSheet({
             }}
             className="flex-1 rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white"
           >
-            Show covers{count ? ` (${count})` : ""}
+            {t("Show covers")}{count ? ` (${count})` : ""}
           </button>
         </div>
       </div>

@@ -51,8 +51,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Chinese product / category names are fetched once Chinese is chosen
+  // (admin panel only: the list needs the admin login)
   useEffect(() => {
-    if (lang === "zh") refreshNames();
+    if (lang === "zh" && window.location.pathname.startsWith("/admin")) refreshNames();
   }, [lang, refreshNames]);
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import InventoryTransaction from "../models/InventoryTransaction.js";
 import { serializeBatch } from "../utils/serialize.js";
 import { renameLine } from "../utils/stockLines.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 export const updateInventory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -174,9 +175,9 @@ export const getAllInventory = async (req, res) => {
 
     if (search) {
       matchStage.$or = [
-        { productName: { $regex: search, $options: "i" } },
-        { sku: { $regex: search, $options: "i" } },
-        { barcode: { $regex: search, $options: "i" } },
+        { productName: { $regex: escapeRegex(search), $options: "i" } },
+        { sku: { $regex: escapeRegex(search), $options: "i" } },
+        { barcode: { $regex: escapeRegex(search), $options: "i" } },
       ];
     }
 

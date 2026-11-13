@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import SidebarTabs, { MainTab, SIDEBAR_LINKS } from "./SidebarTabs";
 import BottomNav from "./BottomNav";
@@ -29,19 +29,60 @@ const tabName = (tab: MainTab) =>
   SIDEBAR_LINKS.flatMap((s) => s.links).find((l) => l.tab === tab)?.name ??
   "Ting Ting ko pasal";
 
+// pages this shell can show; the open one is kept in the address (?tab=)
+// so a reload stays on it
+const PAGES: MainTab[] = [
+  "dashboard",
+  "sales",
+  "expenses",
+  "daybook",
+  "activity-log",
+  "categories",
+  "products",
+  "product-batches",
+  "barcode-labels",
+  "pos",
+  "eoq",
+  "inventory",
+  "inventory-transactions",
+  "payment-methods",
+  "store-info",
+  "security",
+];
+const HOME: MainTab = "pos";
+
+const tabFromUrl = (): MainTab => {
+  if (typeof window === "undefined") return HOME;
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  return PAGES.find((p) => p === tab) ?? HOME;
+};
+
 export default function MainShell() {
-  const [activeTab, setActiveTabState] = useState<MainTab>("pos");
+  const [activeTab, setActiveTabState] = useState<MainTab>(tabFromUrl);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useLang();
 
   // Selecting a tab always dismisses the mobile drawer, otherwise the menu
   // would sit open over the page the user just navigated to.
   const setActiveTab = (tab: MainTab) => {
+    if (tab !== tabFromUrl()) {
+      const url = new URL(window.location.href);
+      if (tab === HOME) url.searchParams.delete("tab");
+      else url.searchParams.set("tab", tab);
+      window.history.pushState({ tab }, "", url);
+    }
     setActiveTabState(tab);
     setMobileMenuOpen(false);
     // a new page starts at its top, not where the last one was scrolled to
     document.querySelector("main")?.scrollTo({ top: 0 });
   };
+
+  // phone back button goes to the previous page in the shop admin
+  useEffect(() => {
+    const onPop = () => setActiveTabState(tabFromUrl());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-100">

@@ -1,19 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
-import { useRouter } from "next/navigation";
-import { Shield, Lock, ArrowRight, Loader2, Building2, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Lock, Tag, User } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+import LanguageToggle from "@/components/app-shell/LanguageToggle";
 
 export default function Page() {
   const { t } = useLang();
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [passcode, setPasscode] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // came from /prices: the price viewer's sign-in
+  const [forPrices, setForPrices] = useState(false);
   const { login } = useAuthStore();
+
+  useEffect(() => {
+    setForPrices(new URLSearchParams(window.location.search).get("for") === "prices");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +31,10 @@ export default function Page() {
       setError(t("Please enter your username"));
       return;
     }
-
     if (passcode.trim() === "") {
       setError(t("Please enter your passcode"));
       return;
     }
-
     if (passcode.length < 4) {
       setError(t("Passcode must be at least 4 characters"));
       return;
@@ -38,62 +43,86 @@ export default function Page() {
     try {
       setLoading(true);
       await login({ username: username.trim(), passcode });
-    } catch (error: any) {
-      // the store already showed a toast
-      setError(t("Invalid username or password."));
+    } catch (err: unknown) {
+      // the server's own reason when it gave one (e.g. too many wrong tries)
+      const reason = (err as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      setError(t(reason || "Invalid username or password."));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center bg-gray-50 px-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full border border-gray-100"></div>
-        <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full border border-gray-100"></div>
-        <div className="absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full border border-gray-50"></div>
+    <div className="login-bg relative flex min-h-dvh flex-col overflow-hidden px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+      {/* soft rings from the badge, behind everything */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full border-[18px] border-[#c8423b]/[0.06]" />
+        <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full border-[22px] border-[#2c3e5c]/[0.06]" />
+        <div className="absolute right-8 top-24 h-24 w-24 rounded-full border-[10px] border-[#e8b04a]/10" />
       </div>
 
-      {/* Main Content */}
-      <div className="relative w-full max-w-md">
-        {/* Logo/Brand Section */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-900">
-            <Building2 className="h-8 w-8 text-white" />
+      <div className="relative z-10 flex items-center justify-between">
+        <Link
+          href="/"
+          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-[#2c3e5c]/80 active:bg-black/5"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t("Back to the shop")}
+        </Link>
+        <LanguageToggle />
+      </div>
+
+      <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-6">
+        {/* brand */}
+        <div className="mb-7 text-center">
+          <div className="lost-bob relative mx-auto mb-4 h-28 w-28">
+            <span className="absolute inset-0 rounded-full bg-[#c8423b]/15 blur-xl" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Ting Ting ko pasal"
+              width={112}
+              height={112}
+              className="relative h-28 w-28 rounded-full shadow-xl ring-4 ring-white"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {t("Welcome to Ting Ting ko pasal")}
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#2c3e5c]">
+            Ting Ting ko pasal
           </h1>
-          <p className="mt-2 text-sm text-gray-500">
-            {t("Secure access to your management dashboard")}
+          <p className="mt-1.5 flex items-center justify-center gap-1.5 text-sm text-[#2c3e5c]/70">
+            {forPrices ? (
+              <>
+                <Tag className="h-4 w-4 text-emerald-600" />
+                {t("Sign in to see prices")}
+              </>
+            ) : (
+              t("Sign in to manage your shop")
+            )}
           </p>
         </div>
 
-        {/* Login Card */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-          {/* Error Message */}
+        {/* card */}
+        <div className="rounded-3xl bg-white/90 p-6 shadow-[0_20px_50px_-20px_rgba(44,62,92,0.35)] ring-1 ring-[#2c3e5c]/5 backdrop-blur sm:p-7">
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100">
-                <span className="text-xs font-bold text-red-600">!</span>
-              </div>
-              <p className="text-sm text-red-700">{error}</p>
+            <div
+              role="alert"
+              className="mb-4 flex items-start gap-2.5 rounded-2xl bg-red-50 px-3.5 py-3 text-sm text-red-700 ring-1 ring-red-100"
+            >
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600">
+                !
+              </span>
+              <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5" method="post" action="#">
+          <form onSubmit={handleSubmit} className="space-y-4" method="post" action="#">
             <div>
-              <label
-                htmlFor="username"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="username" className="mb-1.5 block text-sm font-semibold text-[#2c3e5c]">
                 {t("Username")}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
+                <User className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   id="username"
                   name="username"
@@ -102,13 +131,14 @@ export default function Page() {
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
+                  enterKeyHint="next"
                   placeholder={t("Enter your username")}
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
                     setError("");
                   }}
-                  className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                  className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50/60 pl-11 pr-4 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#c8423b]/50 focus:bg-white focus:ring-4 focus:ring-[#c8423b]/10"
                   maxLength={40}
                   autoFocus
                 />
@@ -116,67 +146,62 @@ export default function Page() {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-[#2c3e5c]">
                 {t("Password")}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPass ? "text" : "password"}
                   autoComplete="current-password"
+                  enterKeyHint="go"
                   placeholder={t("Enter your password")}
                   value={passcode}
                   onChange={(e) => {
                     setPasscode(e.target.value);
                     setError("");
                   }}
-                  className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                  className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50/60 pl-11 pr-12 text-base text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-[#c8423b]/50 focus:bg-white focus:ring-4 focus:ring-[#c8423b]/10"
                   maxLength={20}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((v) => !v)}
+                  aria-label={t(showPass ? "Hide password" : "Show password")}
+                  className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 active:bg-gray-100"
+                >
+                  {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
-              <p className="mt-2 text-xs text-gray-400">
-                {t("Enter the password provided by your administrator")}
-              </p>
             </div>
 
             <button
               type="submit"
               disabled={loading || !username.trim() || !passcode.trim()}
-              className="group cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="group mt-2 inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#c8423b] px-4 text-base font-semibold text-white shadow-lg shadow-[#c8423b]/25 transition hover:bg-[#b53a34] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   {t("Verifying...")}
                 </>
               ) : (
                 <>
-                  <Shield className="h-4 w-4" />
-                  {t("Access Dashboard")}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  {t("Sign in")}
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
             </button>
           </form>
-
-          {/* Help Text */}
-          <div className="mt-6 border-t border-gray-100 pt-4">
-            <div className="flex items-center justify-center gap-2">
-              <Lock className="h-3 w-3 text-gray-400" />
-              <p className="text-xs text-gray-400">
-                {t("Protected by username and password sign-in")}
-              </p>
-            </div>
-          </div>
         </div>
-      </div>
+
+        <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[#2c3e5c]/50">
+          <Lock className="h-3 w-3" />
+          {t("Staff only. Ask the shop owner for a login.")}
+        </p>
+      </main>
     </div>
   );
 }

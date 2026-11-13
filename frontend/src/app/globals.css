@@ -256,3 +256,99 @@ body:has(.fixed.inset-0) main {
     font-size: 16px;
   }
 }
+
+/* 404 page: a shopping bag that lost a page */
+.lost-bg {
+  background:
+    radial-gradient(circle at 15% 20%, #ffe4e6 0, transparent 45%),
+    radial-gradient(circle at 85% 15%, #e0f2fe 0, transparent 40%),
+    radial-gradient(circle at 50% 100%, #fef3c7 0, transparent 55%),
+    #fffaf5;
+}
+.lost-digit {
+  background: linear-gradient(160deg, #f43f5e 0%, #fb923c 55%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 0 rgba(244, 63, 94, 0.15));
+}
+.lost-hop { animation: lost-hop 2.4s ease-in-out infinite; display: inline-block; }
+@keyframes lost-hop {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  20% { transform: translateY(-14px) rotate(-6deg); }
+  40% { transform: translateY(0) rotate(0); }
+}
+.lost-wobble { animation: lost-wobble 3s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes lost-wobble {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+}
+.lost-jump { animation: lost-jump 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), lost-wobble 3s ease-in-out 0.7s infinite; transform-origin: 50% 100%; }
+@keyframes lost-jump {
+  0% { transform: scale(1, 1); }
+  20% { transform: scale(1.12, 0.85); }
+  50% { transform: translateY(-28px) scale(0.95, 1.08) rotate(-6deg); }
+  80% { transform: translateY(0) scale(1.05, 0.95); }
+  100% { transform: scale(1, 1); }
+}
+.lost-peek { animation: lost-peek 2.2s ease-in-out infinite; }
+@keyframes lost-peek {
+  0%, 100% { transform: translateY(6px); }
+  50% { transform: translateY(-4px); }
+}
+.lost-blink { animation: lost-blink 3.2s infinite; }
+@keyframes lost-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+.lost-shadow { animation: lost-shadow 3s ease-in-out infinite; }
+@keyframes lost-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  50% { transform: scaleX(0.75); opacity: 0.6; }
+}
+.lost-bob { animation: lost-bob 4s ease-in-out infinite; }
+@keyframes lost-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+.lost-float { opacity: 0.35; animation: lost-float linear infinite; }
+@keyframes lost-float {
+  0% { transform: translateY(0) rotate(0); opacity: 0; }
+  10% { opacity: 0.4; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-110dvh) rotate(200deg); opacity: 0; }
+}
+.lost-burst {
+  margin: -16px 0 0 -16px;
+  animation: lost-burst 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@keyframes lost-burst {
+  0% { transform: translate(0, 0) scale(0.3) rotate(0); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--bx), var(--by)) scale(1.1) rotate(var(--br)); opacity: 0; }
+}
+.lost-cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.18) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: lost-shine 3s ease-in-out infinite;
+}
+@keyframes lost-shine {
+  0%, 60% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lost-hop, .lost-wobble, .lost-jump, .lost-peek, .lost-blink, .lost-shadow,
+  .lost-bob, .lost-float, .lost-cta::after { animation: none; }
+}
+
+/* sign-in page: warm, in the logo's colours */
+.login-bg {
+  background:
+    radial-gradient(circle at 10% 0%, #fde2e1 0, transparent 45%),
+    radial-gradient(circle at 100% 100%, #dbe4f3 0, transparent 50%),
+    radial-gradient(circle at 90% 20%, #fdf0d5 0, transparent 35%),
+    #fbf8f4;
+}

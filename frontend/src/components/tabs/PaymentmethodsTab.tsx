@@ -358,14 +358,14 @@ export default function PaymentMethodsPage() {
               onClick={() =>
                 setTransferFundsModal({ open: true, fromMethod: null })
               }
-              className="inline-flex cursor-pointer h-11 items-center gap-2 justify-center rounded-xl border border-neutral-200 bg-white px-5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:border-neutral-300 active:scale-[0.98]"
+              className="inline-flex shrink-0 whitespace-nowrap cursor-pointer h-11 items-center gap-2 justify-center rounded-xl border border-neutral-200 bg-white px-5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:border-neutral-300 active:scale-[0.98]"
             >
               <ArrowLeftRight className="h-4 w-4" />
               {t("Transfer")}
             </button>
             <button
               onClick={openCreate}
-              className="inline-flex cursor-pointer h-11 items-center gap-2 justify-center rounded-xl bg-neutral-900 px-5 text-sm font-medium text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800 hover:shadow-neutral-900/20 active:scale-[0.98]"
+              className="inline-flex shrink-0 whitespace-nowrap cursor-pointer h-11 items-center gap-2 justify-center rounded-xl bg-neutral-900 px-5 text-sm font-medium text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800 hover:shadow-neutral-900/20 active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               {t("Add payment method")}

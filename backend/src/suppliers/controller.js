@@ -1,5 +1,6 @@
 import Supplier from "../models/Supplier.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 const toApiSupplier = (doc) => ({
   id: doc._id.toString(),
   supplier_name: doc.supplierName,
@@ -86,7 +87,7 @@ export const getAllSuppliers = async (req, res) => {
     const baseFilter = {};
 
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       baseFilter.$or = [
         { supplierName: regex },
         { contactPerson: regex },

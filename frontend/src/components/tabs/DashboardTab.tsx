@@ -880,8 +880,19 @@ function DashboardHeader({
           </button>
 
           {/* Notification Dropdown */}
+          {/* phones: dim the page behind the panel; tapping it closes */}
           {isNotificationOpen && (
-            <div className="absolute right-0 mt-2 w-[28rem] max-h-[32rem] overflow-y-auto rounded-xl bg-white shadow-2xl ring-1 ring-neutral-200 z-50">
+            <button
+              type="button"
+              aria-label={t("Close notifications")}
+              onClick={() => setIsNotificationOpen(false)}
+              className="fixed inset-0 z-40 cursor-default bg-black/30 sm:hidden"
+            />
+          )}
+          {/* phones: a full-width panel under the top bar; larger screens: a
+              dropdown under the bell that never runs off the screen */}
+          {isNotificationOpen && (
+            <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4rem)] z-50 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-2xl bg-white text-left font-normal shadow-2xl ring-1 ring-neutral-200 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[min(28rem,calc(100vw-2rem))] sm:max-h-[32rem] sm:rounded-xl">
               <div className="sticky top-0 bg-white border-b border-neutral-200 p-4 flex items-center justify-between z-10">
                 <div>
                   <h3 className="text-sm font-bold text-neutral-900">

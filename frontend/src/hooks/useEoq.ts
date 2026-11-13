@@ -122,7 +122,8 @@ export const useEoqByProductId = (productId: number | null) => {
       return res.data;
     },
     staleTime: 5 * 60 * 1000,
-    enabled: !!productId && productId > 0,
+    // product ids are text ("6af69a31..."), not numbers
+    enabled: !!productId,
     retry: 1,
   });
 };

@@ -2,6 +2,7 @@ import QuickSale from "../models/QuickSale.js";
 import PaymentMethod from "../models/PaymentMethod.js";
 import Sale from "../models/Sale.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 const allowedStatuses = ["pending", "converted", "cancelled"];
 
 function normalizeString(value) {
@@ -97,7 +98,7 @@ export const getQuickSales = async (req, res) => {
 
     const match = {};
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       match.notes = regex;
     }
     if (status && allowedStatuses.includes(status)) {

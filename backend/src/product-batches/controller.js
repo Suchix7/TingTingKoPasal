@@ -6,6 +6,7 @@ import { serializeBatch } from "../utils/serialize.js";
 import { generateProductBarcode } from "../utils/barcode.js";
 import { renameLine, sortLines } from "../utils/stockLines.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 export const createProductBatch = async (req, res) => {
   try {
     const { product_id, batch_number, quantity, cost_price, sale_price } = req.body;
@@ -264,9 +265,9 @@ export const getProductBatches = async (req, res) => {
       ? await Product.find({
           isDeleted: false,
           $or: [
-            { productName: { $regex: search, $options: "i" } },
-            { sku: { $regex: search, $options: "i" } },
-            { barcode: { $regex: search, $options: "i" } },
+            { productName: { $regex: escapeRegex(search), $options: "i" } },
+            { sku: { $regex: escapeRegex(search), $options: "i" } },
+            { barcode: { $regex: escapeRegex(search), $options: "i" } },
           ],
         }).distinct("_id")
       : null;
@@ -274,7 +275,7 @@ export const getProductBatches = async (req, res) => {
     const filter = { isDeleted: false };
 
     if (search) {
-      filter.$or = [{ batchNumber: { $regex: search, $options: "i" } }, { productId: { $in: activeProductIds } }];
+      filter.$or = [{ batchNumber: { $regex: escapeRegex(search), $options: "i" } }, { productId: { $in: activeProductIds } }];
     } else {
       const activeIds = await Product.find({ isDeleted: false }).distinct("_id");
       filter.productId = { $in: activeIds };

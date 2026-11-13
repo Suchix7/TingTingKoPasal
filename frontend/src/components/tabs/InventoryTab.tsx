@@ -615,7 +615,7 @@ export default function InventoryPage() {
     <>
       <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-6">
         <div className=" space-y-6">
-          <div className="flex flex-col gap-6 rounded-3xl border border-gray-200 bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 rounded-3xl border border-gray-200 bg-white p-6 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center gap-4">
               <div className="rounded-2xl bg-slate-900 p-3">
                 <Package className="h-6 w-6 text-white" />
@@ -630,15 +630,15 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+              <div className="relative min-w-0">
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder={t("Search by name...")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 sm:w-72"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100 xl:w-72"
                 />
               </div>
 

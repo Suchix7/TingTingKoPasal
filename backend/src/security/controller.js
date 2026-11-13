@@ -1,9 +1,17 @@
 import SystemCredentials from "../models/SystemCredentials.js";
 import bcrypt from "bcryptjs";
+import { createAttemptLimiter, tooMany } from "../utils/attemptLimiter.js";
+
+// guessing the current passcode here is limited like the login
+const limiter = createAttemptLimiter();
 
 export const updatePasscode = async (req, res) => {
   try {
-    const { oldPasscode, newPasscode } = req.body;
+    const oldPasscode = String(req.body?.oldPasscode ?? "");
+    const newPasscode = String(req.body?.newPasscode ?? "");
+
+    const wait = limiter.blockedFor(req.ip, "passcode");
+    if (wait) return tooMany(res, wait);
 
     if (oldPasscode.length === 0) {
       return res
@@ -25,15 +33,24 @@ export const updatePasscode = async (req, res) => {
     );
 
     if (!isMatch) {
+      limiter.fail(req.ip, "passcode");
       return res
         .status(400)
         .json({ success: false, message: "Old passcode is incorrect" });
     }
 
+    limiter.succeed(req.ip, "passcode");
     if (newPasscode.length === 0) {
       return res
         .status(200)
         .json({ success: false, message: "New passcode is required" });
+    }
+    // same rule as the Security tab: 6 to 20 digits
+    if (!/^\d{6,20}$/.test(newPasscode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Passcode must be 6 to 20 digits",
+      });
     }
 
     credentials.passcodeHash = await bcrypt.hash(String(newPasscode), 10);

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 function costRating(total) {
   if (total >= 1000) return "HIGH";
   if (total >= 500) return "MEDIUM";
@@ -93,8 +94,8 @@ export const getAllInventoryCosts = async (req, res) => {
     const filter = { isDeleted: false };
     if (search) {
       filter.$or = [
-        { productName: { $regex: search, $options: "i" } },
-        { sku: { $regex: search, $options: "i" } },
+        { productName: { $regex: escapeRegex(search), $options: "i" } },
+        { sku: { $regex: escapeRegex(search), $options: "i" } },
       ];
     }
 

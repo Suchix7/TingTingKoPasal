@@ -8,6 +8,7 @@ import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 import { logActivity } from "../utils/activityLog.js";
 import { attachItemPhotos, attachSalePhotos } from "../utils/saleItemPhotos.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 const rs = (n) => `Rs. ${Number(n || 0).toLocaleString("en-NP")}`;
 
 export const createSale = async (req, res) => {
@@ -62,7 +63,7 @@ export const getSales = async (req, res) => {
 
     const match = {};
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       match.$or = [
         { invoiceNo: regex },
         { customerName: regex },

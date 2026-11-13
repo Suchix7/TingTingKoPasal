@@ -5,6 +5,7 @@ import ProductBatch from "../models/ProductBatch.js";
 import * as poService from "../services/purchaseOrderService.js";
 import { serializePurchaseOrder } from "../services/purchaseOrderService.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 export const createPurchaseOrder = async (req, res) => {
   try {
     const data = await poService.createPurchaseOrder(req.body);
@@ -70,7 +71,7 @@ export const getAllPurchaseOrders = async (req, res) => {
 
     let supplierIds = null;
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       const matchingSuppliers = await Supplier.find({
         $or: [{ supplierName: regex }, { contactPerson: regex }],
       }).select("_id");

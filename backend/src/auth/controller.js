@@ -8,6 +8,10 @@ import {
   normalizeUsername,
 } from "./accounts.js";
 import { adminUsername, priceUsername } from "./middleware.js";
+import { createAttemptLimiter, tooMany } from "../utils/attemptLimiter.js";
+
+// password guessing: a few wrong tries, then a wait
+const loginLimiter = createAttemptLimiter();
 
 const invalid = (res) =>
   res.status(401).json({ success: false, message: "Invalid username or password" });
@@ -28,9 +32,15 @@ export async function loginController(req, res) {
         .json({ success: false, message: "Password is required" });
     }
 
+    const wait = loginLimiter.blockedFor(req.ip, username);
+    if (wait) return tooMany(res, wait);
+
     const isAdmin = ADMIN_USERNAMES.includes(username);
     const isPriceViewer = username === PRICE_USERNAME;
-    if (!isAdmin && !isPriceViewer) return invalid(res);
+    if (!isAdmin && !isPriceViewer) {
+      loginLimiter.fail(req.ip, username);
+      return invalid(res);
+    }
 
     const credentials = await SystemCredentials.findOne();
 
@@ -44,8 +54,10 @@ export async function loginController(req, res) {
       ? credentials.passcodeHash
       : credentials.priceViewerPasscodeHash;
     if (!hash || !(await bcrypt.compare(String(passcode), hash))) {
+      loginLimiter.fail(req.ip, username);
       return invalid(res);
     }
+    loginLimiter.succeed(req.ip, username);
 
     const role = isAdmin ? ROLE_ADMIN : ROLE_PRICE;
     // signing in as one account keeps the other one signed in, so the admin

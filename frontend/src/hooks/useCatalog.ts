@@ -2,18 +2,20 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
 import type { MediaItem } from "@/components/catalog/image";
 
-// `price` fields are only sent to the signed-in price viewer
-export type CoverModel = { model: string; quantity: number; price?: number };
+// `price` and `cost` fields are only sent to the signed-in price viewer
+export type CoverModel = { model: string; quantity: number; price?: number; cost?: number };
 
 // A colour/style of a product: its photo and the sizes left in it
 export type CoverVariant = {
   name: string;
   // index into `media`, -1 when no photo is tagged with this colour
   media_index: number;
-  sizes: { size: string; quantity: number; price?: number }[];
+  sizes: { size: string; quantity: number; price?: number; cost?: number }[];
   quantity: number;
   price_min?: number;
   price_max?: number;
+  cost_min?: number;
+  cost_max?: number;
 };
 
 export type Cover = {
@@ -34,15 +36,29 @@ export type Cover = {
   has_models?: boolean;
   quantity: number;
   in_stock: boolean;
-  // selling price range, for the price viewer only
+  // product name (and its Chinese name), for the price viewer only
+  name?: string;
+  name_zh?: string;
+  // selling and cost price ranges, for the price viewer only
   price_min?: number;
   price_max?: number;
+  cost_min?: number;
+  cost_max?: number;
 };
+
+// a colour that has one of these phone models (or sizes) in stock
+export const fitsModels = (v: CoverVariant, models: string[]) =>
+  models.length > 0 &&
+  v.sizes.some(
+    (s) => s.quantity > 0 && models.some((m) => m.toLowerCase() === s.size.toLowerCase()),
+  );
 
 export type CatalogModel = { model: string; count: number };
 export type CatalogCategory = {
   id: string;
   name: string;
+  // Chinese name, when one is set
+  name_zh?: string;
   count: number;
   photo_url: string;
   // products here are stocked per size (S, M, L) rather than per phone model

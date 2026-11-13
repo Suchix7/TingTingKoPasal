@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Category from "../models/Category.js";
 import { uploadImageBuffer, deleteImage } from "../utils/cloudinaryUpload.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 const toApiCategory = (doc) => ({
   id: doc._id.toString(),
   category_name: doc.categoryName,
@@ -80,7 +81,7 @@ export const getCategories = async (req, res) => {
     const filter = {};
 
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       filter.$or = [{ categoryName: regex }, { description: regex }];
     }
 

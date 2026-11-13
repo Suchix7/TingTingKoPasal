@@ -8,6 +8,8 @@ type Props = {
   // gave up after retrying; offer to try again
   error: boolean;
   onRetry: () => void;
+  // translates the words (the price page in Chinese)
+  t?: (text: string) => string;
 };
 
 // Shown only for the first visit's wait. A warm server answers in well under
@@ -28,7 +30,7 @@ const STEPS = [
 ];
 const STEP_MS = 6000;
 
-export default function ShopSplash({ ready, error, onRetry }: Props) {
+export default function ShopSplash({ ready, error, onRetry, t = (s) => s }: Props) {
   const startedAt = useRef(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -119,17 +121,17 @@ export default function ShopSplash({ ready, error, onRetry }: Props) {
           {error ? (
             <div className="splash-rise">
               <p className="text-lg font-semibold tracking-tight text-[#2c3e5c]">
-                Couldn&apos;t reach the shop
+                {t("Couldn't reach the shop")}
               </p>
               <p className="mt-1 text-sm text-[#2c3e5c]/70">
-                Check your internet connection and try again.
+                {t("Check your internet connection and try again.")}
               </p>
               <button
                 type="button"
                 onClick={retry}
                 className="mt-5 rounded-full bg-[#c8423b] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-[#c8423b]/30 transition active:scale-95"
               >
-                Try again
+                {t("Try again")}
               </button>
             </div>
           ) : (
@@ -138,7 +140,7 @@ export default function ShopSplash({ ready, error, onRetry }: Props) {
                 key={waking ? "waking" : "opening"}
                 className="splash-rise text-lg font-semibold tracking-tight text-[#2c3e5c]"
               >
-                {waking ? "Waking up the shop" : "Opening the shop"}
+                {t(waking ? "Waking up the shop" : "Opening the shop")}
                 <span className="splash-dots" aria-hidden>
                   <span>.</span>
                   <span>.</span>
@@ -159,7 +161,7 @@ export default function ShopSplash({ ready, error, onRetry }: Props) {
                     key={step}
                     className="splash-rise mt-3 text-sm font-medium text-[#c8423b]"
                   >
-                    {STEPS[step]}
+                    {t(STEPS[step])}
                   </p>
                   <p className="splash-rise mt-3 text-xs leading-relaxed text-[#2c3e5c]/60">
                     The shop was resting, so the first visit can take up to a

@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // the price viewer only sees the customer site, with prices
       window.location.href = res.data.user?.role === "price" ? "/prices" : "/admin";
     } catch (error) {
-      toast.error("Invalid username or password.");
+      // the sign-in page shows why, in the form (no pop-up as well)
       throw error;
     } finally {
       set({ isLoggingIn: false });

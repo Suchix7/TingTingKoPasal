@@ -254,11 +254,12 @@ export default function VariantStockEditor({
     const values = cells.map((c) => g[kind][c]);
     return values.every((v) => v !== undefined && v === values[0]) ? String(values[0]) : "";
   };
+  // sale in green, cost in orange, so the two are easy to tell apart
   const priceInput = (kind: "cost" | "sale", cells: string[], label: string, compact = false) => (
     <label className={`flex min-w-0 items-center gap-1 ${compact ? "" : "flex-1"}`}>
       <span
         className={`shrink-0 text-[10px] font-semibold uppercase ${
-          kind === "sale" ? "text-emerald-700" : "text-slate-500"
+          kind === "sale" ? "text-emerald-700" : "text-orange-600"
         }`}
       >
         {label}
@@ -272,10 +273,14 @@ export default function VariantStockEditor({
         onWheel={(e) => e.currentTarget.blur()}
         onChange={(e) => setPrice(kind, cells, e.target.value)}
         placeholder={String((kind === "sale" ? productPrices?.sale : productPrices?.cost) ?? 0)}
-        className={`h-8 w-full min-w-0 rounded-md border px-1.5 text-xs outline-none focus:border-slate-400 ${
-          cells.some((c) => g[kind][c] !== undefined)
-            ? "border-slate-300 bg-white font-semibold text-slate-900"
-            : "border-slate-200 bg-slate-50 text-slate-700"
+        className={`h-8 w-full min-w-0 rounded-md border px-1.5 text-xs outline-none ${
+          kind === "sale"
+            ? cells.some((c) => g[kind][c] !== undefined)
+              ? "border-emerald-300 bg-white font-semibold text-emerald-800 focus:border-emerald-500"
+              : "border-emerald-200 bg-emerald-50/60 text-emerald-700 placeholder:text-emerald-400 focus:border-emerald-400"
+            : cells.some((c) => g[kind][c] !== undefined)
+              ? "border-orange-300 bg-white font-semibold text-orange-800 focus:border-orange-500"
+              : "border-orange-200 bg-orange-50/60 text-orange-700 placeholder:text-orange-400 focus:border-orange-400"
         }`}
         aria-label={label}
       />

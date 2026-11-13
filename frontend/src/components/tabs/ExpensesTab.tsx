@@ -292,8 +292,8 @@ export default function ExpensesPage() {
       )}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
-        <div className="grid gap-3 md:grid-cols-[1fr_180px_180px_180px_180px]">
-          <div className="relative">
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-[minmax(12rem,1fr)_170px_170px_170px_170px]">
+          <div className="relative sm:col-span-2 2xl:col-span-1">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               size={18}
@@ -309,7 +309,7 @@ export default function ExpensesPage() {
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
+            className="min-w-0 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
           >
             <option value="">{t("All Categories")}</option>
             {categories.map((cat) => (
@@ -322,7 +322,7 @@ export default function ExpensesPage() {
           <select
             value={paymentMethodId}
             onChange={(event) => setPaymentMethodId(event.target.value)}
-            className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
+            className="min-w-0 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
           >
             <option value="">{t("All Payment Methods")}</option>
             <option value="1">{t("Cash")}</option>

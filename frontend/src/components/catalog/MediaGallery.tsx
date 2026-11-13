@@ -14,6 +14,8 @@ type Props = {
   // slides showing something sold out: stamped "Sold out" (colours kept)
   soldOut?: (index: number) => boolean;
   labels?: { previous: string; next: string };
+  // the sold-out stamp in Chinese
+  zh?: boolean;
   // jump to this slide when it changes (e.g. a colour was picked)
   index?: number;
   // told whenever the shown slide changes
@@ -33,6 +35,7 @@ export default function MediaGallery({
   dimmed = false,
   soldOut,
   labels = { previous: "Previous photo", next: "Next photo" },
+  zh = false,
   index: wanted,
   onIndexChange,
 }: Props) {
@@ -175,7 +178,7 @@ export default function MediaGallery({
                     draggable={false}
                   />
                 ))}
-              {soldOut?.(i) && <SoldOutMark size="lg" />}
+              {soldOut?.(i) && <SoldOutMark size="lg" zh={zh} />}
             </div>
           ))}
         </div>

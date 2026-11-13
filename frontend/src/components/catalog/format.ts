@@ -1,4 +1,8 @@
-export const pcs = (n: number) => `${n} ${n === 1 ? "pc" : "pcs"}`;
+// translates shop text; the public shop keeps it as it is (English)
+export type Tr = (text: string) => string;
+export const same: Tr = (text) => text;
+
+export const pcs = (n: number, t: Tr = same) => `${n} ${t(n === 1 ? "pc" : "pcs")}`;
 
 export const rs = (n: number) => `Rs. ${Math.round(n).toLocaleString("en-IN")}`;
 

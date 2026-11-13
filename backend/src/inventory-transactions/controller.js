@@ -3,6 +3,7 @@ import InventoryTransaction from "../models/InventoryTransaction.js";
 import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 export const getAllInventoryTransactions = async (req, res) => {
   try {
     const page = Math.max(Number(req.query.page) || 1, 1);
@@ -84,12 +85,12 @@ export const getAllInventoryTransactions = async (req, res) => {
       pipeline.push({
         $match: {
           $or: [
-            { "product.productName": { $regex: search, $options: "i" } },
-            { "product.sku": { $regex: search, $options: "i" } },
-            { "product.barcode": { $regex: search, $options: "i" } },
-            { type: { $regex: search, $options: "i" } },
-            { referenceType: { $regex: search, $options: "i" } },
-            { "batch.batchNumber": { $regex: search, $options: "i" } },
+            { "product.productName": { $regex: escapeRegex(search), $options: "i" } },
+            { "product.sku": { $regex: escapeRegex(search), $options: "i" } },
+            { "product.barcode": { $regex: escapeRegex(search), $options: "i" } },
+            { type: { $regex: escapeRegex(search), $options: "i" } },
+            { referenceType: { $regex: escapeRegex(search), $options: "i" } },
+            { "batch.batchNumber": { $regex: escapeRegex(search), $options: "i" } },
           ],
         },
       });

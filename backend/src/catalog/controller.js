@@ -14,6 +14,13 @@ import { canSeePrices } from "../auth/middleware.js";
 // stay listed, marked out of stock, after everything that is available.
 // Signed in as the price viewer, selling prices are added too.
 
+// answers with prices depend on the login cookie: never keep them in a shared
+// cache (a CDN or proxy) where the public could be served them
+const noSharedCache = (res) => {
+  res.set("Cache-Control", "private, no-store");
+  res.vary("Cookie");
+};
+
 const baseFilter = () => ({
   isDeleted: false,
   status: "Active",
@@ -27,7 +34,7 @@ const baseFilter = () => ({
 // shown under a colour.
 async function modelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
-    .select("productId batchNumber variant size model quantity salePrice")
+    .select("productId batchNumber variant size model quantity salePrice costPrice")
     .lean();
 
   const map = new Map();
@@ -43,6 +50,7 @@ async function modelsByProduct() {
       part: size || (variant ? model : ""),
       quantity: Math.max(Number(b.quantity) || 0, 0),
       price: Number(b.salePrice) || 0,
+      cost: Number(b.costPrice) || 0,
     });
   }
   return map;
@@ -106,31 +114,45 @@ function priceRange(lines, fallback) {
   return { price_min: Math.min(...prices), price_max: Math.max(...prices) };
 }
 
-// Selling prices for the price viewer, kept apart so the public site never
-// gets them: one range for the product, and per model / colour / size.
+// the same for cost prices
+function costRange(lines, fallback) {
+  const costs = lines.map((e) => e.cost).filter((p) => p > 0);
+  if (!costs.length) return { cost_min: fallback, cost_max: fallback };
+  return { cost_min: Math.min(...costs), cost_max: Math.max(...costs) };
+}
+
+// Selling and cost prices for the price viewer, kept apart so the public site
+// never gets them: one range for the product, and per model / colour / size.
 function withPrices(cover, product, entries) {
   const own = Number(product.salePrice) || 0;
+  const ownCost = Number(product.costPrice) || 0;
   // price the range on what is left; everything when it is all sold out
   const left = entries.filter((e) => e.quantity > 0);
-  const linePrice = (match) => priceRange(entries.filter(match), own).price_min;
+  const priced = left.length ? left : entries;
+  const linePrices = (lines) => ({
+    price: priceRange(lines, own).price_min,
+    cost: costRange(lines, ownCost).cost_min,
+  });
   return {
     ...cover,
-    ...priceRange(left.length ? left : entries, own),
+    // the price viewer also sees what each product is called
+    name: product.productName || "",
+    name_zh: product.productNameZh || "",
+    ...priceRange(priced, own),
+    ...costRange(priced, ownCost),
     models: cover.models.map((m) => ({
       ...m,
-      price: linePrice((e) => e.model.toLowerCase() === m.model.toLowerCase()),
+      ...linePrices(entries.filter((e) => e.model.toLowerCase() === m.model.toLowerCase())),
     })),
     variants: cover.variants.map((v) => {
       const mine = entries.filter((e) => e.variant.toLowerCase() === v.name.toLowerCase());
       return {
         ...v,
         ...priceRange(mine, own),
+        ...costRange(mine, ownCost),
         sizes: v.sizes.map((s) => ({
           ...s,
-          price: priceRange(
-            mine.filter((e) => e.part.toLowerCase() === s.size.toLowerCase()),
-            own,
-          ).price_min,
+          ...linePrices(mine.filter((e) => e.part.toLowerCase() === s.size.toLowerCase())),
         })),
       };
     }),
@@ -194,6 +216,7 @@ export const getCovers = async (req, res) => {
       .filter(Boolean);
 
     const prices = canSeePrices(req);
+    if (prices) noSharedCache(res);
     const modelMap = await modelsByProduct();
 
     const filter = baseFilter();
@@ -264,7 +287,7 @@ export const getCovers = async (req, res) => {
             "photos.sizeGuide": 1,
             categoryId: 1,
             "stock.currentStock": 1,
-            ...(prices ? { salePrice: 1 } : {}),
+            ...(prices ? { salePrice: 1, costPrice: 1, productName: 1, productNameZh: 1 } : {}),
           },
         },
       ]),
@@ -292,16 +315,18 @@ export const getCover = async (req, res) => {
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
       .select(
-        "photoUrl photos.url photos.type photos.variant photos.sizeGuide categoryId stock.currentStock salePrice",
+        "photoUrl photos.url photos.type photos.variant photos.sizeGuide categoryId stock.currentStock salePrice costPrice productName productNameZh",
       )
       .lean();
     if (!product) {
       return res.status(404).json({ success: false, message: "Cover not found" });
     }
+    const prices = canSeePrices(req);
+    if (prices) noSharedCache(res);
     const modelMap = await modelsByProduct();
     return res.json({
       success: true,
-      data: toCover(product, modelMap.get(String(product._id)), canSeePrices(req)),
+      data: toCover(product, modelMap.get(String(product._id)), prices),
     });
   } catch (error) {
     console.error("Catalog cover error:", error);
@@ -377,6 +402,8 @@ export const getCategories = async (_req, res) => {
       data: categories.map((c) => ({
         id: String(c._id),
         name: c.categoryName,
+        // shown when the price page is read in Chinese
+        name_zh: c.categoryNameZh || "",
         count: stats.get(String(c._id)).count,
         photo_url: c.thumbnailUrl || stats.get(String(c._id)).photo_url,
         // stock lines in this category are sizes, not phone models

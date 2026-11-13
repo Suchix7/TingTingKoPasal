@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { Ruler, X } from "lucide-react";
 
-import type { Cover } from "@/hooks/useCatalog";
-import { pcs, priceLabel, rs } from "./format";
+import { fitsModels, type Cover } from "@/hooks/useCatalog";
+import { zhColour } from "@/lib/colourNames";
+import { pcs as pcsOf, priceLabel, same, type Tr } from "./format";
 import { coverImage } from "./image";
 import MediaGallery from "./MediaGallery";
 
@@ -16,6 +17,14 @@ type Props = {
   hasSizes?: boolean;
   // signed in as the price viewer: show selling prices
   showPrices?: boolean;
+  // the price viewer turned on "CP": show cost prices too
+  showCost?: boolean;
+  // phone models picked in the shop filter: open on a colour made for them
+  models?: string[];
+  // translates the text (the price page in Chinese)
+  t?: Tr;
+  // the price page in Chinese: colour names too
+  zh?: boolean;
   onClose: () => void;
 };
 
@@ -26,11 +35,17 @@ export default function CoverViewer({
   isCase,
   hasSizes = false,
   showPrices = false,
+  showCost = false,
+  models = [],
+  t = same,
+  zh = false,
   onClose,
 }: Props) {
-  // " · Rs. 500" after a chip, only for the price viewer
-  const at = (price?: number) => (showPrices && price ? ` · ${rs(price)}` : "");
+  // "Light Blue" -> 浅蓝色 in Chinese; names we don't know stay as typed
+  const colour = (name: string) => (zh ? zhColour(name) : name);
+  const pcs = (n: number) => pcsOf(n, t);
   const coverPrice = showPrices ? priceLabel(cover.price_min, cover.price_max) : "";
+  const coverCost = showCost ? priceLabel(cover.cost_min, cover.cost_max) : "";
   const availableModels = cover.models.filter((m) => m.quantity > 0);
   const media = cover.media?.length
     ? cover.media
@@ -42,13 +57,17 @@ export default function CoverViewer({
     (a, b) => Number(b.quantity > 0) - Number(a.quantity > 0),
   );
   const sizeGuide = cover.size_guide_index ?? -1;
-  const [picked, setPicked] = useState(0);
-  // open on the first available colour's photo
-  const [slide, setSlide] = useState(() =>
-    cover.in_stock && variants[0]?.quantity > 0 && variants[0].media_index >= 0
-      ? variants[0].media_index
-      : 0,
+  // open on a colour made for the phone picked in the filter, else the first
+  // available colour
+  const [picked, setPicked] = useState(() =>
+    Math.max(variants.findIndex((v) => fitsModels(v, models)), 0),
   );
+  const [slide, setSlide] = useState(() => {
+    const first = variants[picked];
+    return cover.in_stock && first?.quantity > 0 && first.media_index >= 0
+      ? first.media_index
+      : 0;
+  });
   const variant = variants[picked];
 
   const pickVariant = (i: number) => {
@@ -90,7 +109,7 @@ export default function CoverViewer({
           type="button"
           onClick={onClose}
           className="rounded-full bg-white/10 p-2.5 text-white active:bg-white/20"
-          aria-label="Close"
+          aria-label={t("Close")}
         >
           <X className="h-5 w-5" />
         </button>
@@ -98,6 +117,8 @@ export default function CoverViewer({
 
       <MediaGallery
         key={cover.id}
+        zh={zh}
+        labels={{ previous: t("Previous photo"), next: t("Next photo") }}
         items={media}
         soldOut={(i) =>
           !cover.in_stock ||
@@ -108,17 +129,29 @@ export default function CoverViewer({
       />
 
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-        {coverPrice && (
-          <p className="mb-3 text-center">
-            <span className="rounded-full bg-emerald-600 px-3 py-1 text-base font-bold text-white">
-              {coverPrice}
-            </span>
+        {showPrices && ((zh && cover.name_zh) || cover.name) && (
+          <h2 className="mb-2 text-center text-lg font-bold leading-snug text-white">
+            {(zh && cover.name_zh) || cover.name}
+          </h2>
+        )}
+        {(coverPrice || coverCost) && (
+          <p className="mb-3 flex flex-wrap justify-center gap-2 text-center">
+            {coverCost && (
+              <span className="rounded-full bg-orange-500 px-3 py-1 text-base font-bold text-white">
+                {coverCost}
+              </span>
+            )}
+            {coverPrice && (
+              <span className="rounded-full bg-emerald-600 px-3 py-1 text-base font-bold text-white">
+                {coverPrice}
+              </span>
+            )}
           </p>
         )}
         {!cover.in_stock && (
           <p className="mb-3 text-center">
             <span className="rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white">
-              Out of stock
+              {t("Out of stock")}
             </span>
           </p>
         )}
@@ -126,7 +159,7 @@ export default function CoverViewer({
           <div className="space-y-3">
             <div>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
-                {variants.length === 1 ? "Colour" : `Colours · ${variants.length}`}
+                {variants.length === 1 ? t("Colour") : `${t("Colours")} · ${variants.length}`}
               </p>
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
                 {variants.map((v, i) => {
@@ -154,7 +187,7 @@ export default function CoverViewer({
                       ) : (
                         <span className="h-10 w-2" />
                       )}
-                      <span className={soldOut ? "line-through" : ""}>{v.name}</span>
+                      <span className={soldOut ? "line-through" : ""}>{colour(v.name)}</span>
                     </button>
                   );
                 })}
@@ -166,8 +199,13 @@ export default function CoverViewer({
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-white/60">
                     {variant.sizes.length > 0
-                      ? `${cover.has_models ? "Phone models" : "Sizes"} in ${variant.name}`
-                      : variant.name}
+                      ? `${t(cover.has_models ? "Phone models in" : "Sizes in")} ${colour(variant.name)}`
+                      : colour(variant.name)}
+                    {showCost && priceLabel(variant.cost_min, variant.cost_max) && (
+                      <span className="ml-1.5 normal-case tracking-normal text-orange-300">
+                        {priceLabel(variant.cost_min, variant.cost_max)}
+                      </span>
+                    )}
                     {showPrices && priceLabel(variant.price_min, variant.price_max) && (
                       <span className="ml-1.5 normal-case tracking-normal text-emerald-300">
                         {priceLabel(variant.price_min, variant.price_max)}
@@ -180,7 +218,7 @@ export default function CoverViewer({
                       onClick={() => setSlide(sizeGuide)}
                       className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white active:bg-white/20"
                     >
-                      <Ruler className="h-3.5 w-3.5" /> Size guide
+                      <Ruler className="h-3.5 w-3.5" /> {t("Size guide")}
                     </button>
                   )}
                 </div>
@@ -193,13 +231,12 @@ export default function CoverViewer({
                           className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
                         >
                           {s.size} · {pcs(s.quantity)}
-                          {at(s.price)}
                         </span>
                       ) : (
                         <span
                           key={s.size}
                           className="rounded-full border border-white/20 px-3 py-1.5 text-sm font-medium text-white/40 line-through"
-                          aria-label={`${s.size} sold out`}
+                          aria-label={`${s.size} ${t("sold out")}`}
                         >
                           {s.size}
                         </span>
@@ -208,11 +245,11 @@ export default function CoverViewer({
                   </div>
                 ) : (
                   <p className="text-sm font-medium text-white">
-                    {variant.quantity > 0 ? `${pcs(variant.quantity)} in stock` : "Sold out"}
+                    {variant.quantity > 0 ? `${pcs(variant.quantity)} ${t("in stock")}` : t("Sold out")}
                   </p>
                 )}
                 {variant.quantity <= 0 && variant.sizes.length > 0 && (
-                  <p className="mt-2 text-xs text-white/60">This colour is sold out.</p>
+                  <p className="mt-2 text-xs text-white/60">{t("This colour is sold out.")}</p>
                 )}
               </div>
             )}
@@ -224,7 +261,7 @@ export default function CoverViewer({
             <>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-white/60">
-                  {hasSizes ? "Sizes" : "Phone models"}
+                  {t(hasSizes ? "Sizes" : "Phone models")}
                 </p>
                 {sizeGuide >= 0 && (
                   <button
@@ -232,7 +269,7 @@ export default function CoverViewer({
                     onClick={() => setSlide(sizeGuide)}
                     className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white active:bg-white/20"
                   >
-                    <Ruler className="h-3.5 w-3.5" /> Size guide
+                    <Ruler className="h-3.5 w-3.5" /> {t("Size guide")}
                   </button>
                 )}
               </div>
@@ -242,8 +279,7 @@ export default function CoverViewer({
                     key={m.model}
                     className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900"
                   >
-                    {m.model} · {pcs(m.quantity)}
-                    {at(m.price)}
+                    {colour(m.model)} · {pcs(m.quantity)}
                   </span>
                 ))}
               </div>
@@ -251,10 +287,10 @@ export default function CoverViewer({
           )
         ) : cover.in_stock ? (
           <p className="text-center text-sm font-medium text-white">
-            {pcs(cover.quantity)} in stock
+            {pcs(cover.quantity)} {t("in stock")}
             {isCase && (
               <span className="mt-1 block text-xs font-normal text-white/60">
-                Ask in store for your phone model
+                {t("Ask in store for your phone model")}
               </span>
             )}
           </p>

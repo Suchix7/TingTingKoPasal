@@ -3,6 +3,7 @@ import PaymentMethod from "../models/PaymentMethod.js";
 import * as expenseService from "../services/expenseService.js";
 import { serializeExpense } from "../services/expenseService.js";
 
+import { escapeRegex } from "../utils/escapeRegex.js";
 const isValidAmount = (value) =>
   value !== undefined && value !== null && !isNaN(Number(value)) && Number(value) >= 0;
 
@@ -82,7 +83,7 @@ export const getAllExpenses = async (req, res) => {
 
     const match = {};
     if (search) {
-      const regex = new RegExp(search, "i");
+      const regex = new RegExp(escapeRegex(search), "i");
       match.$or = [{ title: regex }, { category: regex }, { notes: regex }];
     }
     if (category) match.category = category;
