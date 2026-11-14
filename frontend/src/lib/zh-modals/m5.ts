@@ -19,7 +19,7 @@ export const zhModals5: Record<string, string> = {
   "Cancelled": "已取消",
   "cannot be less than total cost": "不能少于总成本",
   "Change": "找零",
-  "Change amount cannot be greater than 0. Please adjust the payment or grand total.": "找零金额不能大于0。请调整付款或总计。",
+  "Refund on save": "保存时退款",
   "Clear": "清除",
   "Collected amount": "已收金额",
   "Completed": "已完成",

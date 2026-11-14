@@ -767,13 +767,6 @@ export default function EditSaleModal({
       return false;
     }
 
-    if (changeAmount > 0) {
-      toast.error(
-        t("Change amount cannot be greater than 0. Please adjust the payment or grand total."),
-      );
-      return false;
-    }
-
     return true;
   };
 
@@ -786,6 +779,26 @@ export default function EditSaleModal({
 
     const hasTaxInclusive = items.some((item) => item.tax_inclusive);
 
+    // If the sale total went down (e.g. a discount was added after payment),
+    // the customer paid more than they now owe. Trim the payments, starting
+    // from the last one, so they match the new total — the extra is refunded
+    // from that payment method instead of being left as "change".
+    let excess = Math.round(changeAmount * 100) / 100;
+    const fittedPayments = [...payments]
+      .reverse()
+      .map((payment) => {
+        const amount = Number(payment.amount || 0);
+        if (excess <= 0) return { ...payment, amount };
+        const cut = Math.min(amount, excess);
+        excess = Math.round((excess - cut) * 100) / 100;
+        return { ...payment, amount: Math.round((amount - cut) * 100) / 100 };
+      })
+      .reverse();
+    const fittedTotalPayment = fittedPayments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0,
+    );
+
     const updatedSale = {
       ...sale,
       customer_id: customerId,
@@ -796,14 +809,14 @@ export default function EditSaleModal({
       tax_amount: totalTax,
       is_tax_inclusive: hasTaxInclusive,
       grand_total: grandTotal,
-      paid_amount: totalPayment,
-      change_amount: changeAmount,
+      paid_amount: fittedTotalPayment,
+      change_amount: 0,
       remaining_amount: remainingAmount,
       sale_status: saleStatus,
       payment_status: getPaymentStatus(),
       notes: notes.trim() || null,
 
-      payments: payments.map((payment) => ({
+      payments: fittedPayments.map((payment) => ({
         id: payment.id,
         sale_id: sale.id,
         payment_method_id: payment.payment_method_id,
@@ -1408,7 +1421,7 @@ export default function EditSaleModal({
 
                 {changeAmount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500">{t("Change")}</span>
+                    <span className="text-slate-500">{t("Refund on save")}</span>
                     <span className="font-medium text-blue-700">
                       {money(changeAmount)}
                     </span>
