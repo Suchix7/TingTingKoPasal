@@ -74,10 +74,10 @@ export const PAYMENT_METHOD_POPULATE = {
 async function decrementStock(productId, batchId, quantity, session) {
   if (batchId) {
     const batch = await ProductBatch.findOne({ _id: batchId, productId }).session(session);
-    if (!batch) throw new Error(`Batch with ID ${batchId} not found`);
+    if (!batch) throw new Error("Selected colour / size not found");
     if (Number(batch.quantity) < quantity) {
       throw new Error(
-        `Insufficient stock in batch ${batch.batchNumber}. Available stock: ${batch.quantity}`,
+        `Not enough stock for ${batch.batchNumber}. Available: ${batch.quantity}`,
       );
     }
     const updated = await ProductBatch.findOneAndUpdate(
@@ -85,7 +85,7 @@ async function decrementStock(productId, batchId, quantity, session) {
       { $inc: { quantity: -quantity } },
       { session },
     );
-    if (!updated) throw new Error(`Unable to update batch ${batchId}`);
+    if (!updated) throw new Error(`Unable to update stock for ${batch.batchNumber}`);
     return Number(batch.costPrice || 0);
   }
 
@@ -93,7 +93,7 @@ async function decrementStock(productId, batchId, quantity, session) {
   if (!product) throw new Error(`Product with ID ${productId} not found`);
   if (Number(product.stock.currentStock) < quantity) {
     throw new Error(
-      `Insufficient standard stock for ${product.productName}. Available stock: ${product.stock.currentStock}`,
+      `Not enough stock for ${product.productName}. Available: ${product.stock.currentStock}`,
     );
   }
   const updated = await Product.findOneAndUpdate(
@@ -124,7 +124,7 @@ async function restoreStock(productId, batchId, quantity, session) {
 async function getItemCostPrice(productId, batchId, session) {
   if (batchId) {
     const batch = await ProductBatch.findOne({ _id: batchId, productId }).session(session);
-    if (!batch) throw new Error("Selected batch does not belong to this product");
+    if (!batch) throw new Error("Selected colour / size does not belong to this product");
     return Number(batch.costPrice || 0);
   }
   const product = await Product.findById(productId).session(session);
@@ -275,13 +275,13 @@ export async function createSale(body) {
     if (hasBatch) {
       const batch = await ProductBatch.findOne({ _id: item.batch_id, productId: item.product_id });
       if (!batch) {
-        const err = new Error("Selected batch does not belong to this product");
+        const err = new Error("Selected colour / size does not belong to this product");
         err.statusCode = 400;
         throw err;
       }
       if (Number(batch.quantity) < quantity) {
         const err = new Error(
-          `Insufficient stock in selected batch. Available stock: ${batch.quantity}`,
+          `Not enough stock for ${batch.batchNumber}. Available: ${batch.quantity}`,
         );
         err.statusCode = 400;
         throw err;
@@ -290,7 +290,7 @@ export async function createSale(body) {
     } else {
       if (Number(product.stock.currentStock) < quantity) {
         const err = new Error(
-          `Insufficient standard stock for ${product.productName}. Available stock: ${product.stock.currentStock}`,
+          `Not enough stock for ${product.productName}. Available: ${product.stock.currentStock}`,
         );
         err.statusCode = 400;
         throw err;

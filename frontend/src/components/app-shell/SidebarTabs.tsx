@@ -13,7 +13,6 @@ import {
   ArrowLeftRight,
   TrendingDown,
   BookOpenText,
-  PackageOpen,
   Tag,
   LayoutDashboard,
   Calculator,
@@ -45,7 +44,6 @@ export type MainTab =
   | "payment-methods"
   | "security"
   | "payment-methods-transactions"
-  | "product-batches"
   | "barcode-labels"
   | "store-info"
   | "activity-log";
@@ -83,7 +81,6 @@ export const SIDEBAR_LINKS: {
     links: [
       { name: "Products", tab: "products", icon: Package },
       { name: "Categories", tab: "categories", icon: Boxes },
-      { name: "Product Batches", tab: "product-batches", icon: PackageOpen },
       { name: "Barcode Labels", tab: "barcode-labels", icon: Tag },
       { name: "Inventory", tab: "inventory", icon: Warehouse },
       {

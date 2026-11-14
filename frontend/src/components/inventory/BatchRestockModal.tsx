@@ -53,10 +53,10 @@ const BatchRestockModal = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {t("Restock Batch")}
+                {t("Restock")}
               </h2>
               {batchNumber && (
-                <p className="text-sm text-slate-500">{t("Batch")}: {batchNumber}</p>
+                <p className="text-sm text-slate-500">{batchNumber}</p>
               )}
             </div>
           </div>
@@ -92,7 +92,7 @@ const BatchRestockModal = ({
                 />
               </div>
               <p className="mt-1.5 text-xs text-slate-500">
-                {t("Enter the number of units to add to this batch.")}
+                {t("Enter the number of units to add.")}
               </p>
             </div>
           </div>
@@ -120,7 +120,7 @@ const BatchRestockModal = ({
             ) : (
               <>
                 <TrendingUp className="h-4 w-4" />
-                {t("Restock Batch")}
+                {t("Restock")}
               </>
             )}
           </button>

@@ -259,7 +259,7 @@ export const getInventoryTransactionsByBatchId = async (req, res) => {
     const { batch_id } = req.params;
 
     if (!mongoose.isValidObjectId(batch_id)) {
-      return res.status(400).json({ success: false, message: "Invalid batch id" });
+      return res.status(400).json({ success: false, message: "Invalid variant ID" });
     }
 
     const batch = await ProductBatch.findById(batch_id).populate(
@@ -268,7 +268,7 @@ export const getInventoryTransactionsByBatchId = async (req, res) => {
     );
 
     if (!batch) {
-      return res.status(404).json({ success: false, message: "Product batch not found" });
+      return res.status(404).json({ success: false, message: "Variant not found" });
     }
 
     const transactions = await InventoryTransaction.find({ batchId: batch_id })

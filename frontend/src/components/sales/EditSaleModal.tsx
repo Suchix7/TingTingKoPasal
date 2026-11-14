@@ -372,6 +372,13 @@ export default function EditSaleModal({
       : null;
     return variantPhoto(product, batch) || product.photo_url || null;
   };
+  // Colour/size the line was sold in ("Blue / iPhone 13"), from the sale
+  const itemColour = (item: EditableSaleItem) =>
+    saleItems.find((s) => s.id === item.id)?.batch_number ||
+    productById
+      .get(item.product_id)
+      ?.batches?.find((b) => b.id === item.batch_id)?.batch_number ||
+    null;
   const [searchCustomer, setSearchCustomer] = useState("");
   const debouncedSearchCustomer = useDebounced(searchCustomer, 500);
   const { data: customersData, isLoading: isCustomersLoading } = useCustomers(
@@ -1028,19 +1035,33 @@ export default function EditSaleModal({
                         <label className="text-xs font-medium text-slate-500">
                           {t("Product")}
                         </label>
-                        <ProductBatchDropdown
-                          selectedProductId={item.product_id || null}
-                          selectedBatchId={item.batch_id || null}
-                          onSelect={(selection) =>
-                            handleProductBatchSelect(index, selection)
-                          }
-                          placeholder={t("Select product or batch")}
-                          searchPlaceholder={t("Search products by name...")}
-                          emptyMessage={t("No products found")}
-                          showBatchQuantities={true}
-                          showBatchPrices={true}
-                          maxHeight="max-h-64"
-                        />
+                        {item.id ? (
+                          // already sold: show what was sold; its colour
+                          // stays on the line so stock comes back right
+                          <div className="flex min-h-[45px] items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
+                            <span className="truncate">
+                              <Tn v={item.product_name} />
+                              {itemColour(item) ? (
+                                <span className="font-normal text-slate-500">
+                                  {" "}· <Tn v={itemColour(item) as string} />
+                                </span>
+                              ) : null}
+                            </span>
+                          </div>
+                        ) : (
+                          <ProductBatchDropdown
+                            selectedProductId={item.product_id || null}
+                            selectedBatchId={item.batch_id || null}
+                            onSelect={(selection) =>
+                              handleProductBatchSelect(index, selection)
+                            }
+                            placeholder={t("Select product")}
+                            searchPlaceholder={t("Search products by name...")}
+                            emptyMessage={t("No products found")}
+                            showBatchPrices={true}
+                            maxHeight="max-h-64"
+                          />
+                        )}
                       </div>
 
                       <div className="space-y-2 lg:w-24">

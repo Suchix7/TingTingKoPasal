@@ -137,10 +137,10 @@ export default function BatchSelectionModal({
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {t("Select Size / Model / Batch")}
+              {t("Select Colour / Size / Model")}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              {t("Choose which size, phone model or batch to sell for")}{" "}
+              {t("Choose which colour, size or phone model to sell for")}{" "}
               <span className="font-medium text-slate-700">
                 <Tn v={product.product_name} />
               </span>
@@ -189,7 +189,7 @@ export default function BatchSelectionModal({
             <div
               className="space-y-2"
               role="status"
-              aria-label={t("Loading batches...")}
+              aria-label={t("Loading...")}
             >
               {[0, 1, 2].map((i) => (
                 <div
@@ -329,7 +329,7 @@ export default function BatchSelectionModal({
                   <div className="flex items-center gap-2 pt-2">
                     <Layers size={16} className="text-slate-400" />
                     <p className="text-sm font-medium text-slate-500">
-                      {t("Sizes / models / batches")} ({plainLines.length})
+                      {t("Sizes / models")} ({plainLines.length})
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -406,7 +406,7 @@ export default function BatchSelectionModal({
             <div className="flex flex-col items-center justify-center py-8 text-slate-400">
               <Package size={32} className="mb-2" />
               <p className="text-sm">
-                {t("No sizes, models or batches available")}
+                {t("No sizes or models available")}
               </p>
             </div>
           )}

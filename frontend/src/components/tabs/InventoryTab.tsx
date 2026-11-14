@@ -457,7 +457,7 @@ export default function InventoryPage() {
     if (!batches || batches.length === 0) {
       return (
         <div className="bg-slate-50 rounded-xl p-4 text-center">
-          <p className="text-sm text-slate-500">{t("No batches available")}</p>
+          <p className="text-sm text-slate-500">{t("No variants")}</p>
         </div>
       );
     }
@@ -466,7 +466,7 @@ export default function InventoryPage() {
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
           <Layers className="h-4 w-4" />
-          <span>{t("Product Batches")} ({batches.length})</span>
+          <span>{t("Variants")} ({batches.length})</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -474,7 +474,7 @@ export default function InventoryPage() {
             <thead>
               <tr className="bg-slate-50">
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("Batch Number")}
+                  {t("Variant")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                   {t("Quantity")}
@@ -794,7 +794,7 @@ export default function InventoryPage() {
                           {t("Stock Level")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("Batches")}
+                          {t("Variants")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                           {t("Status")}
@@ -880,7 +880,7 @@ export default function InventoryPage() {
                               <td className="px-6 py-4">
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                                   <Layers className="h-3 w-3" />
-                                  {item.batches?.length || 0} {t("batches")}
+                                  {item.batches?.length || 0} {t("variants")}
                                 </span>
                               </td>
                               <td className="px-6 py-4">
@@ -1015,12 +1015,12 @@ export default function InventoryPage() {
                             </div>
                             <div className="mt-2 flex gap-2 text-xs text-slate-400">
                               <span>{t("Std")}: {item.standard_stock}</span>
-                              <span>{t("Batch")}: {item.batch_stock}</span>
+                              <span>{t("Variants")}: {item.batch_stock}</span>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                              <p className="text-slate-500">{t("Batches")}</p>
+                              <p className="text-slate-500">{t("Variants")}</p>
                               <p className="font-medium text-slate-900">
                                 {item.batches?.length || 0}
                               </p>

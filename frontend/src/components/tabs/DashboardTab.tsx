@@ -696,10 +696,10 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
         {lowStockBatches.length > 0 && (
           <section className="mt-4">
             <ChartCard
-              title="Low Stock Batches"
+              title="Low Stock Variants"
               action={
                 <Badge
-                  label={`${formatNumber(lowStockBatches.length)} ${t("batches")}`}
+                  label={`${formatNumber(lowStockBatches.length)} ${t("variants")}`}
                 />
               }
             >
@@ -721,7 +721,7 @@ export default function DashboardTab({ setActiveTab }: { setActiveTab: any }) {
 
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-neutral-400">
-                            {t("Batch")}: {batch.batch_number}
+                            {batch.batch_number}
                           </span>
                         </div>
                       </div>
@@ -959,7 +959,7 @@ function DashboardHeader({
                   {outOfStockBatches.length > 0 && (
                     <div>
                       <h4 className="text-xs font-semibold text-neutral-500 uppercase mb-2 px-1">
-                        {t("Batches Out of Stock")}
+                        {t("Variants Out of Stock")}
                       </h4>
                       <div className="space-y-2">
                         {outOfStockBatches.map((batch) => (
@@ -977,12 +977,12 @@ function DashboardHeader({
                               </p>
 
                               <p className="text-xs text-neutral-500 mt-0.5">
-                                {t("Batch")}: {batch.batch_number}
+                                {batch.batch_number}
                               </p>
 
                               <div className="flex items-center gap-2 mt-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 text-xs font-bold text-orange-700">
-                                  {t("Batch Out of Stock")}
+                                  {t("Out of Stock")}
                                 </span>
 
                                 <span

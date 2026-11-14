@@ -567,7 +567,7 @@ export default function CreatePurchaseOrderModal({ closeModal }: Props) {
                           onSelect={(selection) =>
                             handleProductBatchSelect(index, selection)
                           }
-                          placeholder={t("Select product or batch")}
+                          placeholder={t("Select product")}
                           searchPlaceholder={t("Search products by name...")}
                           emptyMessage={t("No products found")}
                           showBatchQuantities={true}

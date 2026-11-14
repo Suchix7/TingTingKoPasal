@@ -35,6 +35,7 @@ type ProductBatchDropdownProps = {
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
+  // no longer shown; kept so existing callers still compile
   showBatchQuantities?: boolean;
   showBatchPrices?: boolean;
   debounceDelay?: number;
@@ -46,12 +47,11 @@ export function ProductBatchDropdown({
   selectedProductId = null,
   selectedBatchId = null,
   onSelect,
-  placeholder = "Select product or batch",
+  placeholder = "Select product",
   searchPlaceholder = "Search products...",
   emptyMessage = "No products found",
   className = "",
   disabled = false,
-  showBatchQuantities = true,
   showBatchPrices = true,
   debounceDelay = 300,
   autoFocus = true,
@@ -188,7 +188,7 @@ export function ProductBatchDropdown({
     if (selectedProduct && selectedBatch) {
       return (
         <>
-          <Tn v={selectedProduct.product_name} /> - {selectedBatch.batch_number}
+          <Tn v={selectedProduct.product_name} /> · <Tn v={selectedBatch.batch_number} />
         </>
       );
     }
@@ -200,33 +200,7 @@ export function ProductBatchDropdown({
     return null;
   };
 
-  const getDisplaySubtext = () => {
-    if (selectedBatch) {
-      const parts: string[] = [];
-
-      if (showBatchQuantities && selectedBatch.quantity !== undefined) {
-        parts.push(`${t("Qty")}: ${selectedBatch.quantity}`);
-      }
-
-      if (showBatchPrices && selectedBatch.sale_price !== undefined) {
-        parts.push(`${t("Price")}: ${formatPrice(selectedBatch.sale_price)}`);
-      }
-
-      return parts.join(" • ");
-    }
-
-    if (selectedProduct) {
-      const parts: string[] = [];
-
-      if (showBatchPrices && selectedProduct.sale_price !== undefined) {
-        parts.push(`${t("Price")}: ${formatPrice(selectedProduct.sale_price)}`);
-      }
-
-      return parts.join(" • ");
-    }
-
-    return null;
-  };
+  const getDisplaySubtext = () => null;
 
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
@@ -363,7 +337,14 @@ export function ProductBatchDropdown({
                       >
                         <button
                           type="button"
-                          onClick={() => handleSelectProductOnly(product)}
+                          // a product with colours / sizes is sold from one of
+                          // them, so open the list instead of picking the bare
+                          // product (its own stock is 0)
+                          onClick={() =>
+                            hasBatches
+                              ? handleToggleProduct(product)
+                              : handleSelectProductOnly(product)
+                          }
                           className="flex-1 cursor-pointer px-4 py-3 text-left"
                         >
                           <div className="flex items-center gap-3">
@@ -388,14 +369,6 @@ export function ProductBatchDropdown({
                                     </span>
                                   )}
 
-                                {hasBatches && (
-                                  <span className="ml-2">
-                                    • {product.batches!.length}{" "}
-                                    {product.batches!.length !== 1
-                                      ? t("batches")
-                                      : t("batch")}
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -408,8 +381,8 @@ export function ProductBatchDropdown({
                             className="cursor-pointer px-3 py-3 hover:bg-slate-100"
                             aria-label={
                               isExpanded
-                                ? t("Collapse batches")
-                                : t("Expand batches")
+                                ? t("Hide colours")
+                                : t("Show colours")
                             }
                           >
                             {isExpanded ? (
@@ -423,10 +396,6 @@ export function ProductBatchDropdown({
 
                       {isExpanded && hasBatches && (
                         <div className="ml-4 border-l-4 border-l-blue-200 bg-slate-50">
-                          <div className="px-4 pb-1 pt-2 text-xs font-medium text-slate-500">
-                            {t("Batches")} ({product.batches!.length})
-                          </div>
-
                           {product.batches!.map((batch) => {
                             const isBatchSelected =
                               selectedBatchId === batch.id &&
@@ -449,7 +418,7 @@ export function ProductBatchDropdown({
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm text-slate-700 truncate">
-                                        {t("Batch")}: {batch.batch_number}
+                                        <Tn v={batch.batch_number} />
                                       </span>
 
                                       {isBatchSelected && (
@@ -457,35 +426,6 @@ export function ProductBatchDropdown({
                                       )}
                                     </div>
 
-                                    <div className="mt-0.5 text-xs text-slate-500">
-                                      {showBatchQuantities &&
-                                        batch.quantity !== undefined && (
-                                          <span>
-                                            {t("Qty")}: {batch.quantity}
-                                          </span>
-                                        )}
-
-                                      {showBatchPrices && (
-                                        <>
-                                          {showBatchQuantities &&
-                                            batch.quantity !== undefined && (
-                                              <span className="mx-1.5">•</span>
-                                            )}
-
-                                          <span>
-                                            {t("Sale Price")}:{" "}
-                                            {formatPrice(batch.sale_price)}
-                                          </span>
-
-                                          <span className="mx-1.5">•</span>
-
-                                          <span>
-                                            {t("Cost")}:{" "}
-                                            {formatPrice(batch.cost_price)}
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
                                   </div>
                                 </div>
                               </button>

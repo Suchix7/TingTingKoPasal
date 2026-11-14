@@ -381,11 +381,11 @@ export const useUpdateProductBatch = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success(tr("Product batch updated successfully."));
+      toast.success(tr("Variant updated."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, tr("Failed to update product batch.")));
+      toast.error(getErrorMessage(error, tr("Failed to update variant.")));
     },
   });
 };
@@ -423,11 +423,11 @@ export const useRestockProductBatch = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success(tr("Product batch restocked successfully."));
+      toast.success(tr("Variant restocked."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, tr("Failed to restock product batch.")));
+      toast.error(getErrorMessage(error, tr("Failed to restock variant.")));
     },
   });
 };
@@ -465,11 +465,11 @@ export const useDeductProductBatch = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
 
-      toast.success(tr("Product batch deducted successfully."));
+      toast.success(tr("Stock removed."));
     },
 
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, tr("Failed to deduct product batch.")));
+      toast.error(getErrorMessage(error, tr("Failed to remove stock.")));
     },
   });
 };

@@ -53,10 +53,10 @@ const BatchDeductModal = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {t("Deduct from Batch")}
+                {t("Remove Stock")}
               </h2>
               {batchNumber && (
-                <p className="text-sm text-slate-500">{t("Batch")}: {batchNumber}</p>
+                <p className="text-sm text-slate-500">{batchNumber}</p>
               )}
             </div>
           </div>
@@ -92,7 +92,7 @@ const BatchDeductModal = ({
                 />
               </div>
               <p className="mt-1.5 text-xs text-slate-500">
-                {t("Enter the number of units to remove from this batch.")}
+                {t("Enter the number of units to remove.")}
               </p>
             </div>
 
@@ -100,7 +100,7 @@ const BatchDeductModal = ({
             <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3">
               <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
               <p className="text-xs text-amber-700">
-                {t("Please ensure the deduction quantity does not exceed the available batch quantity.")}
+                {t("Please ensure the deduction quantity does not exceed the available quantity.")}
               </p>
             </div>
           </div>
@@ -128,7 +128,7 @@ const BatchDeductModal = ({
             ) : (
               <>
                 <TrendingDown className="h-4 w-4" />
-                {t("Deduct from Batch")}
+                {t("Remove Stock")}
               </>
             )}
           </button>

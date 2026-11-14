@@ -59,10 +59,10 @@ const BatchManageModal = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {t("Manage Batch")}
+                {t("Edit Variant")}
               </h2>
               {batchNumber && (
-                <p className="text-sm text-slate-500">{t("Batch")}: {batchNumber}</p>
+                <p className="text-sm text-slate-500">{batchNumber}</p>
               )}
             </div>
           </div>
@@ -84,7 +84,7 @@ const BatchManageModal = ({
                 htmlFor="batch-number"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                {t("Batch Number")}
+                {t("Variant Name")}
               </label>
               <div className="relative">
                 <Hash className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -95,7 +95,7 @@ const BatchManageModal = ({
                   onChange={(e) =>
                     handleInputChange("batch_number", e.target.value)
                   }
-                  placeholder={t("Enter batch number")}
+                  placeholder={t("Enter variant name")}
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                 />
               </div>
@@ -155,7 +155,7 @@ const BatchManageModal = ({
             ) : (
               <>
                 <Settings className="h-4 w-4" />
-                {t("Update Batch")}
+                {t("Save")}
               </>
             )}
           </button>

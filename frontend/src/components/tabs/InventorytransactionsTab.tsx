@@ -137,7 +137,7 @@ const TransactionDetailsModal = ({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                  {t("Batch ID")}
+                  {t("Variant ID")}
                 </label>
                 <p className="mt-1 font-mono text-sm text-slate-900">
                   #{transaction.batch_id}
@@ -146,7 +146,7 @@ const TransactionDetailsModal = ({
               {transaction.batch_number && (
                 <div>
                   <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                    {t("Batch Number")}
+                    {t("Variant")}
                   </label>
                   <p className="mt-1 text-sm text-slate-900">
                     {transaction.batch_number}
@@ -471,11 +471,11 @@ export default function InventoryTransactionsPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                      {t("Batch ID")}
+                      {t("Variant ID")}
                     </label>
                     <input
                       type="number"
-                      placeholder={t("Enter batch ID")}
+                      placeholder={t("Enter variant ID")}
                       value={filters.batch_id || ""}
                       onChange={(e) =>
                         handleFilterChange(
@@ -579,7 +579,7 @@ export default function InventoryTransactionsPage() {
                           {t("Product")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("Batch")}
+                          {t("Variant")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                           {t("Type")}
@@ -629,7 +629,7 @@ export default function InventoryTransactionsPage() {
                           {t("Product")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("Batch")}
+                          {t("Variant")}
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                           {t("Type")}
@@ -686,7 +686,7 @@ export default function InventoryTransactionsPage() {
                                 <div>
                                   <div className="text-sm text-slate-900">
                                     {transaction.batch_number ||
-                                      `${t("Batch")} #${transaction.batch_id}`}
+                                      `${t("Variant")} #${transaction.batch_id}`}
                                   </div>
                                   <div className="text-xs text-slate-400">
                                     {t("ID")}: #{transaction.batch_id}
@@ -694,7 +694,7 @@ export default function InventoryTransactionsPage() {
                                 </div>
                               ) : (
                                 <span className="text-xs text-slate-400">
-                                  {t("No batch")}
+                                  —
                                 </span>
                               )}
                             </td>
@@ -787,7 +787,7 @@ export default function InventoryTransactionsPage() {
                               <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600">
                                 <Boxes className="h-3 w-3" />
                                 {transaction.batch_number ||
-                                  `${t("Batch")} #${transaction.batch_id}`}
+                                  `${t("Variant")} #${transaction.batch_id}`}
                               </div>
                             )}
                           </div>

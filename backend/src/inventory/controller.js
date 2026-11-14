@@ -403,7 +403,7 @@ async function mutateBatch(req, res, { deltaFn, referenceType, notFoundMsg }) {
   const { id } = req.params;
 
   if (!mongoose.isValidObjectId(id)) {
-    return res.status(400).json({ success: false, message: "Invalid batch ID" });
+    return res.status(400).json({ success: false, message: "Invalid variant ID" });
   }
 
   const batch = await ProductBatch.findById(id);
@@ -421,13 +421,13 @@ export const updateProductBatch = async (req, res) => {
     const { quantity, batch_number, cost_price, sale_price } = req.body;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid batch ID" });
+      return res.status(400).json({ success: false, message: "Invalid variant ID" });
     }
 
     const existingBatch = await ProductBatch.findById(id);
 
     if (!existingBatch) {
-      return res.status(404).json({ success: false, message: "Product batch not found" });
+      return res.status(404).json({ success: false, message: "Variant not found" });
     }
 
     const updatedQuantity =
@@ -444,19 +444,19 @@ export const updateProductBatch = async (req, res) => {
       Number.isNaN(updatedCostPrice) ||
       Number.isNaN(updatedSalePrice)
     ) {
-      return res.status(400).json({ success: false, message: "Batch values must be valid numbers" });
+      return res.status(400).json({ success: false, message: "Values must be valid numbers" });
     }
     if (updatedQuantity < 0) {
-      return res.status(400).json({ success: false, message: "Batch quantity cannot be negative" });
+      return res.status(400).json({ success: false, message: "Quantity cannot be negative" });
     }
     if (updatedCostPrice < 0 || updatedSalePrice < 0) {
       return res.status(400).json({
         success: false,
-        message: "Batch cost price and sale price cannot be negative",
+        message: "Cost price and sale price cannot be negative",
       });
     }
     if (!updatedBatchNumber) {
-      return res.status(400).json({ success: false, message: "Batch number is required" });
+      return res.status(400).json({ success: false, message: "Variant name is required" });
     }
 
     const duplicateBatch = await ProductBatch.findOne({
@@ -468,7 +468,7 @@ export const updateProductBatch = async (req, res) => {
     if (duplicateBatch) {
       return res.status(409).json({
         success: false,
-        message: "Batch with same batch number already exists for this product",
+        message: "This product already has a variant with that name",
       });
     }
 
@@ -496,7 +496,7 @@ export const updateProductBatch = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Product batch updated successfully",
+      message: "Variant updated",
       data: serializeBatch(existingBatch, {
         product_name: product?.productName,
         sku: product?.sku,
@@ -516,7 +516,7 @@ export const restockProductBatch = async (req, res) => {
     const restockQuantity = Number(req.body.quantity);
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid batch ID" });
+      return res.status(400).json({ success: false, message: "Invalid variant ID" });
     }
     if (Number.isNaN(restockQuantity) || restockQuantity <= 0) {
       return res.status(400).json({ success: false, message: "Invalid restock quantity" });
@@ -525,7 +525,7 @@ export const restockProductBatch = async (req, res) => {
     const batch = await ProductBatch.findById(id);
 
     if (!batch) {
-      return res.status(404).json({ success: false, message: "Product batch not found" });
+      return res.status(404).json({ success: false, message: "Variant not found" });
     }
 
     batch.quantity += restockQuantity;
@@ -544,7 +544,7 @@ export const restockProductBatch = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Product batch restocked successfully",
+      message: "Variant restocked",
       data: serializeBatch(batch, {
         product_name: product?.productName,
         sku: product?.sku,
@@ -564,7 +564,7 @@ export const deductProductBatch = async (req, res) => {
     const deductQuantity = Number(req.body.quantity);
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid batch ID" });
+      return res.status(400).json({ success: false, message: "Invalid variant ID" });
     }
     if (Number.isNaN(deductQuantity) || deductQuantity <= 0) {
       return res.status(400).json({ success: false, message: "Invalid deduction quantity" });
@@ -573,11 +573,11 @@ export const deductProductBatch = async (req, res) => {
     const batch = await ProductBatch.findById(id);
 
     if (!batch) {
-      return res.status(404).json({ success: false, message: "Product batch not found" });
+      return res.status(404).json({ success: false, message: "Variant not found" });
     }
 
     if (Number(batch.quantity) < deductQuantity) {
-      return res.status(400).json({ success: false, message: "Not enough batch stock available" });
+      return res.status(400).json({ success: false, message: "Not enough stock available" });
     }
 
     batch.quantity -= deductQuantity;
@@ -596,7 +596,7 @@ export const deductProductBatch = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Product batch stock deducted successfully",
+      message: "Stock removed",
       data: serializeBatch(batch, {
         product_name: product?.productName,
         sku: product?.sku,

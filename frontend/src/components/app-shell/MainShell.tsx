@@ -20,7 +20,6 @@ import InventoryTransactionsTab from "@/components/tabs/InventorytransactionsTab
 import PaymentMethodsTab from "@/components/tabs/PaymentmethodsTab";
 import SecurityTab from "@/components/tabs/SecurityTab";
 import EoqTab from "@/components/tabs/EoqTab";
-import ProductBatchesPage from "../tabs/ProductBatchTab";
 import BarcodeLabelsTab from "../tabs/BarcodeLabelsTab";
 import ActivityLogTab from "../tabs/ActivityLogTab";
 import StoreInfoTab from "../tabs/StoreInfoTab";
@@ -39,7 +38,6 @@ const PAGES: MainTab[] = [
   "activity-log",
   "categories",
   "products",
-  "product-batches",
   "barcode-labels",
   "pos",
   "eoq",
@@ -133,7 +131,6 @@ export default function MainShell() {
           {activeTab === "activity-log" && <ActivityLogTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "products" && <ProductsTab />}
-          {activeTab === "product-batches" && <ProductBatchesPage />}
           {activeTab === "barcode-labels" && <BarcodeLabelsTab />}
           {activeTab === "pos" && <PosTab />}
           {activeTab === "eoq" && <EoqTab />}

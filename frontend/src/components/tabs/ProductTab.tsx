@@ -557,7 +557,7 @@ export default function ProductsPage() {
                 <th className="px-5 py-3">{t("Barcode")}</th>
                 <th className="px-5 py-3">{t("Category")}</th>
                 <th className="px-5 py-3">{t("Stock")}</th>
-                <th className="px-5 py-3">{t("Models / Batches")}</th>
+                <th className="px-5 py-3">{t("Variants")}</th>
                 <th className="px-5 py-3">{t("Cost Price")}</th>
                 <th className="px-5 py-3">{t("Sale Price")}</th>
                 <th className="px-5 py-3">{t("Status")}</th>
@@ -731,8 +731,8 @@ export default function ProductsPage() {
                               <Layers size={12} />
                               {batches.length}{" "}
                               {batches.length === 1
-                                ? t("model / batch")
-                                : t("models / batches")}
+                                ? t("variant")
+                                : t("variants")}
                             </span>
                           ) : (
                             <span className="text-xs text-gray-400">{t("None")}</span>
@@ -791,7 +791,7 @@ export default function ProductsPage() {
                             <div className="border-t border-gray-200 px-8 py-4">
                               <div className="mb-3 flex items-center justify-between">
                                 <h4 className="text-sm font-semibold text-gray-700">
-                                  {t("Batch Details for")} <Tn v={product.product_name} />
+                                  {t("Variants of")} <Tn v={product.product_name} />
                                 </h4>
                               </div>
                               <div className="overflow-hidden rounded-lg border border-gray-200">
@@ -799,7 +799,7 @@ export default function ProductsPage() {
                                   <thead className="bg-white">
                                     <tr className="border-b border-gray-200 text-left text-gray-600">
                                       <th className="px-4 py-2 font-medium">
-                                        {t("Batch Number")}
+                                        {t("Variant")}
                                       </th>
                                       <th className="px-4 py-2 font-medium">
                                         {t("Quantity")}
@@ -879,7 +879,7 @@ export default function ProductsPage() {
                               {batches.length > 0 && (
                                 <div className="mt-3 flex gap-6 text-xs text-gray-500">
                                   <span>
-                                    {t("Total Batches")}:{" "}
+                                    {t("Total Variants")}:{" "}
                                     <strong>{batches.length}</strong>
                                   </span>
                                   <span>

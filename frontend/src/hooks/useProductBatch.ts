@@ -108,44 +108,6 @@ export const productBatchQueryKey = (batchId: string) =>
   ["productBatch", batchId] as const;
 
 /* =========================================================
-   Get All Product Batches
-   Pagination + Search
-========================================================= */
-
-export const useProductBatches = (
-  page = 1,
-  limit = 10,
-  search = "",
-  productId = "",
-) => {
-  return useQuery<ProductBatchesResponse>({
-    queryKey: productBatchesQueryKey(page, limit, search, productId),
-
-    queryFn: async () => {
-      const res = await axiosInstance.get<ProductBatchesResponse>(
-        "/product-batches",
-        {
-          params: {
-            page,
-            limit,
-            search,
-            productId: productId || undefined,
-          },
-        },
-      );
-
-      return res.data;
-    },
-
-    staleTime: 5 * 60 * 1000,
-
-    placeholderData: keepPreviousData,
-
-    enabled: page > 0 && limit > 0,
-  });
-};
-
-/* =========================================================
    Get All Batches Of A Specific Product
 ========================================================= */
 
@@ -164,78 +126,6 @@ export const useProductBatchesByProduct = (productId: string) => {
     staleTime: 5 * 60 * 1000,
 
     enabled: Boolean(productId),
-  });
-};
-
-/* =========================================================
-   Get Single Product Batch
-========================================================= */
-
-export const useProductBatch = (batchId: string) => {
-  return useQuery<ProductBatchResponse>({
-    queryKey: productBatchQueryKey(batchId),
-
-    queryFn: async () => {
-      const res = await axiosInstance.get<ProductBatchResponse>(
-        `/product-batches/${batchId}`,
-      );
-
-      return res.data;
-    },
-
-    staleTime: 5 * 60 * 1000,
-
-    enabled: Boolean(batchId),
-  });
-};
-
-/* =========================================================
-   Create Product Batch
-========================================================= */
-
-export const useCreateProductBatch = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (newBatch: CreateProductBatchPayload) => {
-      try {
-        const res = await axiosInstance.post<ProductBatchResponse>(
-          "/product-batches",
-          newBatch,
-        );
-
-        return res.data;
-      } catch (error: any) {
-        throw new Error(
-          error?.response?.data?.message ||
-            error?.message ||
-            tr("Failed to create product batch"),
-        );
-      }
-    },
-
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["productBatches"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: productBatchesByProductQueryKey(variables.product_id),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["products"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["inventory"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["inventory-transactions"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-    },
   });
 };
 
@@ -282,52 +172,6 @@ export const useUpdateProductBatch = () => {
           queryKey: productBatchesByProductQueryKey(variables.product_id),
         });
       }
-
-      queryClient.invalidateQueries({
-        queryKey: ["products"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["inventory"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["inventory-transactions"],
-      });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-    },
-  });
-};
-
-/* =========================================================
-   Delete Product Batch
-========================================================= */
-
-export const useDeleteProductBatch = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (productBatchId: string) => {
-      try {
-        const res = await axiosInstance.delete<ProductBatchDeleteResponse>(
-          `/product-batches/${productBatchId}`,
-        );
-
-        return res.data;
-      } catch (error: any) {
-        console.log("Error while deleting product batch:", error);
-
-        throw new Error(
-          error?.response?.data?.message || tr("Failed to delete product batch"),
-        );
-      }
-    },
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["productBatches"],
-      });
 
       queryClient.invalidateQueries({
         queryKey: ["products"],

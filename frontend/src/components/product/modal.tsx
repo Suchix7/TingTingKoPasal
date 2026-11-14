@@ -28,7 +28,6 @@ import VariantStockEditor, {
 } from "./VariantStockEditor";
 import { DropdownWithSearch } from "../layout/DropdownWithSearch";
 import CategoriesModal from "../categories/modal";
-import BatchModal from "../product-batch/modal";
 import { GripHorizontal, ImagePlus, Play, RefreshCw, Ruler, Star, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
@@ -87,8 +86,6 @@ export default function ProductModal({
 
   const isEditMode = !!selectedProduct;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showBatchModal, setShowBatchModal] = useState(false);
-  const [showCostPriceDialog, setShowCostPriceDialog] = useState(false);
   const [originalCostPrice, setOriginalCostPrice] = useState<number>(0);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
@@ -370,8 +367,8 @@ export default function ProductModal({
 
   const savedBatches = (selectedProduct?.batches ?? []).filter((b) => !b.is_deleted);
   // Sizes can be edited here when the product has none yet, or when its
-  // category has preset sizes (gloves, clothes). Phone models and purchase
-  // batches are still managed on the Product Batches page.
+  // category has preset sizes (gloves, clothes); other stock lines are
+  // restocked from the Inventory page.
   // A cover: its phone models (and colours / prices) are edited here
   const categoryLabel =
     categories.find((c) => String(c.id) === String(formData.category_id))
@@ -497,74 +494,11 @@ export default function ProductModal({
     return savedBatches.length > 0 ? { ...rest, stock_lines: [] } : rest;
   };
 
-  const handleUpdateWithCostPriceChange = async () => {
-    // Update product with new cost price
-    setShowCostPriceDialog(false);
-
-    try {
-      const payload = {
-        ...formData,
-        product_name: formData.product_name.trim(),
-        product_name_zh: nameZh.trim(),
-        category_id: formData.category_id,
-        unit: formData.unit.trim(),
-        barcode:
-          formData.barcode.trim() === "" ? null : formData.barcode.trim(),
-        description:
-          formData.description.trim() === ""
-            ? null
-            : formData.description.trim(),
-      };
-
-      if (isEditMode && selectedProduct) {
-        await updateProductMutation.mutateAsync({
-          ...(withSizes(payload) as typeof payload),
-          id: selectedProduct.id,
-        });
-        void savePhotosIfNeeded(selectedProduct.id);
-      }
-
-      closeModal();
-    } catch (error) {
-      console.error("Error updating product:", error);
-    }
-  };
-
-  const handleCreateNewBatch = () => {
-    setShowCostPriceDialog(false);
-    setShowBatchModal(true);
-  };
-
-  const handleCostPriceDialogCancel = () => {
-    // Revert cost price to original and close dialog
-    setShowCostPriceDialog(false);
-    setFormData((prev) => ({
-      ...prev,
-      cost_price: originalCostPrice,
-    }));
-  };
-
-  const handleBatchModalClose = () => {
-    setShowBatchModal(false);
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
-    // Check if cost price changed in edit mode
-    if (
-      isEditMode &&
-      selectedProduct &&
-      Number(formData.cost_price) !== originalCostPrice
-    ) {
-      // Show dialog asking how to proceed
-      setShowCostPriceDialog(true);
-      return;
-    }
-
-    // Proceed with normal save if no cost price change
     try {
       const payload = {
         ...formData,
@@ -965,7 +899,7 @@ export default function ProductModal({
 
               {stockOnModelsOnly && (
                 <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  {t("Stock for this product is kept per size / phone model. Change quantities or add more on the Product Batches page.")}
+                  {t("Stock for this product is kept per size / phone model. Change quantities on the Inventory page.")}
                 </div>
               )}
 
@@ -1109,82 +1043,6 @@ export default function ProductModal({
           </form>
         </div>
       </div>
-
-      {/* Cost Price Change Dialog */}
-      {showCostPriceDialog && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-full bg-amber-100 p-2">
-                <svg
-                  className="h-6 w-6 text-amber-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900">
-                {t("Cost Price Changed")}
-              </h3>
-            </div>
-
-            <p className="mb-4 text-sm text-slate-600">
-              {t("The cost price has been changed from")}{" "}
-              <span className="font-semibold text-slate-900">
-                NPR {originalCostPrice.toFixed(2)}
-              </span>{" "}
-              {t("to")}{" "}
-              <span className="font-semibold text-slate-900">
-                NPR {Number(formData.cost_price).toFixed(2)}
-              </span>
-              . {t("How would you like to proceed?")}
-            </p>
-
-            <div className="space-y-3">
-              <button
-                onClick={handleCreateNewBatch}
-                disabled={isSubmitting}
-                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-              >
-                {t("Create New Batch with Updated Price")}
-              </button>
-
-              <button
-                onClick={handleUpdateWithCostPriceChange}
-                disabled={isSubmitting}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-              >
-                {t("Update Product with New Cost Price")}
-              </button>
-
-              <button
-                onClick={handleCostPriceDialogCancel}
-                disabled={isSubmitting}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                {t("Cancel and Revert Cost Price")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Batch Modal */}
-      {showBatchModal && selectedProduct && (
-        <BatchModal
-          closeModal={handleBatchModalClose}
-          productId={selectedProduct.id}
-          defaultCostPrice={Number(formData.cost_price)}
-          defaultSalePrice={Number(formData.sale_price)}
-        />
-      )}
 
       {showCategoryModal && (
         <CategoriesModal closeModal={() => setShowCategoryModal(false)} />
