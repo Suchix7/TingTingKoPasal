@@ -14,7 +14,7 @@ import {
   Package,
 } from "lucide-react";
 import Image from "next/image";
-import { coverImage } from "@/components/catalog/image";
+import { coverImage, variantPhoto } from "@/components/catalog/image";
 import toast from "react-hot-toast";
 
 import {
@@ -359,13 +359,19 @@ export default function EditSaleModal({
 
   const { data: paymentMethodsData } = usePaymentMethods(1, 1000);
   const { data: productsData } = useProducts({ limit: 1000 });
-  const productPhotoById = useMemo(() => {
-    const map: Record<string, string | null | undefined> = {};
-    for (const product of productsData?.data || []) {
-      map[product.id] = product.photo_url;
-    }
-    return map;
-  }, [productsData]);
+  const productById = useMemo(
+    () => new Map((productsData?.data || []).map((p) => [p.id, p])),
+    [productsData],
+  );
+  // Photo of the line: the sold colour's photo, else the product's cover
+  const itemPhoto = (item: EditableSaleItem) => {
+    const product = productById.get(item.product_id);
+    if (!product) return null;
+    const batch = item.batch_id
+      ? product.batches?.find((b) => b.id === item.batch_id)
+      : null;
+    return variantPhoto(product, batch) || product.photo_url || null;
+  };
   const [searchCustomer, setSearchCustomer] = useState("");
   const debouncedSearchCustomer = useDebounced(searchCustomer, 500);
   const { data: customersData, isLoading: isCustomersLoading } = useCustomers(
@@ -1005,10 +1011,9 @@ export default function EditSaleModal({
                   >
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
                       <div className="flex shrink-0 h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
-                        {item.product_id &&
-                        productPhotoById[item.product_id] ? (
+                        {itemPhoto(item) ? (
                           <Image
-                            src={coverImage(productPhotoById[item.product_id] as string, 160)}
+                            src={coverImage(itemPhoto(item) as string, 160)}
                             alt={item.product_name}
                             width={64}
                             height={64}
