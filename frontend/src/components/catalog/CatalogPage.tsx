@@ -514,8 +514,7 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                         {t("colours")}
                       </span>
                     )}
-                    {priceView &&
-                      (priceLabel(cover.price_min, cover.price_max) ||
+                    {(priceLabel(cover.price_min, cover.price_max) ||
                         (showCost && priceLabel(cover.cost_min, cover.cost_max))) && (
                         // cost in orange, then the selling price in green
                         <span className="absolute left-2 top-9 flex flex-col items-start gap-1">

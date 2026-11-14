@@ -102,7 +102,7 @@ app.use("/api/v1", (req, res, next) => {
   next();
 });
 
-// Public customer catalog: no login needed (read-only, no prices or names)
+// Public customer catalog: no login needed (read-only, selling prices only: no cost prices or names)
 app.use("/api/v1/catalog", catalogRouter);
 
 app.use("/api/v1", authRouter);

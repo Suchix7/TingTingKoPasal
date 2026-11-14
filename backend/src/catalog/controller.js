@@ -12,9 +12,10 @@ import { canSeePrices } from "../auth/middleware.js";
 
 // Public, read-only catalog for the customer site. It exposes the photos and videos,
 // its category and how many are left (per phone model for cases, a single
-// count for accessories): no prices, names, SKUs or barcodes. Sold-out items
-// stay listed, marked out of stock, after everything that is available.
-// Signed in as the price viewer, selling prices are added too.
+// count for accessories) and selling prices: no cost prices, names, SKUs or
+// barcodes. Sold-out items stay listed, marked out of stock, after everything
+// that is available. Signed in as the price viewer, cost prices and product
+// names are added too.
 
 // answers with prices depend on the login cookie: never keep them in a shared
 // cache (a CDN or proxy) where the public could be served them
@@ -120,7 +121,7 @@ function stockSnapshot() {
 const modelsByProduct = () => stockSnapshot().models;
 const inStockProductIds = () => stockSnapshot().inStock;
 
-// Answers without prices are the same for every visitor: a CDN may reuse them
+// Answers without cost prices are the same for every visitor: a CDN may reuse them
 // for a few seconds. Anything asked with ?prices stays
 // private, even when the viewer turned out not to be signed in.
 const publicCache = (req, res) => {
@@ -194,25 +195,26 @@ function costRange(lines, fallback) {
 // "iPhone 13/14/15")
 const fitsName = (e, name) => e.fits.some((f) => f.toLowerCase() === name.toLowerCase());
 
-// Selling and cost prices for the price viewer, kept apart so the public site
-// never gets them: one range for the product, and per model / colour / size.
-function withPrices(cover, product, entries) {
+// Selling prices for everyone; cost prices and names only for the price
+// viewer (`staff`), kept apart so the public site never gets them: one range
+// for the product, and per model / colour / size.
+function withPrices(cover, product, entries, staff) {
   const own = Number(product.salePrice) || 0;
   const ownCost = Number(product.costPrice) || 0;
   // price the range on what is left; everything when it is all sold out
   const left = entries.filter((e) => e.quantity > 0);
   const priced = left.length ? left : entries;
+  const costs = (lines) => (staff ? costRange(lines, ownCost) : {});
   const linePrices = (lines) => ({
     price: priceRange(lines, own).price_min,
-    cost: costRange(lines, ownCost).cost_min,
+    ...(staff ? { cost: costRange(lines, ownCost).cost_min } : {}),
   });
   return {
     ...cover,
     // the price viewer also sees what each product is called
-    name: product.productName || "",
-    name_zh: product.productNameZh || "",
+    ...(staff ? { name: product.productName || "", name_zh: product.productNameZh || "" } : {}),
     ...priceRange(priced, own),
-    ...costRange(priced, ownCost),
+    ...costs(priced),
     models: cover.models.map((m) => ({
       ...m,
       ...linePrices(entries.filter((e) => fitsName(e, m.model))),
@@ -222,7 +224,7 @@ function withPrices(cover, product, entries) {
       return {
         ...v,
         ...priceRange(mine, own),
-        ...costRange(mine, ownCost),
+        ...costs(mine),
         sizes: v.sizes.map((s) => ({
           ...s,
           ...linePrices(mine.filter((e) => e.part && fitsName(e, s.size))),
@@ -282,7 +284,7 @@ const toCover = (product, entries = [], prices = false) => {
     quantity,
     in_stock: quantity > 0,
   };
-  return prices ? withPrices(cover, product, entries) : cover;
+  return withPrices(cover, product, entries, prices);
 };
 
 export const getCovers = async (req, res) => {
@@ -370,7 +372,8 @@ export const getCovers = async (req, res) => {
             "photos.sizeGuide": 1,
             categoryId: 1,
             "stock.currentStock": 1,
-            ...(prices ? { salePrice: 1, costPrice: 1, productName: 1, productNameZh: 1 } : {}),
+            salePrice: 1,
+            ...(prices ? { costPrice: 1, productName: 1, productNameZh: 1 } : {}),
           },
         },
       ]),

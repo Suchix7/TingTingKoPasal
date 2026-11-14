@@ -15,7 +15,7 @@ type Props = {
   isCase: boolean;
   // stock lines are sizes (S, M, L), not phone models
   hasSizes?: boolean;
-  // signed in as the price viewer: show selling prices
+  // signed in as the price viewer: show product names
   showPrices?: boolean;
   // the price viewer turned on "CP": show cost prices too
   showCost?: boolean;
@@ -44,7 +44,8 @@ export default function CoverViewer({
   // "Light Blue" -> 浅蓝色 in Chinese; names we don't know stay as typed
   const colour = (name: string) => (zh ? zhColour(name) : name);
   const pcs = (n: number) => pcsOf(n, t);
-  const coverPrice = showPrices ? priceLabel(cover.price_min, cover.price_max) : "";
+  // selling prices are shown to everyone; cost and names to the price viewer
+  const coverPrice = priceLabel(cover.price_min, cover.price_max);
   const coverCost = showCost ? priceLabel(cover.cost_min, cover.cost_max) : "";
   const availableModels = cover.models.filter((m) => m.quantity > 0);
   const media = cover.media?.length
@@ -206,7 +207,7 @@ export default function CoverViewer({
                         {priceLabel(variant.cost_min, variant.cost_max)}
                       </span>
                     )}
-                    {showPrices && priceLabel(variant.price_min, variant.price_max) && (
+                    {priceLabel(variant.price_min, variant.price_max) && (
                       <span className="ml-1.5 normal-case tracking-normal text-emerald-300">
                         {priceLabel(variant.price_min, variant.price_max)}
                       </span>
