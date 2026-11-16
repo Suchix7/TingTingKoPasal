@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import {
   useCustomers,
-  useCreateCustomer,
-  useUpdateCustomer,
   Customer,
 } from "@/hooks/useCustomers";
 import CustomerModal from "@/components/customers/modal";
@@ -75,17 +73,6 @@ const repriceItem = (item: CartItem): CartItem => {
   };
 };
 
-const emptyCustomerForm: Omit<Customer, "id" | "created_at" | "updated_at"> = {
-  name: "",
-  phone: "",
-  email: "",
-  address: "",
-  credit_amount: 0,
-  credit_limit: 0,
-  status: "Active",
-  notes: "",
-};
-
 export default function PointOfSalesPage() {
   const { t, tn } = useLang();
   const [search, setSearch] = useState("");
@@ -98,7 +85,6 @@ export default function PointOfSalesPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
-  const [formData, setFormData] = useState(emptyCustomerForm);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">(
     "all",
   );
@@ -207,8 +193,6 @@ export default function PointOfSalesPage() {
 
   const createSale = useCreateSale();
   const { data: customersData } = useCustomers(1, 100, "", "Active");
-  const createCustomer = useCreateCustomer();
-  const updateCustomer = useUpdateCustomer();
 
   const customers = customersData?.data ?? [];
 
@@ -653,28 +637,6 @@ export default function PointOfSalesPage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (selectedCustomer) {
-      await updateCustomer.mutateAsync({
-        ...selectedCustomer,
-        ...formData,
-      });
-    } else {
-      const res = await createCustomer.mutateAsync(formData);
-
-      if (res?.data?.id) {
-        setCustomerId(res.data.id);
-      }
-    }
-
-    setIsModalOpen(false);
-    setSelectedCustomer(null);
-    setFormData(emptyCustomerForm);
-    resetSale();
-  };
-
   const resetSale = () => {
     setPayments([]);
     setCustomerId(null);
@@ -850,7 +812,6 @@ export default function PointOfSalesPage() {
           setCustomerId={setCustomerId}
           openCustomerModal={(customer) => {
             setSelectedCustomer(customer || null);
-            setFormData(customer || emptyCustomerForm);
             setIsModalOpen(true);
           }}
           paymentMethods={paymentMethods}
@@ -949,11 +910,10 @@ export default function PointOfSalesPage() {
         <CustomerModal
           selectedCustomer={selectedCustomer}
           setIsModalOpen={setIsModalOpen}
-          formData={formData}
-          setFormData={setFormData}
-          handleSubmit={handleSubmit}
-          createCustomer={createCustomer}
-          updateCustomer={updateCustomer}
+          onSaved={(customer, isNew) => {
+            // A customer added from the bill goes straight onto the bill
+            if (isNew) setCustomerId(customer.id);
+          }}
         />
       )}
 

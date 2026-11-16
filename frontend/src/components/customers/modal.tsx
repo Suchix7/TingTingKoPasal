@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { useLang } from "@/lib/i18n";
 import {
-  useCustomers,
   useCreateCustomer,
   useUpdateCustomer,
-  useDeleteCustomer,
   Customer,
 } from "@/hooks/useCustomers";
 
@@ -33,10 +32,18 @@ const emptyCustomer: Omit<Customer, "id" | "created_at" | "updated_at"> = {
   notes: "",
 };
 
+type CustomerModalProps = {
+  selectedCustomer: Customer | null;
+  setIsModalOpen: (open: boolean) => void;
+  // Called with the saved customer after a successful create / update
+  onSaved?: (customer: Customer, isNew: boolean) => void;
+};
+
 export default function CustomerModal({
   selectedCustomer,
   setIsModalOpen,
-}: any) {
+  onSaved,
+}: CustomerModalProps) {
   const { t } = useLang();
   const [formData, setFormData] = useState(emptyCustomer);
   const createCustomer = useCreateCustomer();
@@ -60,16 +67,24 @@ export default function CustomerModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedCustomer) {
-      await updateCustomer.mutateAsync({
-        ...selectedCustomer,
-        ...formData,
-      });
-    } else {
-      await createCustomer.mutateAsync(formData);
-    }
+    if (createCustomer.isPending || updateCustomer.isPending) return;
 
-    setIsModalOpen(false);
+    try {
+      const res = selectedCustomer
+        ? await updateCustomer.mutateAsync({ ...selectedCustomer, ...formData })
+        : await createCustomer.mutateAsync(formData);
+
+      toast.success(
+        selectedCustomer ? t("Customer updated") : t("Customer created"),
+      );
+      if (res?.data) onSaved?.(res.data as Customer, !selectedCustomer);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      // Keep the form open so nothing typed is lost, and say why it failed
+      toast.error(
+        err?.response?.data?.message || t("Could not save the customer"),
+      );
+    }
   };
   return (
     <div
