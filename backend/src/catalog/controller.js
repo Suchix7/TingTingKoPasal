@@ -4,7 +4,7 @@ import ProductBatch from "../models/ProductBatch.js";
 import Category from "../models/Category.js";
 import StoreInfo from "../models/StoreInfo.js";
 import { DEFAULT_INSTAGRAM } from "../store-info/controller.js";
-import { productMedia } from "../utils/media.js";
+import { coverIndex, productMedia } from "../utils/media.js";
 import { compareModels, compareSizes, lineParts } from "../utils/stockLines.js";
 import { modelScore, suggestModels, tokenize } from "./search.js";
 import { expandModel } from "../utils/phoneFits.js";
@@ -277,6 +277,8 @@ const toCover = (product, entries = [], prices = false) => {
     models,
     variants,
     size_guide_index: media.findIndex((m) => m.sizeGuide),
+    // index into `media` of the cover photo (the card picture)
+    cover_index: coverIndex(media),
     // stock lines are sizes (S, M, L), whatever the category
     has_sizes: sized,
     // colours split by phone model (Blue: iPhone 13, iPhone 15...)
@@ -370,6 +372,7 @@ export const getCovers = async (req, res) => {
             "photos.type": 1,
             "photos.variant": 1,
             "photos.sizeGuide": 1,
+            "photos.cover": 1,
             categoryId: 1,
             "stock.currentStock": 1,
             salePrice: 1,
@@ -401,7 +404,7 @@ export const getCover = async (req, res) => {
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
       .select(
-        "photoUrl photos.url photos.type photos.variant photos.sizeGuide categoryId stock.currentStock salePrice costPrice productName productNameZh",
+        "photoUrl photos.url photos.type photos.variant photos.sizeGuide photos.cover categoryId stock.currentStock salePrice costPrice productName productNameZh",
       )
       .lean();
     if (!product) {

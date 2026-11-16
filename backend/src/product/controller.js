@@ -978,8 +978,10 @@ function validNewMedia(item) {
 
 // Body: { media: [...] } in display order; each entry is the id of a photo or
 // video the product already has, or { type, url, publicId } for a new upload.
-// Either may come as an object with `variant` (the colour/style it shows)
-// and `size_guide` (it is the size chart); a bare id keeps its saved labels.
+// Either may come as an object with `variant` (the colour/style it shows),
+// `size_guide` (it is the size chart) and `cover` (it is the cover photo; it
+// keeps its place in the order); a bare id keeps its saved labels. With no
+// cover marked, the first one is the cover.
 export const saveProductPhotos = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1010,6 +1012,7 @@ export const saveProductPhotos = async (req, res) => {
     const next = [];
     const used = new Set();
     let hasSizeGuide = false;
+    let hasCover = false;
     for (const entry of media) {
       const saved =
         typeof entry === "string"
@@ -1031,16 +1034,21 @@ export const saveProductPhotos = async (req, res) => {
       const sizeGuide =
         !hasSizeGuide && (labelled ? !!entry.size_guide : !!saved?.sizeGuide);
       if (sizeGuide) hasSizeGuide = true;
+      // only one cover
+      const isCover = !hasCover && (labelled ? !!entry.cover : !!saved?.cover);
+      if (isCover) hasCover = true;
       next.push({
         type: item.type,
         url: item.url,
         publicId: item.publicId,
         variant: sizeGuide ? "" : variant,
         sizeGuide,
+        cover: isCover,
       });
     }
 
-    const cover = next[0];
+    if (!hasCover && next.length) next[0].cover = true;
+    const cover = next.find((p) => p.cover);
     product.photos = next;
     product.photoUrl = cover
       ? cover.type === "video"

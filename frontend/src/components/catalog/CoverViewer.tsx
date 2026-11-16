@@ -58,6 +58,8 @@ export default function CoverViewer({
     (a, b) => Number(b.quantity > 0) - Number(a.quantity > 0),
   );
   const sizeGuide = cover.size_guide_index ?? -1;
+  // where the cover photo sits in the gallery (it keeps its place in the order)
+  const coverAt = Math.max(cover.cover_index ?? 0, 0);
   // Open on the same photo the card showed:
   // - a colour made for the phone picked in the filter, if there is one
   // - else the cover photo (often a group shot of every colour) - unless the
@@ -66,7 +68,7 @@ export default function CoverViewer({
     (v) => v.media_index >= 0 && fitsModels(v, models),
   );
   const coverIsSoldOut = variants.some(
-    (v) => v.media_index === 0 && v.quantity <= 0,
+    (v) => v.media_index === coverAt && v.quantity <= 0,
   );
   const firstAvailable = variants.findIndex(
     (v) => v.quantity > 0 && v.media_index >= 0,
@@ -79,24 +81,27 @@ export default function CoverViewer({
         : -1;
   const [picked, setPicked] = useState(() => {
     if (startVariant >= 0) return startVariant;
-    // the cover photo is itself a colour: select that colour
-    const onCover = variants.findIndex((v) => v.media_index === 0);
-    return Math.max(onCover, 0);
+    // the cover photo is itself a colour: select that colour. A cover that
+    // shows no single colour (a group shot) leaves every colour unselected.
+    return variants.findIndex((v) => v.media_index === coverAt);
   });
   const [slide, setSlide] = useState(() =>
-    startVariant >= 0 ? variants[startVariant].media_index : 0,
+    startVariant >= 0 ? variants[startVariant].media_index : coverAt,
   );
-  const variant = variants[picked];
+  // undefined while no colour is picked
+  const variant = picked >= 0 ? variants[picked] : undefined;
 
   const pickVariant = (i: number) => {
     setPicked(i);
     if (variants[i].media_index >= 0) setSlide(variants[i].media_index);
   };
-  // swiping onto a colour's photo selects that colour
+  // swiping onto a colour's photo selects that colour; onto a photo that is
+  // no colour (the cover group shot) the selection is cleared. The size
+  // guide keeps the colour that was picked.
   const onSlide = (i: number) => {
     setSlide(i);
-    const v = variants.findIndex((x) => x.media_index === i);
-    if (v >= 0) setPicked(v);
+    if (i === sizeGuide) return;
+    setPicked(variants.findIndex((x) => x.media_index === i));
   };
 
   useEffect(() => {
@@ -211,6 +216,21 @@ export default function CoverViewer({
                 })}
               </div>
             </div>
+
+            {!variant && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-white/70">{t("Pick a colour to see what's left in it.")}</p>
+                {sizeGuide >= 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSlide(sizeGuide)}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white active:bg-white/20"
+                  >
+                    <Ruler className="h-3.5 w-3.5" /> {t("Size guide")}
+                  </button>
+                )}
+              </div>
+            )}
 
             {variant && (
               <div>

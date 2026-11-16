@@ -22,8 +22,10 @@ export type CoverVariant = {
 export type Cover = {
   id: string;
   photo_url: string;
-  // every photo and video, cover first
+  // every photo and video, in the order set
   media: MediaItem[];
+  // index into `media` of the cover photo (what photo_url shows)
+  cover_index?: number;
   category_id: string | null;
   // every phone model, in stock first; empty for plain accessories
   models: CoverModel[];

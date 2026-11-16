@@ -46,8 +46,9 @@ const inStockModels = (c: Cover) => c.models.filter((m) => m.quantity > 0);
 const cardPhoto = (c: Cover, models: string[]) => {
   if (!c.in_stock || !c.variants?.length) return c.photo_url;
   const fits = c.variants.find((v) => v.media_index >= 0 && fitsModels(v, models));
-  if (fits) return fits.media_index === 0 ? c.photo_url : c.media[fits.media_index]?.poster || c.photo_url;
-  const first = c.variants.find((v) => v.media_index === 0);
+  const coverAt = c.cover_index ?? 0;
+  if (fits) return fits.media_index === coverAt ? c.photo_url : c.media[fits.media_index]?.poster || c.photo_url;
+  const first = c.variants.find((v) => v.media_index === coverAt);
   // the cover isn't a colour (e.g. a group shot of every colour), or its
   // colour is still in stock: keep the cover
   if (!first || first.quantity > 0) return c.photo_url;

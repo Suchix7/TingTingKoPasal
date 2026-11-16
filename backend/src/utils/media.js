@@ -31,6 +31,7 @@ export function productMedia(obj) {
         publicId: p.publicId || null,
         variant: p.variant || "",
         sizeGuide: !!p.sizeGuide,
+        cover: !!p.cover,
       };
     });
   }
@@ -44,8 +45,16 @@ export function productMedia(obj) {
         publicId: obj.photoPublicId || null,
         variant: "",
         sizeGuide: false,
+        cover: true,
       },
     ];
   }
   return [];
+}
+
+// Where the cover is in a productMedia() list: the one marked as cover, else
+// the first (-1 when there is nothing)
+export function coverIndex(media) {
+  const i = media.findIndex((m) => m.cover);
+  return i >= 0 ? i : media.length ? 0 : -1;
 }

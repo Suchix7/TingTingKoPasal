@@ -127,6 +127,7 @@ export const zhFixes: Record<string, string> = {
   "Ask in store for your phone model": "请到店询问您的手机型号",
   "Size guide": "尺码表",
   "This colour is sold out.": "这个颜色已售罄。",
+  "Pick a colour to see what's left in it.": "选择一个颜色，查看剩余库存。",
   "Close filters": "关闭筛选",
   "Phone model": "手机型号",
   "Find a model": "查找型号",

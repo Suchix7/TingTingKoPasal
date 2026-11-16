@@ -36,7 +36,7 @@ const lineModel = (b: ProductBatch) =>
 // Card photo: when the cover photo is of a colour that is sold out, show the
 // first colour still in stock instead
 const cardPhoto = (product: Product) => {
-  const cover = product.photos?.[0];
+  const cover = product.photos?.find((p) => p.cover) ?? product.photos?.[0];
   const lines = product.batches ?? [];
   const coverColour = cover?.variant?.trim().toLowerCase();
   if (!coverColour) return product.photo_url;

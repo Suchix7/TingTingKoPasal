@@ -63,9 +63,11 @@ export type ProductPhoto = {
   // colour/style this photo shows, and whether it is the size chart
   variant?: string;
   size_guide?: boolean;
+  // the cover photo (it keeps its place in the order)
+  cover?: boolean;
 };
 
-type MediaLabels = { variant?: string; size_guide?: boolean };
+type MediaLabels = { variant?: string; size_guide?: boolean; cover?: boolean };
 
 // What the product form sends: an existing photo/video id, or a new file,
 // each with the colour it shows / whether it is the size guide
@@ -352,8 +354,8 @@ export const useProductByBarcode = (barcode: string) => {
   });
 };
 
-// Saves the whole photo/video list at once, in display order (first one is
-// the cover). New files are uploaded first, one at a time, with progress.
+// Saves the whole photo/video list at once, in display order (the one marked
+// `cover` is the cover, else the first). New files are uploaded first, one at a time, with progress.
 export const useSaveProductPhotos = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -384,6 +386,7 @@ export const useSaveProductPhotos = () => {
           ...uploaded,
           variant: entry.variant ?? "",
           size_guide: !!entry.size_guide,
+          cover: !!entry.cover,
         });
         done += 1;
         onProgress?.(done, total, 0);

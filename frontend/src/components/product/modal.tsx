@@ -97,6 +97,9 @@ export default function ProductModal({
   const [grid, setGrid] = useState<StockGrid>(() => emptyGrid());
   // photo that is the size chart (shown to customers as "Size guide")
   const [sizeGuideKey, setSizeGuideKey] = useState<string | null>(null);
+  // photo picked as the cover (the star); it keeps its place in the order.
+  // None picked (or it was removed): the first photo is the cover.
+  const [coverKey, setCoverKey] = useState<string | null>(null);
 
   useEffect(() => {
     setNameZh(selectedProduct?.product_name_zh || "");
@@ -128,12 +131,14 @@ export default function ProductModal({
       setSizeGuideKey(
         selectedProduct.photos?.find((p) => p.size_guide)?.id ?? null,
       );
+      setCoverKey(selectedProduct.photos?.find((p) => p.cover)?.id ?? null);
       setOriginalCostPrice(selectedProduct.cost_price || 0);
       setPhotos(savedPhotos(selectedProduct));
     } else {
       setFormData(initialFormData);
       setGrid(emptyGrid());
       setSizeGuideKey(null);
+      setCoverKey(null);
       setOriginalCostPrice(0);
       setPhotos([]);
     }
@@ -251,16 +256,19 @@ export default function ProductModal({
       colours: g.colours.map((c) => (c.photoKey === oldKey ? { ...c, photoKey: key } : c)),
     }));
     if (sizeGuideKey === oldKey) setSizeGuideKey(isVideo ? null : key);
+    if (coverKey === oldKey) setCoverKey(key);
     toast.success(t("Photo replaced. Save to keep it."));
   };
 
   const removePhoto = (key: string) => {
     setPhotos((prev) => prev.filter((p) => photoKey(p) !== key));
     if (key === sizeGuideKey) setSizeGuideKey(null);
+    if (key === coverKey) setCoverKey(null);
   };
 
   // Photos are put in order by dragging their handle (mouse or finger): the
-  // photo jumps to the spot under the pointer. The first one is the cover.
+  // photo jumps to the spot under the pointer. The cover is marked with the
+  // star and stays wherever it is put.
   const [dragPhoto, setDragPhoto] = useState<string | null>(null);
   const photoTiles = useRef(new Map<string, HTMLDivElement>());
   const onPhotoDrag = (e: React.PointerEvent) => {
@@ -287,20 +295,23 @@ export default function ProductModal({
     });
   };
 
-  const makeCover = (key: string) =>
-    setPhotos((prev) => {
-      const target = prev.find((p) => photoKey(p) === key);
-      return target ? [target, ...prev.filter((p) => p !== target)] : prev;
-    });
+  // the cover: the starred photo, else the first one
+  const currentCover =
+    coverKey && photos.some((p) => photoKey(p) === coverKey)
+      ? coverKey
+      : photos[0]
+        ? photoKey(photos[0])
+        : null;
 
-  // Colour a photo shows ("" for none) and whether it is the size guide
+  // Colour a photo shows ("" for none), whether it is the size guide and
+  // whether it is the cover
   const photoLabels = (key: string) => {
     const sizeGuide = key === sizeGuideKey;
     const colour =
       !sizeGuide && grid.useColours
         ? grid.colours.find((c) => c.photoKey === key)?.name.trim() ?? ""
         : "";
-    return { variant: colour, size_guide: sizeGuide };
+    return { variant: colour, size_guide: sizeGuide, cover: key === currentCover };
   };
 
   const photosChanged = () => {
@@ -314,7 +325,11 @@ export default function ProductModal({
       // a colour or the size guide was (un)assigned
       saved.some((p) => {
         const now = photoLabels(p.id);
-        return (p.variant || "") !== now.variant || !!p.size_guide !== now.size_guide;
+        return (
+          (p.variant || "") !== now.variant ||
+          !!p.size_guide !== now.size_guide ||
+          !!p.cover !== now.cover
+        );
       })
     );
   };
@@ -579,7 +594,7 @@ export default function ProductModal({
                 <div
                   className={`grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap sm:gap-3 ${dragPhoto ? "select-none" : ""}`}
                 >
-                  {photos.map((photo, i) => (
+                  {photos.map((photo) => (
                     <div
                       key={photoKey(photo)}
                       ref={(el) => {
@@ -587,7 +602,7 @@ export default function ProductModal({
                         else photoTiles.current.delete(photoKey(photo));
                       }}
                       className={`relative aspect-square w-full shrink-0 overflow-hidden rounded-xl border bg-slate-50 sm:h-28 sm:w-28 ${
-                        i === 0
+                        photoKey(photo) === currentCover
                           ? "border-blue-500 ring-2 ring-blue-500/30"
                           : "border-slate-200"
                       } ${dragPhoto === photoKey(photo) ? "z-10 scale-105 opacity-80 shadow-xl" : ""}`}
@@ -640,14 +655,14 @@ export default function ProductModal({
                           </span>
                         </span>
                       )}
-                      {i === 0 ? (
+                      {photoKey(photo) === currentCover ? (
                         <span className="absolute left-1 top-1 rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                           {t("Cover")}
                         </span>
                       ) : (
                         <button
                           type="button"
-                          onClick={() => makeCover(photoKey(photo))}
+                          onClick={() => setCoverKey(photoKey(photo))}
                           disabled={isSubmitting}
                           title={t("Set as cover")}
                           aria-label={t("Set as cover")}

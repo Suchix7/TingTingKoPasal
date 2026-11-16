@@ -1,4 +1,4 @@
-import { productMedia } from "./media.js";
+import { coverIndex, productMedia } from "./media.js";
 
 export function serializeProduct(doc) {
   if (!doc) return null;
@@ -20,14 +20,19 @@ export function serializeProduct(doc) {
     barcode_last_printed_quantity: obj.barcodeLabel?.lastPrintedQuantity || 0,
     description: obj.description || null,
     photo_url: obj.photoUrl || null,
-    photos: productMedia(obj).map(({ id, type, url, poster, variant, sizeGuide }) => ({
-      id,
-      type,
-      url,
-      poster,
-      variant,
-      size_guide: sizeGuide,
-    })),
+    photos: (() => {
+      const media = productMedia(obj);
+      const cover = coverIndex(media);
+      return media.map(({ id, type, url, poster, variant, sizeGuide }, i) => ({
+        id,
+        type,
+        url,
+        poster,
+        variant,
+        size_guide: sizeGuide,
+        cover: i === cover,
+      }));
+    })(),
     stock_quantity: obj.stock?.currentStock || 0,
     reorder_level: obj.stock?.reorderLevel || 0,
     reorder_quantity: obj.stock?.reorderQuantity || 0,

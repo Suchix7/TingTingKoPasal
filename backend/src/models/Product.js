@@ -29,8 +29,8 @@ const productSchema = new mongoose.Schema(
     },
 
     // Every photo and video in display order. photoUrl / photoPublicId mirror
-    // the first one (the cover; a video's still frame) so older code and
-    // queries keep working.
+    // the cover (the one marked `cover`, else the first; a video's still
+    // frame) so older code and queries keep working.
     photos: {
       type: [
         {
@@ -41,6 +41,8 @@ const productSchema = new mongoose.Schema(
           variant: { type: String, default: "" },
           // the size chart / measuring guide, not a product photo
           sizeGuide: { type: Boolean, default: false },
+          // the cover photo; it keeps its place in the gallery order
+          cover: { type: Boolean, default: false },
         },
       ],
       default: [],

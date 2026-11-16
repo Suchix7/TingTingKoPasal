@@ -1,6 +1,6 @@
 import Product from "../models/Product.js";
 import ProductBatch from "../models/ProductBatch.js";
-import { productMedia } from "./media.js";
+import { coverIndex, productMedia } from "./media.js";
 
 // Adds `photo_url` (the sold colour's photo, else the product's cover) and
 // `batch_number` (e.g. "Blue / iPhone 13") to serialized sale items, so sale
@@ -26,12 +26,14 @@ export async function attachItemPhotos(items) {
   for (const item of items) {
     const product = productById.get(String(item.product_id));
     const batch = item.batch_id ? batchById.get(String(item.batch_id)) : null;
-    const media = product ? productMedia(product).filter((m) => !m.sizeGuide) : [];
+    const all = product ? productMedia(product) : [];
+    const cover = all[coverIndex(all)];
+    const media = all.filter((m) => !m.sizeGuide);
     const variant = batch?.variant?.trim().toLowerCase();
     const own = variant
       ? media.find((m) => m.variant?.trim().toLowerCase() === variant)
       : null;
-    item.photo_url = own?.poster || media[0]?.poster || product?.photoUrl || null;
+    item.photo_url = own?.poster || cover?.poster || media[0]?.poster || product?.photoUrl || null;
     item.batch_number = batch?.batchNumber || null;
   }
   return items;
