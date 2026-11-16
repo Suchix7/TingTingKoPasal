@@ -30,6 +30,7 @@ import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
 import { StatCardsSkeleton, TableRowsSkeleton } from "@/components/layout/Skeleton";
 import { useLang } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 
 const emptyCustomer: Omit<Customer, "id" | "created_at" | "updated_at"> = {
   name: "",
@@ -251,8 +252,7 @@ export default function CustomersPage() {
                   className="w-full outline-none"
                 >
                   <option value="">{t("All Status")}</option>
-                  <option value="Active">{t("Active")}</option>
-                  <option value="Inactive">{t("Inactive")}</option>
+                  <SortedOptions options={[["Active", "Active"], ["Inactive", "Inactive"]]} />
                 </select>
               </div>
             </div>

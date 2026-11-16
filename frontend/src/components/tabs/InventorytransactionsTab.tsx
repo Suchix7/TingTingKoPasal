@@ -35,6 +35,7 @@ import Pagination from "@/components/layout/Pagination";
 import { dateTime } from "@/utils/nepaliTime";
 import Tn from "@/components/layout/Tn";
 import { useLang, tr } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 
 const refLabel = (r?: string | null) => {
   if (!r) return tr("N/A");
@@ -432,9 +433,7 @@ export default function InventoryTransactionsPage() {
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
                       <option value="">{t("All Movements")}</option>
-                      <option value="IN">{t("Stock In")}</option>
-                      <option value="OUT">{t("Stock Out")}</option>
-                      <option value="ADJUSTMENT">{t("Adjustment")}</option>
+                      <SortedOptions options={[["IN", "Stock In"], ["OUT", "Stock Out"], ["ADJUSTMENT", "Adjustment"]]} />
                     </select>
                   </div>
                   <div>
@@ -453,20 +452,7 @@ export default function InventoryTransactionsPage() {
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
                       <option value="">{t("All References")}</option>
-                      <option value="INITIAL_STOCK">{t("Initial Stock")}</option>
-                      <option value="SALE">{t("Sale")}</option>
-                      <option value="SALE_DELETE">{t("Sale Delete")}</option>
-                      <option value="SALE_CANCELLED">{t("Sale Cancelled")}</option>
-                      <option value="SALE_RETURN">{t("Sale Return")}</option>
-                      <option value="SALE_UPDATE_RESTORE">
-                        {t("Sale Update Restore")}
-                      </option>
-                      <option value="RESTOCK">{t("Restock")}</option>
-                      <option value="PURCHASE_ORDER">{t("Purchase Order")}</option>
-                      <option value="RETURN">{t("Return")}</option>
-                      <option value="ADJUSTMENT">{t("Adjustment")}</option>
-                      <option value="DEDUCT">{t("Deduct")}</option>
-                      <option value="MANUAL">{t("Manual")}</option>
+                      <SortedOptions options={[["INITIAL_STOCK", "Initial Stock"], ["SALE", "Sale"], ["SALE_DELETE", "Sale Delete"], ["SALE_CANCELLED", "Sale Cancelled"], ["SALE_RETURN", "Sale Return"], ["SALE_UPDATE_RESTORE", "Sale Update Restore"], ["RESTOCK", "Restock"], ["PURCHASE_ORDER", "Purchase Order"], ["RETURN", "Return"], ["ADJUSTMENT", "Adjustment"], ["DEDUCT", "Deduct"], ["MANUAL", "Manual"]]} />
                     </select>
                   </div>
                   <div>

@@ -47,6 +47,7 @@ import { StatCardsSkeleton, TableRowsSkeleton, Skeleton } from "@/components/lay
 import { dateTime } from "@/utils/nepaliTime";
 import axiosInstance from "@/lib/axiosInstance";
 import { useLang, tr } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 
 const LIMIT = 20;
 
@@ -425,9 +426,7 @@ export default function SalesPage() {
               className="w-full outline-none"
             >
               <option value="All">{t("All Payments")}</option>
-              <option value="Paid">{t("Paid")}</option>
-              <option value="Partial">{t("Partial")}</option>
-              <option value="Unpaid">{t("Unpaid")}</option>
+              <SortedOptions options={[["Paid", "Paid"], ["Partial", "Partial"], ["Unpaid", "Unpaid"]]} />
             </select>
           </div>
 
@@ -440,10 +439,7 @@ export default function SalesPage() {
               className="w-full outline-none"
             >
               <option value="All">{t("All Sales")}</option>
-              <option value="Pending">{t("COD Pending")}</option>
-              <option value="Completed">{t("Completed")}</option>
-              <option value="Cancelled">{t("Cancelled")}</option>
-              <option value="Returned">{t("Returned")}</option>
+              <SortedOptions options={[["Pending", "COD Pending"], ["Completed", "Completed"], ["Cancelled", "Cancelled"], ["Returned", "Returned"]]} />
             </select>
           </div>
         </div>

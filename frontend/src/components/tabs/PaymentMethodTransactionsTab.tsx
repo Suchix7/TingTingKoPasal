@@ -24,6 +24,7 @@ import { useDebounced } from "@/hooks/useDebounced";
 import { format } from "date-fns";
 import Pagination from "@/components/layout/Pagination";
 import { useLang } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 import {
   StatCardsSkeleton,
   TableRowsSkeleton,
@@ -403,16 +404,7 @@ export default function PaymentTransactionsPage() {
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
                       <option value="">{t("All Types")}</option>
-                      <option value="OPENING_BALANCE">{t("Opening Balance")}</option>
-                      <option value="CAPITAL_ADDITION">{t("Capital Addition")}</option>
-                      <option value="SALE_PAYMENT">{t("Sale Payment")}</option>
-                      <option value="EXPENSE_PAYMENT">{t("Expense Payment")}</option>
-                      <option value="PURCHASE_PAYMENT">{t("Purchase Payment")}</option>
-                      <option value="WITHDRAWAL">{t("Withdrawal")}</option>
-                      <option value="TRANSFER_IN">{t("Transfer In")}</option>
-                      <option value="TRANSFER_OUT">{t("Transfer Out")}</option>
-                      <option value="ADJUSTMENT_IN">{t("Adjustment In")}</option>
-                      <option value="ADJUSTMENT_OUT">{t("Adjustment Out")}</option>
+                      <SortedOptions options={[["OPENING_BALANCE", "Opening Balance"], ["CAPITAL_ADDITION", "Capital Addition"], ["SALE_PAYMENT", "Sale Payment"], ["EXPENSE_PAYMENT", "Expense Payment"], ["PURCHASE_PAYMENT", "Purchase Payment"], ["WITHDRAWAL", "Withdrawal"], ["TRANSFER_IN", "Transfer In"], ["TRANSFER_OUT", "Transfer Out"], ["ADJUSTMENT_IN", "Adjustment In"], ["ADJUSTMENT_OUT", "Adjustment Out"]]} />
                     </select>
                   </div>
                   <div>
@@ -427,8 +419,7 @@ export default function PaymentTransactionsPage() {
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
                       <option value="">{t("All")}</option>
-                      <option value="IN">{t("Inflow")}</option>
-                      <option value="OUT">{t("Outflow")}</option>
+                      <SortedOptions options={[["IN", "Inflow"], ["OUT", "Outflow"]]} />
                     </select>
                   </div>
                   <div>
@@ -443,16 +434,7 @@ export default function PaymentTransactionsPage() {
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
                     >
                       <option value="">{t("All References")}</option>
-                      <option value="sale">{t("Sale")}</option>
-                      <option value="sale_payment">{t("Sale Payment")}</option>
-                      <option value="expense">{t("Expense")}</option>
-                      <option value="purchase_order">{t("Purchase Order")}</option>
-                      <option value="purchase_order_payment">
-                        {t("Purchase Order Payment")}
-                      </option>
-                      <option value="manual">{t("Manual")}</option>
-                      <option value="transfer">{t("Transfer")}</option>
-                      <option value="adjustment">{t("Adjustment")}</option>
+                      <SortedOptions options={[["sale", "Sale"], ["sale_payment", "Sale Payment"], ["expense", "Expense"], ["purchase_order", "Purchase Order"], ["purchase_order_payment", "Purchase Order Payment"], ["manual", "Manual"], ["transfer", "Transfer"], ["adjustment", "Adjustment"]]} />
                     </select>
                   </div>
                   <div>

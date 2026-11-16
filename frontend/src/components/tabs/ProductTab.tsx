@@ -39,6 +39,8 @@ import { coverImage } from "@/components/catalog/image";
 
 import Tn from "@/components/layout/Tn";
 import { useLang } from "@/lib/i18n";
+import { byLabel } from "@/lib/sortOptions";
+import SortedOptions from "@/components/layout/SortedOptions";
 import { StatCardsSkeleton, Skeleton } from "@/components/layout/Skeleton";
 export type ProductVariantInput = { model: string; quantity: number };
 
@@ -90,7 +92,7 @@ function StatCard({
   subtitle?: string;
   trend?: { value: number; isPositive: boolean };
 }) {
-  const { t } = useLang();
+  const { t, tn, lang } = useLang();
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
@@ -119,7 +121,7 @@ function StatCard({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const { t } = useLang();
+  const { t, tn, lang } = useLang();
   const styles = {
     Active: "bg-green-100 text-green-700 border-green-200",
     Inactive: "bg-gray-100 text-gray-700 border-gray-200",
@@ -140,7 +142,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function ProductsPage() {
-  const { t } = useLang();
+  const { t, tn, lang } = useLang();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 500);
@@ -352,7 +354,7 @@ export default function ProductsPage() {
                   {categoriesLoading && (
                     <option disabled>{t("Loading...")}</option>
                   )}
-                  {categories.map((category) => (
+                  {byLabel(categories, (c) => tn(c.category_name), lang).map((category) => (
                     <option key={category.id} value={String(category.id)}>
                       <Tn v={category.category_name} />
                     </option>
@@ -373,9 +375,7 @@ export default function ProductsPage() {
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
                 >
                   <option value="">{t("All Status")}</option>
-                  <option value="Active">{t("Active")}</option>
-                  <option value="Inactive">{t("Inactive")}</option>
-                  <option value="Discontinued">{t("Discontinued")}</option>
+                  <SortedOptions options={[["Active", "Active"], ["Inactive", "Inactive"], ["Discontinued", "Discontinued"]]} />
                 </select>
               </div>
             </div>

@@ -33,6 +33,7 @@ import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
 import { dateTime } from "@/utils/nepaliTime";
 import { useLang } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 import { TableRowsSkeleton } from "@/components/layout/Skeleton";
 
 const LIMIT = 20;
@@ -259,9 +260,7 @@ export default function QuickSalesPage() {
               className="w-full outline-none"
             >
               <option value="all">{t("All Status")}</option>
-              <option value="pending">{t("Pending")}</option>
-              <option value="converted">{t("Converted")}</option>
-              <option value="cancelled">{t("Cancelled")}</option>
+              <SortedOptions options={[["pending", "Pending"], ["converted", "Converted"], ["cancelled", "Cancelled"]]} />
             </select>
           </div>
         </div>

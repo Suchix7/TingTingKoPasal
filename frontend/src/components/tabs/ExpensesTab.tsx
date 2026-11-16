@@ -29,6 +29,7 @@ import {
   useDeleteExpense,
 } from "@/hooks/useExpenses";
 import { useLang } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 import {
   Skeleton,
   StatCardsSkeleton,
@@ -312,11 +313,7 @@ export default function ExpensesPage() {
             className="min-w-0 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
           >
             <option value="">{t("All Categories")}</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {t(cat)}
-              </option>
-            ))}
+            <SortedOptions options={categories.map((cat) => [cat, cat] as const)} />
           </select>
 
           <select
@@ -325,10 +322,7 @@ export default function ExpensesPage() {
             className="min-w-0 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-gray-400"
           >
             <option value="">{t("All Payment Methods")}</option>
-            <option value="1">{t("Cash")}</option>
-            <option value="2">{t("Bank Transfer")}</option>
-            <option value="3">{t("Credit Card")}</option>
-            <option value="4">{t("Mobile Payment")}</option>
+            <SortedOptions options={[["1", "Cash"], ["2", "Bank Transfer"], ["3", "Credit Card"], ["4", "Mobile Payment"]]} />
           </select>
 
           <div className="relative">

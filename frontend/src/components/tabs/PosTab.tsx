@@ -35,6 +35,7 @@ import { useStore } from "@/hooks/useStoreInfo";
 import Tn from "@/components/layout/Tn";
 import { linePhoto } from "@/components/catalog/image";
 import { useLang } from "@/lib/i18n";
+import { byLabel } from "@/lib/sortOptions";
 import { CardGridSkeleton, SlowNotice } from "@/components/layout/Skeleton";
 export type CartItem = {
   product_id: string;
@@ -74,7 +75,7 @@ const repriceItem = (item: CartItem): CartItem => {
 };
 
 export default function PointOfSalesPage() {
-  const { t, tn } = useLang();
+  const { t, tn, lang } = useLang();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 300);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -698,7 +699,7 @@ export default function PointOfSalesPage() {
               className="col-span-2 sm:w-56"
             >
               <option value="all">{t("All Products")}</option>
-              {categories.map((category) => (
+              {byLabel(categories, (c) => tn(c.category_name), lang).map((category) => (
                 <option key={category.id} value={String(category.id)}>
                   {tn(category.category_name)}
                 </option>
