@@ -15,6 +15,8 @@ import {
   TrendingUp,
   Edit,
   Undo2,
+  CheckCircle2,
+  Truck,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -35,6 +37,8 @@ import DeleteConfirmModal from "@/components/layout/DeleteConfirmModal";
 import SaleDetailsModal from "@/components/sales/SaleDetailsModal";
 import SaleItemThumbs from "@/components/sales/SaleItemThumbs";
 import EditSaleModal from "@/components/sales/EditSaleModal";
+import PendingCodSection from "@/components/sales/PendingCodSection";
+import CompleteCodModal, { type CodOrder } from "@/components/sales/CompleteCodModal";
 import ReceiptPrinter, { ReceiptData } from "@/components/pos/ReceiptPrinter";
 import { prepareReceiptData } from "@/utils/receiptHelper";
 import { useDebounced } from "@/hooks/useDebounced";
@@ -65,6 +69,7 @@ const paymentStatusClass: Record<PaymentStatus, string> = {
 };
 
 const saleStatusClass: Record<SaleStatus, string> = {
+  Pending: "bg-amber-100 text-amber-800 border-amber-200",
   Completed: "bg-blue-100 text-blue-700 border-blue-200",
   Cancelled: "bg-red-100 text-red-700 border-red-200",
   Returned: "bg-purple-100 text-purple-700 border-purple-200",
@@ -84,6 +89,20 @@ const getPaymentLabel = (payment: AnySalePayment) => {
 
   return `${tr("Method")} #${payment.payment_method_id}`;
 };
+
+// What to call a sale's status in the list: a COD order waiting for its money
+// reads "COD Pending" rather than just "Pending".
+const saleStatusLabel = (sale: Sale) =>
+  sale.sale_status === "Pending" ? "COD Pending" : sale.sale_status;
+
+function CodBadge() {
+  const { t } = useLang();
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+      <Truck size={11} /> {t("COD")}
+    </span>
+  );
+}
 
 function StatusBadge({
   children,
@@ -168,7 +187,12 @@ export default function SalesPage() {
   const [saleStatus, setSaleStatus] = useState<"All" | SaleStatus>("All");
   const [selectedSaleId, setSelectedSaleId] = useState<string | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<Sale | null>(null);
-  const [revokeTarget, setRevokeTarget] = useState<Sale | null>(null);
+  // a sale to revoke, or a pending COD order to cancel
+  const [revokeTarget, setRevokeTarget] = useState<
+    (Pick<Sale, "id" | "invoice_no" | "grand_total"> & { pending?: boolean }) | null
+  >(null);
+  // a pending COD order whose money has arrived
+  const [codToComplete, setCodToComplete] = useState<CodOrder | null>(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [printSale, setPrintSale] = useState<Sale | null>(null);
   const [printSaleItems, setPrintSaleItems] = useState<any[]>([]);
@@ -214,7 +238,11 @@ export default function SalesPage() {
         saleId: revokeTarget.id,
         reason: revokeReason.trim(),
       });
-      toast.success(t("Sale revoked. Stock restored and payments reversed."));
+      toast.success(
+        revokeTarget.pending
+          ? t("COD order cancelled. Stock restored.")
+          : t("Sale revoked. Stock restored and payments reversed."),
+      );
       setRevokeTarget(null);
       setRevokeReason("");
     } catch {
@@ -363,6 +391,16 @@ export default function SalesPage() {
       </div>
       )}
 
+      <PendingCodSection
+        money={money}
+        onView={(id) => setSelectedSaleId(id)}
+        onComplete={(order) => setCodToComplete(order)}
+        onCancel={(order) => {
+          setRevokeReason("");
+          setRevokeTarget({ ...order, pending: true });
+        }}
+      />
+
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
           <div className="relative">
@@ -402,6 +440,7 @@ export default function SalesPage() {
               className="w-full outline-none"
             >
               <option value="All">{t("All Sales")}</option>
+              <option value="Pending">{t("COD Pending")}</option>
               <option value="Completed">{t("Completed")}</option>
               <option value="Cancelled">{t("Cancelled")}</option>
               <option value="Returned">{t("Returned")}</option>
@@ -495,9 +534,10 @@ export default function SalesPage() {
                     </StatusBadge>
                     {sale.sale_status !== "Completed" && (
                       <StatusBadge className={saleStatusClass[sale.sale_status]}>
-                        {t(sale.sale_status)}
+                        {t(saleStatusLabel(sale))}
                       </StatusBadge>
                     )}
+                    {sale.is_cod && sale.sale_status !== "Pending" && <CodBadge />}
                     {sale.payment_proof_url ? (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600">
                         <Camera size={12} /> {t("Proof photo")}
@@ -519,14 +559,25 @@ export default function SalesPage() {
                       <Printer size={18} />
                     )}
                   </button>
-                  {sale.sale_status === "Completed" && (
+                  {sale.sale_status === "Pending" && (
+                    <button
+                      onClick={() => setCodToComplete(sale)}
+                      className="rounded-xl p-2.5 text-green-600 active:bg-green-50"
+                      aria-label={t("Mark as Completed")}
+                    >
+                      <CheckCircle2 size={18} />
+                    </button>
+                  )}
+                  {(sale.sale_status === "Completed" || sale.sale_status === "Pending") && (
                     <button
                       onClick={() => {
                         setRevokeReason("");
-                        setRevokeTarget(sale);
+                        setRevokeTarget({ ...sale, pending: sale.sale_status === "Pending" });
                       }}
                       className="rounded-xl p-2.5 text-gray-500 active:bg-amber-50 active:text-amber-600"
-                      aria-label={t("Revoke sale")}
+                      aria-label={
+                        sale.sale_status === "Pending" ? t("Cancel COD order") : t("Revoke sale")
+                      }
                     >
                       <Undo2 size={18} />
                     </button>
@@ -652,6 +703,11 @@ export default function SalesPage() {
                     </td>
 
                     <td className="px-5 py-4">
+                      {sale.sale_status === "Pending" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                          <Truck size={13} /> {t("Awaiting COD payment")}
+                        </span>
+                      ) : (
                       <PaymentsPreview
                         payments={
                           sale.payments?.length
@@ -659,6 +715,7 @@ export default function SalesPage() {
                             : salePayments.filter((p) => p.sale_id === sale.id)
                         }
                       />
+                      )}
                       {sale.payment_proof_url ? (
                         <a
                           href={sale.payment_proof_url}
@@ -682,8 +739,9 @@ export default function SalesPage() {
                         <StatusBadge
                           className={saleStatusClass[sale.sale_status]}
                         >
-                          {t(sale.sale_status)}
+                          {t(saleStatusLabel(sale))}
                         </StatusBadge>
+                        {sale.is_cod && sale.sale_status !== "Pending" && <CodBadge />}
                       </div>
                     </td>
 
@@ -706,15 +764,31 @@ export default function SalesPage() {
                             <Printer size={18} />
                           )}
                         </button>
-                        {sale.sale_status === "Completed" && (
+                        {sale.sale_status === "Pending" && (
+                          <button
+                            onClick={() => setCodToComplete(sale)}
+                            className="rounded-xl p-2 text-green-600 transition hover:bg-green-50"
+                            aria-label={t("Mark as Completed")}
+                            title={t("Payment received - mark as Completed")}
+                          >
+                            <CheckCircle2 size={18} />
+                          </button>
+                        )}
+                        {(sale.sale_status === "Completed" || sale.sale_status === "Pending") && (
                           <button
                             onClick={() => {
                               setRevokeReason("");
-                              setRevokeTarget(sale);
+                              setRevokeTarget({ ...sale, pending: sale.sale_status === "Pending" });
                             }}
                             className="rounded-xl p-2 text-gray-500 transition hover:bg-amber-50 hover:text-amber-600"
-                            aria-label={t("Revoke sale")}
-                            title={t("Revoke (sold by mistake)")}
+                            aria-label={
+                              sale.sale_status === "Pending" ? t("Cancel COD order") : t("Revoke sale")
+                            }
+                            title={
+                              sale.sale_status === "Pending"
+                                ? t("Cancel COD order (returned / refused)")
+                                : t("Revoke (sold by mistake)")
+                            }
                           >
                             <Undo2 size={18} />
                           </button>
@@ -782,10 +856,13 @@ export default function SalesPage() {
             className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
           >
             <h2 className="text-lg font-semibold text-slate-900">
-              {t("Revoke sale")} {revokeTarget.invoice_no}?
+              {revokeTarget.pending ? t("Cancel COD order") : t("Revoke sale")}{" "}
+              {revokeTarget.invoice_no}?
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              {t("Use this when a sale was made by mistake. The items go back into stock and the payment is reversed. The sale stays on record as Cancelled and is written to the Activity Log.")}{" "}
+              {revokeTarget.pending
+                ? t("Use this when the customer refused the order or the courier brought it back. The items go back into stock. Nothing was paid, so there is nothing to reverse. The order stays on record as Cancelled.")
+                : t("Use this when a sale was made by mistake. The items go back into stock and the payment is reversed. The sale stays on record as Cancelled and is written to the Activity Log.")}{" "}
               ({money(revokeTarget.grand_total)})
             </p>
             <label className="mt-4 block text-sm font-medium text-slate-700">
@@ -795,7 +872,9 @@ export default function SalesPage() {
               type="text"
               value={revokeReason}
               onChange={(e) => setRevokeReason(e.target.value)}
-              placeholder={t("e.g. Wrong item sold")}
+              placeholder={
+                revokeTarget.pending ? t("e.g. Customer refused") : t("e.g. Wrong item sold")
+              }
               disabled={revokeSale.isPending}
               className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
             />
@@ -805,7 +884,7 @@ export default function SalesPage() {
                 disabled={revokeSale.isPending}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
               >
-                {t("Keep sale")}
+                {revokeTarget.pending ? t("Keep order") : t("Keep sale")}
               </button>
               <button
                 onClick={handleRevoke}
@@ -813,11 +892,23 @@ export default function SalesPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {revokeSale.isPending && <Loader2 size={14} className="animate-spin" />}
-                {revokeSale.isPending ? t("Revoking...") : t("Revoke sale")}
+                {revokeSale.isPending
+                  ? t("Revoking...")
+                  : revokeTarget.pending
+                    ? t("Cancel COD order")
+                    : t("Revoke sale")}
               </button>
             </div>
           </div>
         </div>
+      ) : null}
+
+      {codToComplete ? (
+        <CompleteCodModal
+          order={codToComplete}
+          money={money}
+          onClose={() => setCodToComplete(null)}
+        />
       ) : null}
 
       {deleteConfirm ? (

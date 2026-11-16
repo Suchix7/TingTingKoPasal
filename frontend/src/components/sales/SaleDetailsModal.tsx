@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, CreditCard, ImageIcon, Phone, User, X } from "lucide-react";
+import { Calendar, CreditCard, ImageIcon, Phone, Truck, User, X } from "lucide-react";
 import { coverImage } from "@/components/catalog/image";
 import { SaleItem, useSaleById, useSaleItems } from "@/hooks/useSales";
 import {
@@ -110,6 +110,26 @@ export default function SaleDetailsModal({
             </div>
           ) : (
             <div className="space-y-6">
+              {sale.is_cod && (
+                <div
+                  className={`flex items-start gap-3 rounded-2xl border p-4 text-sm ${
+                    sale.sale_status === "Pending"
+                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                      : "border-gray-200 bg-gray-50 text-gray-700"
+                  }`}
+                >
+                  <Truck className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    <span className="font-semibold">{t("Cash on Delivery")}</span>
+                    {" · "}
+                    {sale.sale_status === "Pending"
+                      ? `${t("Pending - waiting for payment of")} ${money(sale.grand_total)}`
+                      : sale.sale_status === "Completed"
+                        ? `${t("Paid")}${sale.completed_at ? ` ${dateTime(sale.completed_at)}` : ""}`
+                        : t(sale.sale_status)}
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
                 <div className="col-span-2 rounded-2xl bg-gray-50 p-4 md:col-span-1">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">

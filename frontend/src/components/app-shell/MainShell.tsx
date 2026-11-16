@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import SidebarTabs, { MainTab, SIDEBAR_LINKS } from "./SidebarTabs";
 import BottomNav from "./BottomNav";
 import LanguageToggle from "./LanguageToggle";
+import CodNotifications from "./CodNotifications";
 import ActivityBar from "@/components/layout/ActivityBar";
 import { useLang } from "@/lib/i18n";
 
@@ -116,7 +117,8 @@ export default function MainShell() {
               {t(tabName(activeTab))}
             </span>
           </span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <CodNotifications onOpenSales={() => setActiveTab("sales")} />
             <LanguageToggle />
           </div>
         </header>

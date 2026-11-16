@@ -81,6 +81,11 @@ export default function DaybookSalesTable({
                 >
                   {t(sale.payment_status)}
                 </span>
+                {sale.sale_status === "Pending" && (
+                  <span className="ml-1.5 inline-flex rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                    {t("COD Pending")}
+                  </span>
+                )}
               </td>
               <td className="px-5 py-4">
                 <div className="flex justify-end">

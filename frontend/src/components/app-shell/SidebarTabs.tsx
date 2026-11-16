@@ -21,6 +21,7 @@ import {
   Building2,
 } from "lucide-react";
 import { useDashboardOverview } from "@/hooks/useDashboard";
+import { usePendingCodSales } from "@/hooks/useSales";
 import { useAuthStore } from "@/store/auth.store";
 import { useLang } from "@/lib/i18n";
 
@@ -143,6 +144,10 @@ export default function SidebarTabs({
   // Total out of stock count (items + batches)
   const totalOutOfStockCount = outOfStockItemsCount + outOfStockBatchesCount;
 
+  // Cash on Delivery orders still waiting for payment (amber badge on Sales)
+  const { data: pendingCod } = usePendingCodSales(20);
+  const pendingCodCount = pendingCod?.count ?? 0;
+
   useEffect(() => {
     const handleResize = () => {
       setIsOpen(window.innerWidth >= 768);
@@ -183,8 +188,15 @@ export default function SidebarTabs({
               {section.links.map((link) => {
                 const Icon = link.icon;
                 const isActive = activeTab === link.tab;
-                const showNotificationBadge =
-                  link.tab === "inventory" && totalOutOfStockCount > 0;
+                const badgeCount =
+                  link.tab === "inventory"
+                    ? totalOutOfStockCount
+                    : link.tab === "sales"
+                      ? pendingCodCount
+                      : 0;
+                const showNotificationBadge = badgeCount > 0;
+                const badgeColor =
+                  link.tab === "sales" ? "bg-amber-500" : "bg-red-500";
 
                 return (
                   <button
@@ -200,10 +212,8 @@ export default function SidebarTabs({
 
                       {/* Notification Badge on Icon (when sidebar is collapsed) */}
                       {showNotificationBadge && !showLabelsHere && (
-                        <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-900">
-                          {totalOutOfStockCount > 9
-                            ? "9+"
-                            : totalOutOfStockCount}
+                        <span className={`absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full ${badgeColor} text-[10px] font-bold text-white ring-2 ring-gray-900`}>
+                          {badgeCount > 9 ? "9+" : badgeCount}
                         </span>
                       )}
                     </div>
@@ -214,10 +224,15 @@ export default function SidebarTabs({
 
                         {/* Notification Badge (when sidebar is open) */}
                         {showNotificationBadge && (
-                          <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                            {totalOutOfStockCount > 99
-                              ? "99+"
-                              : totalOutOfStockCount}
+                          <span
+                            className={`ml-2 rounded-full ${badgeColor} px-2 py-0.5 text-[10px] font-bold text-white`}
+                            title={
+                              link.tab === "sales"
+                                ? t("COD orders waiting for payment")
+                                : undefined
+                            }
+                          >
+                            {badgeCount > 99 ? "99+" : badgeCount}
                           </span>
                         )}
                       </span>

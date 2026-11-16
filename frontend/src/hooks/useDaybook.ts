@@ -18,7 +18,8 @@ export type DaybookSale = {
   remaining_amount: number;
 
   payment_status: "Paid" | "Unpaid" | "Partial";
-  sale_status: "Completed" | "Cancelled" | "Returned";
+  sale_status: "Pending" | "Completed" | "Cancelled" | "Returned";
+  is_cod?: boolean;
 
   notes?: string | null;
   created_at: string;
@@ -98,6 +99,8 @@ export type DaybookSummary = {
   completed_sales_count: number;
   cancelled_sales_count: number;
   returned_sales_count: number;
+  pending_cod_count?: number;
+  pending_cod_amount?: number;
 
   paid_sales_count: number;
   partial_sales_count: number;

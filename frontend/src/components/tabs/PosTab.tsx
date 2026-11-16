@@ -103,6 +103,8 @@ export default function PointOfSalesPage() {
     "all",
   );
   const [isDiscountEnabled, setIsDiscountEnabled] = useState(false);
+  // Cash on Delivery: order goes out now, saved as Pending until paid
+  const [isCod, setIsCod] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   // Below xl the layout stacks (products above, bill below). The bill
@@ -452,9 +454,102 @@ export default function PointOfSalesPage() {
     );
   };
 
+  const clearBill = () => {
+    setCartItems([]);
+    setPayments([]);
+    setPaymentProofFile(null);
+    setShowQrModal(false);
+    setCustomerId(null);
+    setDiscountAmount(0);
+    setDiscountValue(0);
+    setIsDiscountEnabled(false);
+    setIsCod(false);
+  };
+
+  // Cash on Delivery: nothing is paid now. The order is saved as Pending
+  // (stock goes out with it) and is completed from Sales once paid.
+  const handleCodCheckout = () => {
+    if (!customerId) {
+      toast.error(t("Choose the customer this order goes to."));
+      return;
+    }
+
+    const totalTaxAmount = cartItems.reduce(
+      (sum, item) => sum + (item.tax_amount || 0) * item.quantity,
+      0,
+    );
+    const hasTaxInclusive = cartItems.some((item) => item.tax_inclusive);
+
+    createSale.mutate(
+      {
+        invoice_no: `INV-${Date.now()}`,
+        customer_id: customerId,
+        customer_name: selectedBillCustomer?.name ?? null,
+        customer_phone: selectedBillCustomer?.phone ?? null,
+        subtotal,
+        tax_amount: totalTaxAmount,
+        discount_amount: discountAmount,
+        grand_total: grandTotal,
+        paid_amount: 0,
+        change_amount: 0,
+        remaining_amount: grandTotal,
+        payments: [],
+        payment_status: "Unpaid",
+        sale_status: "Pending",
+        is_cod: true,
+        notes: null,
+        items: cartItems.map((item) => ({
+          ...item,
+          tax_amount: item.tax_amount || 0,
+          tax_inclusive: item.tax_inclusive || false,
+        })),
+        is_tax_inclusive: hasTaxInclusive,
+      },
+      {
+        onSuccess: (data) => {
+          const receipt = prepareReceiptData(
+            data.data.invoice_no || `INV-${Date.now()}`,
+            cartItems,
+            [],
+            paymentMethods,
+            {
+              subtotal,
+              discountAmount,
+              taxAmount: totalTaxAmount,
+              grandTotal,
+              paidAmount: 0,
+              changeAmount: 0,
+              remainingAmount: grandTotal,
+            },
+            {
+              customerName: selectedBillCustomer?.name,
+              customerPhone: selectedBillCustomer?.phone,
+              cashierName: "Admin",
+              notes: `CASH ON DELIVERY - collect Rs. ${grandTotal.toLocaleString()}${
+                selectedBillCustomer?.address
+                  ? ` | Deliver to: ${selectedBillCustomer.address}`
+                  : ""
+              }`,
+              paymentStatus: "COD - PENDING",
+              store,
+            },
+          );
+          setReceiptData(receipt);
+          setShowReceipt(true);
+          clearBill();
+          toast.success(t("COD order placed - pending payment"));
+        },
+      },
+    );
+  };
+
   const handleCheckout = () => {
     if (cartItems.length === 0) {
       toast.error(t("Please add at least one product to the cart"));
+      return;
+    }
+    if (isCod) {
+      handleCodCheckout();
       return;
     }
     const validPayments = payments.filter(
@@ -767,6 +862,8 @@ export default function PointOfSalesPage() {
           paidAmount={paidAmount}
           handleCheckout={handleCheckout}
           isCheckingOut={createSale.isPending}
+          isCod={isCod}
+          setIsCod={setIsCod}
           isDiscountEnabled={isDiscountEnabled}
           setIsDiscountEnabled={setIsDiscountEnabled}
           discountAmount={discountAmount}

@@ -14,6 +14,7 @@ import {
   FileText,
   Loader2,
   ImageIcon,
+  Truck,
 } from "lucide-react";
 import { coverImage } from "@/components/catalog/image";
 import { ListSkeleton } from "@/components/layout/Skeleton";
@@ -72,6 +73,10 @@ interface BillingSectionProps {
 
   handleCheckout: () => void;
   isCheckingOut: boolean;
+
+  // Cash on Delivery: the order goes out now, payment is collected later
+  isCod?: boolean;
+  setIsCod?: Dispatch<SetStateAction<boolean>>;
 
   isDiscountEnabled: boolean;
   setIsDiscountEnabled: Dispatch<SetStateAction<boolean>>;
@@ -392,6 +397,8 @@ export default function BillingSection({
   paidAmount,
   handleCheckout,
   isCheckingOut,
+  isCod = false,
+  setIsCod,
   isDiscountEnabled,
   setIsDiscountEnabled,
   discountAmount,
@@ -948,6 +955,74 @@ export default function BillingSection({
                   />
                 </div>
 
+                {/* Cash on Delivery: send the order now, collect the money later */}
+                {setIsCod && (
+                  <div
+                    className={`rounded-xl border p-3 transition-colors ${
+                      isCod
+                        ? "border-amber-300 bg-amber-50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            isCod
+                              ? "bg-amber-500 text-white"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          <Truck className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {t("Cash on Delivery")}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {t("Customer pays when the order is delivered")}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isCod}
+                        aria-label={t("Cash on Delivery")}
+                        onClick={() => {
+                          const next = !isCod;
+                          setIsCod(next);
+                          // no payment is taken now for a COD order
+                          if (next) {
+                            setPayments([]);
+                            setPaymentProofFile?.(null);
+                          }
+                        }}
+                        className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
+                          isCod ? "bg-amber-500" : "bg-gray-300"
+                        }`}
+                      >
+                        <span
+                          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                            isCod ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {isCod && (
+                      <p className="mt-2.5 rounded-lg bg-white/70 px-3 py-2 text-xs text-amber-800">
+                        {t("The order is saved as Pending and stock goes out now. When the money arrives, mark it Completed in Sales.")}
+                        {!customerId && (
+                          <span className="mt-1 block font-semibold">
+                            {t("Choose the customer this order goes to.")}
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {!isCod && (
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <label className="block text-sm font-medium text-gray-700">
@@ -1099,6 +1174,7 @@ export default function BillingSection({
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Discount Section */}
                 <div className="rounded-xl bg-white border border-gray-200 p-3 space-y-3">
@@ -1258,19 +1334,32 @@ export default function BillingSection({
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">{t("Total Paid")}</span>
-                    <span className="font-semibold">Rs. {paidAmount}</span>
-                  </div>
+                  {isCod ? (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">
+                        {t("To collect on delivery")}
+                      </span>
+                      <span className="font-semibold text-amber-700">
+                        Rs. {cartSummary.grandTotal}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">{t("Total Paid")}</span>
+                        <span className="font-semibold">Rs. {paidAmount}</span>
+                      </div>
 
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">{t("Remaining")}</span>
-                    <span className="font-semibold text-red-600">
-                      Rs. {cartSummary.remainingAmount}
-                    </span>
-                  </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">{t("Remaining")}</span>
+                        <span className="font-semibold text-red-600">
+                          Rs. {cartSummary.remainingAmount}
+                        </span>
+                      </div>
+                    </>
+                  )}
 
-                  {changeAmount > 0 && (
+                  {!isCod && changeAmount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">{t("Change")}</span>
                       <span className="font-semibold text-green-600">
@@ -1284,12 +1373,21 @@ export default function BillingSection({
                   type="button"
                   onClick={handleCheckout}
                   disabled={isCheckingOut}
-                  className="w-full cursor-pointer bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`w-full cursor-pointer text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    isCod
+                      ? "bg-amber-600 hover:bg-amber-700"
+                      : "bg-gray-900 hover:bg-gray-800"
+                  }`}
                 >
                   {isCheckingOut ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t("Processing...")}
+                    </>
+                  ) : isCod ? (
+                    <>
+                      <Truck className="h-5 w-5" />
+                      {t("Place COD Order")}
                     </>
                   ) : (
                     <>

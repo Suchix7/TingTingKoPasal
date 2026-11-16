@@ -49,6 +49,7 @@ export const getDaybookByDate = async (req, res) => {
       remaining_amount: s.remainingAmount,
       payment_status: s.paymentStatus,
       sale_status: s.saleStatus,
+      is_cod: Boolean(s.isCod),
       notes: s.notes,
       created_at: s.createdAt,
     }));
@@ -187,6 +188,11 @@ export const getDaybookByDate = async (req, res) => {
       completed_sales_count: completedSales.length,
       cancelled_sales_count: salesDocs.filter((s) => s.saleStatus === "Cancelled").length,
       returned_sales_count: salesDocs.filter((s) => s.saleStatus === "Returned").length,
+      // Cash on Delivery orders from this day still waiting for their money
+      pending_cod_count: salesDocs.filter((s) => s.saleStatus === "Pending").length,
+      pending_cod_amount: salesDocs
+        .filter((s) => s.saleStatus === "Pending")
+        .reduce((sum, s) => sum + toNum(s.grandTotal), 0),
       paid_sales_count: salesDocs.filter((s) => s.paymentStatus === "Paid").length,
       partial_sales_count: salesDocs.filter((s) => s.paymentStatus === "Partial").length,
       unpaid_sales_count: salesDocs.filter((s) => s.paymentStatus === "Unpaid").length,

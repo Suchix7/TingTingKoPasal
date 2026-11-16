@@ -60,7 +60,11 @@ function calculateAccuracyMetrics(forecastData) {
 }
 
 async function fetchPeriodSeries(periodType, startDate, endDate) {
-  const match = { paymentStatus: { $nin: ["Cancelled", "Refunded"] } };
+  // Pending Cash on Delivery orders are not sales yet (no money collected)
+  const match = {
+    paymentStatus: { $nin: ["Cancelled", "Refunded"] },
+    saleStatus: { $ne: "Pending" },
+  };
 
   if (startDate || endDate) {
     match.createdAt = {};

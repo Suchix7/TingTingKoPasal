@@ -135,7 +135,7 @@ export type AnalyticsRecentSale = {
   remaining_amount: number;
   change_amount: number;
   payment_status: "Paid" | "Unpaid" | "Partial";
-  sale_status: "Completed" | "Cancelled" | "Returned";
+  sale_status: "Pending" | "Completed" | "Cancelled" | "Returned";
   created_at: string;
 };
 

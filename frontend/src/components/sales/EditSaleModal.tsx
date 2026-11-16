@@ -775,7 +775,8 @@ export default function EditSaleModal({
       return false;
     }
 
-    if (!customerId && totalPayment < grandTotal) {
+    // A pending COD order has no payment yet - that's expected
+    if (saleStatus !== "Pending" && !customerId && totalPayment < grandTotal) {
       toast.error(t("Please select a customer or adjust the payment amount."));
       return false;
     }
@@ -826,10 +827,11 @@ export default function EditSaleModal({
       change_amount: 0,
       remaining_amount: remainingAmount,
       sale_status: saleStatus,
-      payment_status: getPaymentStatus(),
+      payment_status: saleStatus === "Pending" ? "Unpaid" : getPaymentStatus(),
       notes: notes.trim() || null,
 
-      payments: fittedPayments.map((payment) => ({
+      // still a pending COD order: no payment is recorded until it's completed
+      payments: (saleStatus === "Pending" ? [] : fittedPayments).map((payment) => ({
         id: payment.id,
         sale_id: sale.id,
         payment_method_id: payment.payment_method_id,
@@ -990,10 +992,19 @@ export default function EditSaleModal({
                   }
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
                 >
+                  {/* only a COD order that is still unpaid can stay Pending */}
+                  {sale.sale_status === "Pending" && (
+                    <option value="Pending">{t("COD Pending")}</option>
+                  )}
                   <option value="Completed">{t("Completed")}</option>
                   <option value="Cancelled">{t("Cancelled")}</option>
                   <option value="Returned">{t("Returned")}</option>
                 </select>
+                {sale.sale_status === "Pending" && saleStatus === "Completed" && (
+                  <p className="text-xs text-amber-700">
+                    {t("Add the payment you received below, then save.")}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1223,7 +1234,12 @@ export default function EditSaleModal({
               </div>
             </div>
 
-            <div>
+            {saleStatus === "Pending" && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                {t("This Cash on Delivery order is waiting for payment. Change the status to Completed to record the payment.")}
+              </div>
+            )}
+            <div className={saleStatus === "Pending" ? "hidden" : ""}>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-900">
                   {t("Payments")}

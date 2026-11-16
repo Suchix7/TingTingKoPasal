@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { MainTab } from "./SidebarTabs";
 import { useDashboardOverview } from "@/hooks/useDashboard";
+import { usePendingCodSales } from "@/hooks/useSales";
 import { useLang } from "@/lib/i18n";
 
 // Phones only: the most used pages one thumb-tap away. Everything else is
@@ -38,6 +39,9 @@ export default function BottomNav({
     (data?.data.lowStockBatches?.filter((b) => Number(b.quantity) <= 0)
       .length || 0);
   const moreActive = !ITEMS.some((i) => i.tab === activeTab);
+  // Cash on Delivery orders waiting for payment: amber dot on Sales
+  const { data: pendingCod } = usePendingCodSales(20);
+  const pendingCodCount = pendingCod?.count ?? 0;
 
   const item = (
     key: string,
@@ -45,7 +49,7 @@ export default function BottomNav({
     Icon: React.ElementType,
     active: boolean,
     onClick: () => void,
-    dot = false,
+    dot: false | "red" | "amber" = false,
   ) => (
     <button
       key={key}
@@ -62,7 +66,11 @@ export default function BottomNav({
       <span className="relative">
         <Icon className={`h-5 w-5 ${active ? "stroke-[2.4]" : ""}`} />
         {dot && (
-          <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+          <span
+            className={`absolute -right-1 -top-0.5 h-2 w-2 rounded-full ring-2 ring-white ${
+              dot === "amber" ? "bg-amber-500" : "bg-red-500"
+            }`}
+          />
         )}
       </span>
       <span className="max-w-full truncate px-1">{label}</span>
@@ -75,11 +83,16 @@ export default function BottomNav({
       className="flex shrink-0 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {ITEMS.map((i) =>
-        item(i.tab, t(i.name), i.icon, activeTab === i.tab, () =>
-          setActiveTab(i.tab),
+        item(
+          i.tab,
+          t(i.name),
+          i.icon,
+          activeTab === i.tab,
+          () => setActiveTab(i.tab),
+          i.tab === "sales" && pendingCodCount > 0 ? "amber" : false,
         ),
       )}
-      {item("more", t("More"), Menu, moreActive, onMore, outOfStock > 0)}
+      {item("more", t("More"), Menu, moreActive, onMore, outOfStock > 0 ? "red" : false)}
     </nav>
   );
 }

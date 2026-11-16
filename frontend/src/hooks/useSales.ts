@@ -52,7 +52,10 @@ export type Sale = {
   profit_amount?: number;
   payments: SalePayment[];
   payment_status: "Paid" | "Unpaid" | "Partial" | "Refunded" | "Cancelled";
-  sale_status: "Completed" | "Cancelled" | "Returned";
+  // "Pending" = a Cash on Delivery order waiting for its money
+  sale_status: "Pending" | "Completed" | "Cancelled" | "Returned";
+  is_cod?: boolean;
+  completed_at?: string | null;
   notes?: string | null;
   items?: SaleItem[];
   is_tax_inclusive?: boolean;
@@ -71,7 +74,7 @@ export type CreateSaleItem = {
 
 export type CreateSale = Omit<
   Sale,
-  "id" | "items" | "created_at" | "updated_at"
+  "id" | "items" | "created_at" | "updated_at" | "completed_at"
 > & {
   items: CreateSaleItem[];
 };
@@ -85,6 +88,8 @@ type SalesResponse = {
     totalPaid: number;
     totalRemaining: number;
     partialOrUnpaid: number;
+    pendingCodCount?: number;
+    pendingCodAmount?: number;
   };
   page: number;
   limit: number;
@@ -318,5 +323,102 @@ export const useSaleItems = (saleId?: string) => {
       return res.data;
     },
     enabled: !!saleId,
+  });
+};
+
+// ---- Cash on Delivery ----------------------------------------------------
+
+export type PendingCodSale = {
+  id: string;
+  invoice_no: string;
+  customer_id: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  grand_total: number;
+  created_at: string;
+};
+
+// "today", "1 day ago", "5 days ago" - how long a COD order has been waiting
+export const waitingSince = (iso?: string) => {
+  if (!iso) return "";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return tr("today");
+  return days === 1 ? tr("1 day ago") : `${days} ${tr("days ago")}`;
+};
+
+type PendingCodResponse = {
+  success: boolean;
+  count: number;
+  total_amount: number;
+  data: PendingCodSale[];
+};
+
+// COD orders still waiting for payment (oldest first). Polled so the bell and
+// the Sales badge stay current while the shop is open.
+export const usePendingCodSales = (limit = 20) => {
+  return useQuery<PendingCodResponse>({
+    queryKey: ["sales", "cod-pending", limit],
+    queryFn: async () => {
+      const res = await axiosInstance.get<PendingCodResponse>(
+        "/sales/cod/pending",
+        { params: { limit } },
+      );
+      return res.data;
+    },
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+};
+
+const SALE_RELATED_KEYS = [
+  "sales",
+  "products",
+  "salePayments",
+  "inventory",
+  "inventory-transactions",
+  "overview",
+  "eoq",
+  "daybook",
+  "customers",
+  "saleItems",
+  "dashboard",
+  "analytics",
+  "payment-transactions",
+  "paymentMethods",
+  "productBatches",
+  "abc-classification",
+  "activity-logs",
+];
+
+// The money for a COD order arrived: record it and mark the order Completed.
+export const useCompleteCodSale = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      saleId,
+      payments,
+      notes,
+    }: {
+      saleId: string;
+      payments: SalePayment[];
+      notes?: string;
+    }) => {
+      const res = await axiosInstance.post<SaleResponse>(
+        `/sales/${saleId}/complete-cod`,
+        { payments, notes },
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      for (const key of SALE_RELATED_KEYS) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || tr("Failed to complete COD order."),
+      );
+    },
   });
 };

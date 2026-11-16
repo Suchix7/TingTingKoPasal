@@ -15,10 +15,12 @@ export const createSale = async (req, res) => {
   try {
     const sale = await saleService.createSale(req.body);
     await logActivity({
-      action: "SALE_CREATED",
+      action: sale.is_cod ? "SALE_COD_CREATED" : "SALE_CREATED",
       entityType: "Sale",
       entityId: sale.id,
-      summary: `Sale ${sale.invoice_no} created - ${rs(sale.grand_total)}`,
+      summary: sale.is_cod
+        ? `Cash on Delivery order ${sale.invoice_no} sent - ${rs(sale.grand_total)} to collect`
+        : `Sale ${sale.invoice_no} created - ${rs(sale.grand_total)}`,
       details: {
         invoice_no: sale.invoice_no,
         total: sale.grand_total,
@@ -42,7 +44,9 @@ export const createSale = async (req, res) => {
     });
     return res.status(201).json({
       success: true,
-      message: "Sale created successfully",
+      message: sale.is_cod
+        ? "Cash on Delivery order created - pending payment"
+        : "Sale created successfully",
       data: sale,
     });
   } catch (error) {
@@ -56,7 +60,7 @@ export const createSale = async (req, res) => {
 
 export const getSales = async (req, res) => {
   try {
-    const { page, limit, search, payment_status, sale_status } = req.query;
+    const { page, limit, search, payment_status, sale_status, is_cod } = req.query;
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 10;
     const offset = (pageNum - 1) * limitNum;
@@ -72,8 +76,9 @@ export const getSales = async (req, res) => {
     }
     if (payment_status) match.paymentStatus = payment_status;
     if (sale_status) match.saleStatus = sale_status;
+    if (is_cod === "true") match.isCod = true;
 
-    const [sales, totalCount, statsAgg] = await Promise.all([
+    const [sales, totalCount, statsAgg, pendingAgg] = await Promise.all([
       Sale.find(match)
         .sort({ createdAt: -1 })
         .skip(offset)
@@ -94,6 +99,12 @@ export const getSales = async (req, res) => {
           },
         },
       ]),
+      // Cash on Delivery orders still waiting for their money (all of them,
+      // whatever the filters), for the Pending COD section
+      Sale.aggregate([
+        { $match: { saleStatus: "Pending" } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: "$grandTotal" } } },
+      ]),
     ]);
 
     const stats = statsAgg[0] || {
@@ -112,6 +123,8 @@ export const getSales = async (req, res) => {
         totalPaid: Number(stats.totalPaid) || 0,
         totalRemaining: Number(stats.totalRemaining) || 0,
         partialOrUnpaid: Number(stats.partialOrUnpaid) || 0,
+        pendingCodCount: Number(pendingAgg[0]?.count) || 0,
+        pendingCodAmount: Number(pendingAgg[0]?.amount) || 0,
       },
       page: pageNum,
       limit: limitNum,
@@ -145,7 +158,9 @@ export const updateSale = async (req, res) => {
     const statusChanged = before && before.saleStatus !== sale.sale_status;
     await logActivity({
       action: statusChanged
-        ? `SALE_${String(sale.sale_status).toUpperCase()}`
+        ? before.saleStatus === "Pending" && sale.sale_status === "Completed"
+          ? "SALE_COD_COMPLETED"
+          : `SALE_${String(sale.sale_status).toUpperCase()}`
         : "SALE_UPDATED",
       entityType: "Sale",
       entityId: id,
@@ -203,14 +218,18 @@ export const revokeSale = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ success: false, message: "Sale not found" });
     }
-    if (existing.saleStatus !== "Completed") {
+    // A pending Cash on Delivery order can be called off too (customer
+    // refused it / courier brought it back): the goods go back into stock.
+    if (existing.saleStatus !== "Completed" && existing.saleStatus !== "Pending") {
       return res.status(400).json({
         success: false,
-        message: `Only completed sales can be revoked (this one is ${existing.saleStatus})`,
+        message: `Only completed sales or pending COD orders can be revoked (this one is ${existing.saleStatus})`,
       });
     }
+    const wasPendingCod = existing.saleStatus === "Pending";
 
-    const note = reason ? `Revoked: ${reason}` : "Revoked";
+    const label = wasPendingCod ? "COD order cancelled" : "Revoked";
+    const note = reason ? `${label}: ${reason}` : label;
     const sale = await saleService.updateSale(id, {
       sale_status: "Cancelled",
       notes: existing.notes ? `${existing.notes}
@@ -218,18 +237,20 @@ ${note}` : note,
     });
 
     await logActivity({
-      action: "SALE_REVOKED",
+      action: wasPendingCod ? "SALE_COD_CANCELLED" : "SALE_REVOKED",
       entityType: "Sale",
       entityId: id,
-      summary: `Sale ${existing.invoiceNo} revoked (${rs(existing.grandTotal)})${
-        reason ? ` - ${reason}` : ""
-      }`,
+      summary: `${wasPendingCod ? "COD order" : "Sale"} ${existing.invoiceNo} ${
+        wasPendingCod ? "cancelled" : "revoked"
+      } (${rs(existing.grandTotal)})${reason ? ` - ${reason}` : ""}`,
       details: { invoice_no: existing.invoiceNo, total: existing.grandTotal, reason: reason || null },
     });
 
     return res.status(200).json({
       success: true,
-      message: "Sale revoked. Stock restored and payments reversed.",
+      message: wasPendingCod
+        ? "COD order cancelled. Stock restored."
+        : "Sale revoked. Stock restored and payments reversed.",
       data: sale,
     });
   } catch (error) {
@@ -238,6 +259,126 @@ ${note}` : note,
       success: false,
       message: error.message || "Internal server error",
     });
+  }
+};
+
+// Cash on Delivery: the money has arrived. Records the payment(s) and moves
+// the order from Pending to Completed - from then on it counts in sales,
+// profit, the daybook and the payment method balances like any other sale.
+export const completeCodSale = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payments = Array.isArray(req.body?.payments) ? req.body.payments : [];
+    const extraNote = String(req.body?.notes ?? "").trim();
+
+    const existing = await Sale.findById(id)
+      .select("saleStatus invoiceNo notes grandTotal customerId")
+      .lean();
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Sale not found" });
+    }
+    if (existing.saleStatus !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: `This order is not pending payment (it is ${existing.saleStatus})`,
+      });
+    }
+
+    const validPayments = payments
+      .filter((p) => p && p.payment_method_id && Number(p.amount) > 0)
+      .map((p) => ({ payment_method_id: p.payment_method_id, amount: Number(p.amount) }));
+    const paid = Number(validPayments.reduce((sum, p) => sum + p.amount, 0).toFixed(2));
+    const total = Number(Number(existing.grandTotal || 0).toFixed(2));
+
+    if (validPayments.length === 0 && total > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Add the payment you received for this order",
+      });
+    }
+    if (paid > total) {
+      return res.status(400).json({
+        success: false,
+        message: `Received amount is more than the order total (${rs(total)})`,
+      });
+    }
+    if (paid < total && !existing.customerId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "The full amount must be received - this order has no saved customer to keep the rest on credit",
+      });
+    }
+
+    const note = extraNote ? `COD paid: ${extraNote}` : null;
+    const sale = await saleService.updateSale(id, {
+      sale_status: "Completed",
+      payments: validPayments,
+      ...(note ? { notes: existing.notes ? `${existing.notes}\n${note}` : note } : {}),
+    });
+
+    await logActivity({
+      action: "SALE_COD_COMPLETED",
+      entityType: "Sale",
+      entityId: id,
+      summary: `COD order ${existing.invoiceNo} paid - ${rs(paid)} received`,
+      details: {
+        invoice_no: existing.invoiceNo,
+        total,
+        received: paid,
+        payment: (sale.payments || [])
+          .map((p) => `${p.payment_method || p.payment_method_type}: ${rs(p.amount)}`)
+          .join(", "),
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment received. Order marked completed.",
+      data: sale,
+    });
+  } catch (error) {
+    console.error("Complete COD sale error:", error.message);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+// Pending Cash on Delivery orders, oldest first - for the notification bell
+// and the badge on the Sales menu item.
+export const getPendingCodSales = async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 100);
+    const [docs, agg] = await Promise.all([
+      Sale.find({ saleStatus: "Pending" })
+        .sort({ createdAt: 1 })
+        .limit(limit)
+        .select("invoiceNo customerId customerName customerPhone grandTotal createdAt")
+        .lean(),
+      Sale.aggregate([
+        { $match: { saleStatus: "Pending" } },
+        { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: "$grandTotal" } } },
+      ]),
+    ]);
+    return res.status(200).json({
+      success: true,
+      count: Number(agg[0]?.count) || 0,
+      total_amount: Number(agg[0]?.amount) || 0,
+      data: docs.map((s) => ({
+        id: String(s._id),
+        invoice_no: s.invoiceNo,
+        customer_id: s.customerId ? String(s.customerId) : null,
+        customer_name: s.customerName || null,
+        customer_phone: s.customerPhone || null,
+        grand_total: s.grandTotal,
+        created_at: s.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("Get pending COD sales error:", error.message);
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 

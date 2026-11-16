@@ -22,6 +22,8 @@ export function prepareReceiptData(
     customerPhone?: string;
     cashierName?: string;
     notes?: string;
+    // overrides the PAID / PARTIAL label (e.g. a Cash on Delivery order)
+    paymentStatus?: string;
     store?: Store | null;
   },
 ): ReceiptData {
@@ -67,7 +69,9 @@ export function prepareReceiptData(
         amount: Number(payment.amount),
       })),
 
-    payment_status: totals.paidAmount >= totals.grandTotal ? "PAID" : "PARTIAL",
+    payment_status:
+      options?.paymentStatus ||
+      (totals.paidAmount >= totals.grandTotal ? "PAID" : "PARTIAL"),
     notes: options?.notes || "",
     footer_message: "Thank you for your purchase!",
     store_name: storeName,

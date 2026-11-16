@@ -7,6 +7,8 @@ import {
   updateSale,
   deleteSale,
   revokeSale,
+  completeCodSale,
+  getPendingCodSales,
   getSaleItems,
   getSaleItemById,
   getSalePayments,
@@ -27,7 +29,12 @@ router.post("/", createSale);
 
 router.get("/", getSales);
 
+// Cash on Delivery orders waiting for payment (before "/:id")
+router.get("/cod/pending", getPendingCodSales);
+
 router.get("/:id", getSaleById);
+
+router.post("/:id/complete-cod", completeCodSale);
 
 router.put("/:id", updateSale);
 

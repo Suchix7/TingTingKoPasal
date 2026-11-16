@@ -57,9 +57,16 @@ const saleSchema = new mongoose.Schema(
     },
     saleStatus: {
       type: String,
-      enum: ["Completed", "Cancelled", "Returned"],
+      // "Pending" = Cash on Delivery order: the goods have left the shop
+      // (stock is out) but the money has not been collected yet.
+      enum: ["Pending", "Completed", "Cancelled", "Returned"],
       default: "Completed",
     },
+    // Cash on Delivery order. Stays true after it is completed, so COD
+    // orders can always be told apart from counter sales.
+    isCod: { type: Boolean, default: false },
+    // When a pending COD order was paid and marked Completed
+    completedAt: { type: Date, default: null },
     notes: { type: String, default: "" },
 
     paymentProofUrl: { type: String, default: null },
@@ -70,5 +77,7 @@ const saleSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+saleSchema.index({ saleStatus: 1, createdAt: -1 });
 
 export default mongoose.model("Sale", saleSchema);

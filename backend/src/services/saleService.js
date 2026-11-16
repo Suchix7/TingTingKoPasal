@@ -10,6 +10,12 @@ import InventoryTransaction from "../models/InventoryTransaction.js";
 const round2 = (n) => Number(Number(n).toFixed(2));
 const eq2 = (a, b) => round2(a) === round2(b);
 
+export const SALE_STATUSES = ["Pending", "Completed", "Cancelled", "Returned"];
+// Statuses where the sold goods are out of the shop (stock deducted).
+// A pending Cash on Delivery order has left with the courier, so it holds
+// stock just like a completed sale; it only has no money recorded yet.
+const holdsStock = (status) => status === "Completed" || status === "Pending";
+
 export function serializeSale(sale) {
   const obj = sale.toObject ? sale.toObject() : sale;
   return {
@@ -29,6 +35,8 @@ export function serializeSale(sale) {
     profit_amount: obj.profitAmount,
     payment_status: obj.paymentStatus,
     sale_status: obj.saleStatus,
+    is_cod: Boolean(obj.isCod),
+    completed_at: obj.completedAt || null,
     notes: obj.notes,
     payment_proof_url: obj.paymentProofUrl || null,
     created_at: obj.createdAt,
@@ -145,9 +153,38 @@ export async function createSale(body) {
     payment_status,
     sale_status = "Completed",
     notes,
-    payments,
     items,
   } = body;
+  let { payments } = body;
+
+  // Cash on Delivery: the order is created as Pending, stock goes out now,
+  // and the payment is recorded later when the courier brings the money.
+  const isCod = sale_status === "Pending" || body.is_cod === true;
+  if (isCod) {
+    if (sale_status !== "Pending") {
+      const err = new Error("A Cash on Delivery order must start as Pending");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (Array.isArray(payments) && payments.some((p) => Number(p?.amount) > 0)) {
+      const err = new Error(
+        "A Cash on Delivery order is paid on delivery - record the payment when you mark it completed",
+      );
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!customer_id && !String(customer_name ?? "").trim() && !String(customer_phone ?? "").trim()) {
+      const err = new Error("Choose the customer this Cash on Delivery order goes to");
+      err.statusCode = 400;
+      throw err;
+    }
+    payments = [];
+    if (Number(paid_amount || 0) !== 0) {
+      const err = new Error("Paid amount must be 0 for a Cash on Delivery order");
+      err.statusCode = 400;
+      throw err;
+    }
+  }
 
   if (!invoice_no || subtotal === undefined || grand_total === undefined) {
     const err = new Error("Please provide all required sale fields");
@@ -159,8 +196,9 @@ export async function createSale(body) {
     err.statusCode = 400;
     throw err;
   }
-  // A zero-total sale (e.g. free / Rs 0 items) needs no payment.
-  if (!Array.isArray(payments) || (payments.length === 0 && Number(grand_total) > 0)) {
+  // A zero-total sale (e.g. free / Rs 0 items) needs no payment, and neither
+  // does a Cash on Delivery order (it is paid later).
+  if (!Array.isArray(payments) || (payments.length === 0 && Number(grand_total) > 0 && !isCod)) {
     const err = new Error("Sale must contain at least one payment");
     err.statusCode = 400;
     throw err;
@@ -170,7 +208,7 @@ export async function createSale(body) {
     err.statusCode = 400;
     throw err;
   }
-  if (!["Completed", "Cancelled", "Returned"].includes(sale_status)) {
+  if (!["Pending", "Completed", "Cancelled", "Returned"].includes(sale_status)) {
     const err = new Error("Invalid sale status");
     err.statusCode = 400;
     throw err;
@@ -359,8 +397,13 @@ export async function createSale(body) {
   if (Number(paid_amount) < Number(grand_total)) {
     computedRemainingAmount = Number(grand_total) - Number(paid_amount);
   }
-  const computedPaymentStatus =
-    computedRemainingAmount > 0 ? (Number(paid_amount) > 0 ? "Partial" : "Unpaid") : "Paid";
+  const computedPaymentStatus = isCod
+    ? "Unpaid"
+    : computedRemainingAmount > 0
+      ? Number(paid_amount) > 0
+        ? "Partial"
+        : "Unpaid"
+      : "Paid";
 
   const hasInclusiveTaxItem = items.some((item) => Boolean(item.tax_inclusive));
 
@@ -451,6 +494,7 @@ export async function createSale(body) {
             profitAmount: round2(saleProfitAmount),
             paymentStatus: computedPaymentStatus,
             saleStatus: sale_status,
+            isCod,
             notes: notes ? notes.trim() : null,
             items: itemsForSale,
             payments: paymentsForSale,
@@ -526,8 +570,26 @@ export async function updateSale(id, body) {
     err.statusCode = 400;
     throw err;
   }
-  if (!["Completed", "Cancelled", "Returned"].includes(updatedSaleStatus)) {
+  if (!SALE_STATUSES.includes(updatedSaleStatus)) {
     const err = new Error("Invalid sale status");
+    err.statusCode = 400;
+    throw err;
+  }
+  // Only a Cash on Delivery order starts life as Pending; a finished sale
+  // can't be put back into it.
+  if (updatedSaleStatus === "Pending" && existingSale.saleStatus !== "Pending") {
+    const err = new Error("Only a Cash on Delivery order can be pending payment");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (
+    updatedSaleStatus === "Pending" &&
+    Array.isArray(body.payments) &&
+    body.payments.some((p) => Number(p?.amount) > 0)
+  ) {
+    const err = new Error(
+      "A pending Cash on Delivery order has no payments yet - mark it Completed to record the payment",
+    );
     err.statusCode = 400;
     throw err;
   }
@@ -563,18 +625,28 @@ export async function updateSale(id, body) {
       const hasItems = items !== undefined;
       const oldItems = sale.items;
       const wasCompleted = sale.saleStatus === "Completed";
+      const wasPending = sale.saleStatus === "Pending";
       const updatedCustomerId = customer_id !== undefined ? customer_id : sale.customerId;
       const isCompleted = updatedSaleStatus === "Completed";
+      const isPending = updatedSaleStatus === "Pending";
+      // Profit is worked out for a pending COD order too (it is only counted
+      // in reports once the order is Completed).
+      const earnsProfit = isCompleted || isPending;
+      const wasHoldingStock = holdsStock(sale.saleStatus);
+      const isHoldingStock = holdsStock(updatedSaleStatus);
+      // Same items, still out of the shop (e.g. a COD order being paid):
+      // nothing to put back and take out again.
+      const stockUnchanged = !hasItems && wasHoldingStock && isHoldingStock;
 
       const updatedDiscount =
         discount_amount !== undefined ? Number(discount_amount) : Number(sale.discountAmount || 0);
       if (updatedDiscount < 0) throw new Error("Discount cannot be negative");
       if (hasItems && items.length === 0) throw new Error("Sale must have at least one item");
 
-      // Reverse stock for old items if the sale was previously completed
-      // (batch-aware: restores to the specific batch the item was sold from,
-      // or to the product's standard stock otherwise)
-      if (wasCompleted) {
+      // Reverse stock for old items if the sale had taken them out of the shop
+      // (completed, or a pending COD order) - batch-aware: restores to the
+      // specific batch the item was sold from, or the product's stock otherwise
+      if (wasHoldingStock && !stockUnchanged) {
         for (const item of oldItems) {
           await restoreStock(item.productId, item.batchId, item.quantity, session);
           await InventoryTransaction.create(
@@ -637,7 +709,7 @@ export async function updateSale(id, body) {
             ? grossAmountAfterItemDiscount - itemTaxAmount
             : grossAmountAfterItemDiscount;
           const itemCost = costPrice * quantity;
-          const itemProfit = isCompleted ? revenueExcludingTax - itemCost : 0;
+          const itemProfit = earnsProfit ? revenueExcludingTax - itemCost : 0;
 
           preparedItems.push({
             productId,
@@ -669,7 +741,7 @@ export async function updateSale(id, body) {
             ? grossAmountAfterItemDiscount - itemTaxAmount
             : grossAmountAfterItemDiscount;
           const itemCost = costPrice * quantity;
-          const itemProfit = isCompleted ? revenueExcludingTax - itemCost : 0;
+          const itemProfit = earnsProfit ? revenueExcludingTax - itemCost : 0;
           return {
             ...item.toObject(),
             taxAmount: itemTaxAmount,
@@ -729,12 +801,13 @@ export async function updateSale(id, body) {
             ? (Number(item.totalPrice || 0) / totalItemsForDiscountShare) * updatedDiscount
             : 0;
         const itemCost = costPrice * quantity;
-        const itemProfit = isCompleted ? revenueExcludingTax - saleDiscountShare - itemCost : 0;
+        const itemProfit = earnsProfit ? revenueExcludingTax - saleDiscountShare - itemCost : 0;
         return { ...item, profitAmount: itemProfit };
       });
 
-      // Deduct stock for final items if completed (batch-aware)
-      if (isCompleted) {
+      // Take stock out for the final items when the sale holds stock
+      // (completed, or a pending COD order) - batch-aware
+      if (isHoldingStock && !stockUnchanged) {
         for (const item of finalItems) {
           await decrementStock(item.productId, item.batchId || null, Number(item.quantity), session);
           await InventoryTransaction.create(
@@ -774,7 +847,10 @@ export async function updateSale(id, body) {
       if (updatedSaleStatus === "Cancelled") {
         updatedPaymentStatusFinal = "Cancelled";
       } else if (updatedSaleStatus === "Returned") {
-        updatedPaymentStatusFinal = "Refunded";
+        // A COD order sent back by the courier was never paid: nothing to refund
+        updatedPaymentStatusFinal = wasPending ? "Cancelled" : "Refunded";
+      } else if (isPending) {
+        updatedPaymentStatusFinal = "Unpaid";
       } else {
         updatedPaymentStatusFinal =
           body.payment_status ??
@@ -830,7 +906,7 @@ export async function updateSale(id, body) {
         await newCustomer.save({ session });
       }
 
-      const updatedProfitAmount = isCompleted
+      const updatedProfitAmount = earnsProfit
         ? finalItems.reduce((sum, item) => sum + Number(item.profitAmount || 0), 0)
         : 0;
       const hasInclusiveTaxItem = finalItems.some((item) => Boolean(item.taxInclusive));
@@ -886,7 +962,25 @@ export async function updateSale(id, body) {
           if (!paymentMethod) {
             throw new Error(`Payment method with ID ${payment.paymentMethodId} not found`);
           }
-          if (isCompleted && !isReturningOrCancelling) {
+          if (isCompleted && wasPending) {
+            // The money for a Cash on Delivery order has arrived: this is the
+            // sale's first (and real) payment, not an adjustment.
+            await PaymentMethodTransaction.create(
+              [
+                {
+                  paymentMethodId: payment.paymentMethodId,
+                  transactionType: "SALE_PAYMENT",
+                  direction: "IN",
+                  amount: Number(payment.amount),
+                  referenceType: "sale",
+                  referenceId: sale._id,
+                  title: `COD payment ${sale.invoiceNo}`,
+                  notes: "Cash on Delivery payment received",
+                },
+              ],
+              { session },
+            );
+          } else if (isCompleted && !isReturningOrCancelling) {
             await PaymentMethodTransaction.create(
               [
                 {
@@ -925,6 +1019,7 @@ export async function updateSale(id, body) {
       sale.profitAmount = updatedProfitAmount;
       sale.paymentStatus = updatedPaymentStatusFinal;
       sale.saleStatus = updatedSaleStatus;
+      if (wasPending && isCompleted) sale.completedAt = new Date();
       sale.notes = notes !== undefined ? notes?.trim() || null : sale.notes;
       sale.items = finalItems;
       sale.payments = finalPayments;
@@ -950,7 +1045,9 @@ export async function deleteSale(id) {
         throw err;
       }
 
-      if (sale.saleStatus === "Completed") {
+      // A pending COD order has its goods out of the shop too: put them back.
+      // (It has no payments or customer credit yet, so those loops are no-ops.)
+      if (holdsStock(sale.saleStatus)) {
         for (const item of sale.items) {
           if (item.batchId) {
             await ProductBatch.updateOne(
@@ -998,7 +1095,8 @@ export async function deleteSale(id) {
           );
         }
 
-        if (sale.customerId) {
+        // Only a completed sale put anything on the customer's credit
+        if (sale.saleStatus === "Completed" && sale.customerId) {
           const customer = await Customer.findById(sale.customerId).session(session);
           if (customer) {
             customer.creditAmount = Math.max(
