@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import {
   ShoppingCart,
   Search,
@@ -28,6 +28,7 @@ import ViewPurchaseOrderModal from "@/components/purchase-orders/ViewPurchaseOrd
 import DeleteConfirmModal from "@/components/purchase-orders/DeleteConfirmModal";
 import Pagination from "@/components/layout/Pagination";
 import { useLang } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 import {
   ListSkeleton,
   StatCardsSkeleton,
@@ -317,9 +318,7 @@ export default function PurchaseOrdersPage() {
                       className="w-full outline-none"
                     >
                       <option value="ALL">{t("All Status")}</option>
-                      <option value="Pending">{t("Pending")}</option>
-                      <option value="Received">{t("Received")}</option>
-                      <option value="Cancelled">{t("Cancelled")}</option>
+                      <SortedOptions options={[["Pending", "Pending"], ["Received", "Received"], ["Cancelled", "Cancelled"]]} />
                     </select>
                   </div>
 

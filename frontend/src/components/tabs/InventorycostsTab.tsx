@@ -6,7 +6,7 @@ import {
   TableRowsSkeleton,
 } from "@/components/layout/Skeleton";
 import { useMemo, useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import {
   DollarSign,
   Search,
@@ -278,7 +278,6 @@ export default function InventoryCostsPage() {
 
   return (
     <>
-      <Toaster position="top-right" />
 
       <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-slate-100/50 p-6 ">
         <div className="space-y-6">

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
-import { Toaster } from "react-hot-toast";
+import AppToaster from "@/components/layout/AppToaster";
 import { Poppins } from "next/font/google";
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -40,7 +40,7 @@ export default function RootLayout({
         <LanguageProvider>
           <QueryProvider>{children}</QueryProvider>
         </LanguageProvider>
-        <Toaster position="top-right" />
+        <AppToaster />
       </body>
     </html>
   );

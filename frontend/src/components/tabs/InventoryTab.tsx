@@ -6,7 +6,7 @@ import {
   TableRowsSkeleton,
 } from "@/components/layout/Skeleton";
 import React, { useMemo, useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import {
   Package,
   Search,
@@ -42,6 +42,7 @@ import Pagination from "@/components/layout/Pagination";
 
 import Tn from "@/components/layout/Tn";
 import { useLang, tr } from "@/lib/i18n";
+import SortedOptions from "@/components/layout/SortedOptions";
 
 export type InventoryFormData = {
   product_id: number | "";
@@ -651,10 +652,7 @@ export default function InventoryPage() {
                   className="w-full outline-none"
                 >
                   <option value="ALL">{t("All Status")}</option>
-                  <option value="HEALTHY">{t("Healthy")}</option>
-                  <option value="LOW">{t("Low Stock")}</option>
-                  <option value="CRITICAL">{t("Critical")}</option>
-                  <option value="OUT_OF_STOCK">{t("Out of Stock")}</option>
+                  <SortedOptions options={[["HEALTHY", "Healthy"], ["LOW", "Low Stock"], ["CRITICAL", "Critical"], ["OUT_OF_STOCK", "Out of Stock"]]} />
                 </select>
               </div>
 
