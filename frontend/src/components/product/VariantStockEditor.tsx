@@ -61,6 +61,7 @@ const NO_COLOUR = "";
 const cell = (colour: string, size: string) => `${colour}|${size}`;
 const newKey = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // "iPhone 12 \ 13" -> "iPhone 12/13": "/" is allowed, but " / " (with spaces)
 // splits a line's colour from its size / model, so the spaces go
 const cleanSize = (raw: string) => raw.trim().replace(/\s*[\\/]\s*/g, "/");
@@ -585,7 +586,19 @@ export default function VariantStockEditor({
     const key = newKey();
     set({ colours: [...g.colours, { key, name: "", photoKey: free?.key ?? null }] });
   };
-  const removeColour = (key: string) => set({ colours: g.colours.filter((c) => c.key !== key) });
+  // Colours still named by number ("Colour 1", "Colour 2"...) are numbered
+  // again after one is removed, so deleting Colour 1 makes Colour 2 the new
+  // Colour 1. Names typed by hand are left alone.
+  const removeColour = (key: string) => {
+    const numbered = new RegExp(`^(${escapeRegExp(t("Colour"))}|Colour) \\d+$`, "i");
+    set({
+      colours: g.colours
+        .filter((c) => c.key !== key)
+        .map((c, i) =>
+          numbered.test(c.name.trim()) ? { ...c, name: `${t("Colour")} ${i + 1}` } : c,
+        ),
+    });
+  };
 
   const photoOf = (photoKey: string | null) => photos.find((p) => p.key === photoKey) ?? null;
   const sizes = g.useSizes ? g.sizes : [""];
