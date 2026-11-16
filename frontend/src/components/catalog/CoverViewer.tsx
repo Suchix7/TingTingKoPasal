@@ -58,17 +58,34 @@ export default function CoverViewer({
     (a, b) => Number(b.quantity > 0) - Number(a.quantity > 0),
   );
   const sizeGuide = cover.size_guide_index ?? -1;
-  // open on a colour made for the phone picked in the filter, else the first
-  // available colour
-  const [picked, setPicked] = useState(() =>
-    Math.max(variants.findIndex((v) => fitsModels(v, models)), 0),
+  // Open on the same photo the card showed:
+  // - a colour made for the phone picked in the filter, if there is one
+  // - else the cover photo (often a group shot of every colour) - unless the
+  //   cover is a sold-out colour, then the first colour still in stock
+  const fitting = variants.findIndex(
+    (v) => v.media_index >= 0 && fitsModels(v, models),
   );
-  const [slide, setSlide] = useState(() => {
-    const first = variants[picked];
-    return cover.in_stock && first?.quantity > 0 && first.media_index >= 0
-      ? first.media_index
-      : 0;
+  const coverIsSoldOut = variants.some(
+    (v) => v.media_index === 0 && v.quantity <= 0,
+  );
+  const firstAvailable = variants.findIndex(
+    (v) => v.quantity > 0 && v.media_index >= 0,
+  );
+  const startVariant =
+    fitting >= 0
+      ? fitting
+      : cover.in_stock && coverIsSoldOut && firstAvailable >= 0
+        ? firstAvailable
+        : -1;
+  const [picked, setPicked] = useState(() => {
+    if (startVariant >= 0) return startVariant;
+    // the cover photo is itself a colour: select that colour
+    const onCover = variants.findIndex((v) => v.media_index === 0);
+    return Math.max(onCover, 0);
   });
+  const [slide, setSlide] = useState(() =>
+    startVariant >= 0 ? variants[startVariant].media_index : 0,
+  );
   const variant = variants[picked];
 
   const pickVariant = (i: number) => {
