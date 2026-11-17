@@ -29,7 +29,7 @@ export async function generateProductBarcode() {
   const counter = await Counter.findByIdAndUpdate(
     "product_barcode",
     { $inc: { seq: 1 } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
   return buildEAN13(counter.seq);
 }

@@ -935,7 +935,7 @@ export const markBarcodePrinted = async (req, res) => {
           lastPrintedQuantity: parsedQuantity,
         },
       },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (!product) {
