@@ -68,7 +68,11 @@ export default function CodNotifications({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-gray-200">
+        // Phones: the bell isn't at the screen edge (the language toggle is
+        // right of it), so a panel hung off the bell ran off the left side.
+        // There it's pinned to the screen instead, just under the header,
+        // with the same margin on both sides. Wider screens: under the bell.
+        <div className="fixed inset-x-3 top-16 z-50 flex max-h-[calc(100dvh-5rem)] flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-gray-200 md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:max-h-none md:w-96">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div>
               <h3 className="text-sm font-bold text-gray-900">
@@ -91,7 +95,7 @@ export default function CodNotifications({
           </div>
 
           {orders.length > 0 ? (
-            <ul className="max-h-80 space-y-2 overflow-y-auto p-3">
+            <ul className="max-h-80 min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
               {orders.map((order) => (
                 <li key={order.id}>
                   <button
