@@ -50,26 +50,66 @@ const PAGES: MainTab[] = [
 ];
 const HOME: MainTab = "pos";
 
+// The open page is also remembered for this browser tab, so it comes back
+// even when the address loses ?tab= (e.g. sent to sign-in and back to
+// /admin while the server was waking up).
+const TAB_KEY = "admin-tab";
+const isPage = (tab: string | null): tab is MainTab =>
+  PAGES.some((p) => p === tab);
+
+const rememberTab = (tab: MainTab) => {
+  try {
+    sessionStorage.setItem(TAB_KEY, tab);
+  } catch {}
+};
+
+const rememberedTab = (): MainTab | null => {
+  try {
+    const tab = sessionStorage.getItem(TAB_KEY);
+    return isPage(tab) ? tab : null;
+  } catch {
+    return null;
+  }
+};
+
 const tabFromUrl = (): MainTab => {
   if (typeof window === "undefined") return HOME;
   const tab = new URLSearchParams(window.location.search).get("tab");
-  return PAGES.find((p) => p === tab) ?? HOME;
+  return isPage(tab) ? tab : HOME;
+};
+
+// page to open on load: the address first, then the remembered one
+const initialTab = (): MainTab => {
+  if (typeof window === "undefined") return HOME;
+  if (new URLSearchParams(window.location.search).has("tab")) return tabFromUrl();
+  return rememberedTab() ?? HOME;
+};
+
+// put the page in the address without adding a back-button step
+const syncUrl = (tab: MainTab, push: boolean) => {
+  const url = new URL(window.location.href);
+  if (tab === HOME) url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  if (url.href === window.location.href) return;
+  if (push) window.history.pushState({ tab }, "", url);
+  else window.history.replaceState({ ...window.history.state, tab }, "", url);
 };
 
 export default function MainShell() {
-  const [activeTab, setActiveTabState] = useState<MainTab>(tabFromUrl);
+  const [activeTab, setActiveTabState] = useState<MainTab>(initialTab);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useLang();
+
+  // the address and the remembered page always match the open page
+  useEffect(() => {
+    syncUrl(activeTab, false);
+    rememberTab(activeTab);
+  }, [activeTab]);
 
   // Selecting a tab always dismisses the mobile drawer, otherwise the menu
   // would sit open over the page the user just navigated to.
   const setActiveTab = (tab: MainTab) => {
-    if (tab !== tabFromUrl()) {
-      const url = new URL(window.location.href);
-      if (tab === HOME) url.searchParams.delete("tab");
-      else url.searchParams.set("tab", tab);
-      window.history.pushState({ tab }, "", url);
-    }
+    if (tab !== tabFromUrl()) syncUrl(tab, true);
     setActiveTabState(tab);
     setMobileMenuOpen(false);
     // a new page starts at its top, not where the last one was scrolled to
@@ -145,6 +185,9 @@ export default function MainShell() {
           {activeTab === "payment-methods" && <PaymentMethodsTab />}
           {activeTab === "store-info" && <StoreInfoTab />}
           {activeTab === "security" && <SecurityTab />}
+          {/* phones: room to scroll a page's last buttons (Save...) above
+              the notifications, which sit just over the bottom nav */}
+          <div aria-hidden className="h-20 md:hidden" />
         </main>
 
         <BottomNav

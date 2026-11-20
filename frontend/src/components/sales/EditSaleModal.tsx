@@ -1530,7 +1530,9 @@ export default function EditSaleModal({
         />
       )}
 
-      {isModalOpen && <CustomerModal setIsModalOpen={setIsModalOpen} />}
+      {isModalOpen && (
+        <CustomerModal selectedCustomer={null} setIsModalOpen={setIsModalOpen} />
+      )}
       {showProductModal && (
         <ProductModal closeModal={() => setShowProductModal(false)} />
       )}
