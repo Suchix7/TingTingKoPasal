@@ -1,7 +1,7 @@
 // Shared rules for product photos and videos stored on Cloudinary.
 
 export const PRODUCT_MEDIA_FOLDER = "byapardesk/products";
-export const MAX_PRODUCT_MEDIA = 10;
+export const MAX_PRODUCT_MEDIA = Infinity;
 
 // Videos are re-encoded once, right after upload, to an H.264 MP4 capped at
 // 1080p in the best automatic quality, so every phone can play them. The

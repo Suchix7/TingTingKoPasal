@@ -19,6 +19,8 @@ export const zhLoading4: Record<string, string> = {
   "A product can have at most 10 photos and videos.": "每个商品最多10个照片或视频。",
   "Up to 10 photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.":
     "最多10个照片或视频（视频不超过100 MB）。第一个为封面，点击星标可更换封面。",
+  "Photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.":
+    "照片或视频（视频不超过100 MB）。第一个为封面，点击星标可更换封面。",
   "Previous photo": "上一张",
   "Next photo": "下一张",
 };

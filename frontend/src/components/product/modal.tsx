@@ -31,7 +31,6 @@ import CategoriesModal from "../categories/modal";
 import { GripHorizontal, ImagePlus, Play, RefreshCw, Ruler, Star, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
-const MAX_PHOTOS = 10;
 // Cloudinary's limits for a single upload on the plan in use
 const MAX_IMAGE_MB = 10;
 const MAX_VIDEO_MB = 100;
@@ -167,19 +166,13 @@ export default function ProductModal({
       return true;
     });
 
-    const room = MAX_PHOTOS - photos.length;
-    if (usable.length > room) {
-      toast.error(t("A product can have at most 10 photos and videos."));
-    }
-    const added: PhotoItem[] = usable
-      .slice(0, Math.max(room, 0))
-      .map((file) => ({
-        kind: "new",
-        key: `${Date.now()}-${Math.random()}`,
-        type: file.type.startsWith("video/") ? "video" : "image",
-        file,
-        preview: URL.createObjectURL(file),
-      }));
+    const added: PhotoItem[] = usable.map((file) => ({
+      kind: "new",
+      key: `${Date.now()}-${Math.random()}`,
+      type: file.type.startsWith("video/") ? "video" : "image",
+      file,
+      preview: URL.createObjectURL(file),
+    }));
     if (added.length) setPhotos((prev) => [...prev, ...added]);
   };
 
@@ -216,10 +209,6 @@ export default function ProductModal({
       return;
     }
     if (!usableFile(file)) return;
-    if (photos.length >= MAX_PHOTOS) {
-      toast.error(t("A product can have at most 10 photos and videos."));
-      return;
-    }
     const key = `${Date.now()}-${Math.random()}`;
     setPhotos((prev) => [
       ...prev,
@@ -733,17 +722,15 @@ export default function ProductModal({
                     </div>
                   ))}
 
-                  {photos.length < MAX_PHOTOS && (
-                    <button
-                      type="button"
-                      onClick={() => photoInputRef.current?.click()}
-                      disabled={isSubmitting}
-                      className="flex aspect-square w-full shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 px-1 text-center text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-28 sm:w-28"
-                    >
-                      <ImagePlus size={20} />
-                      {t("Add Photos / Videos")}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={isSubmitting}
+                    className="flex aspect-square w-full shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 px-1 text-center text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-28 sm:w-28"
+                  >
+                    <ImagePlus size={20} />
+                    {t("Add Photos / Videos")}
+                  </button>
                   <input
                     ref={replaceInputRef}
                     type="file"
@@ -763,7 +750,7 @@ export default function ProductModal({
                   />
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  {t("Up to 10 photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.")}{" "}
+                  {t("Photos or videos (videos up to 100 MB). The first one is the cover; tap the star to change it.")}{" "}
                   {t("Tap the ruler on the size chart photo to show it as the size guide.")}{" "}
                   {t("Tap the arrows on a photo to replace it with another.")}{" "}
                   {photos.length > 1 && t("Drag the handle at the top of a photo to change the order.")}

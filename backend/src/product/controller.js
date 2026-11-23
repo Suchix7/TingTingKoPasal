@@ -13,7 +13,6 @@ import { expandModel } from "../utils/phoneFits.js";
 import {
   productMedia,
   videoPoster,
-  MAX_PRODUCT_MEDIA,
   PRODUCT_MEDIA_FOLDER,
 } from "../utils/media.js";
 
@@ -993,12 +992,6 @@ export const saveProductPhotos = async (req, res) => {
     const media = req.body?.media;
     if (!Array.isArray(media)) {
       return res.status(400).json({ success: false, message: "Invalid media list" });
-    }
-    if (media.length > MAX_PRODUCT_MEDIA) {
-      return res.status(400).json({
-        success: false,
-        message: `A product can have at most ${MAX_PRODUCT_MEDIA} photos and videos`,
-      });
     }
 
     const product = await Product.findOne({ _id: id, isDeleted: false });
