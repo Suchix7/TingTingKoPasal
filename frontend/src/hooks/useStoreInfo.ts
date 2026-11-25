@@ -14,6 +14,7 @@ export type Store = {
   map_url?: string;
   instagram?: string;
   pan_vat_number: string;
+  discounts_enabled?: boolean;
   created_at?: string;
   updated_at?: string;
 };
@@ -25,6 +26,7 @@ export type StorePayload = {
   map_url?: string;
   instagram?: string;
   pan_vat_number: string;
+  discounts_enabled?: boolean;
 };
 
 export type StoreResponse = {

@@ -13,6 +13,10 @@ const productSchema = new mongoose.Schema(
     },
     costPrice: { type: Number, required: true, min: 0 },
     salePrice: { type: Number, required: true, min: 0 },
+    // Discounted price (offer price). When set and < salePrice, discount is active.
+    discountPrice: { type: Number, default: null, min: 0 },
+    // Kept for backward compatibility / crossed-out MRP reference
+    originalPrice: { type: Number, default: null, min: 0 },
     unit: {
       type: String,
       enum: ["Piece", "Kg", "Liter", "Box"],

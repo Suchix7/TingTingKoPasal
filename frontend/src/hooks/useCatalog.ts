@@ -15,6 +15,8 @@ export type CoverVariant = {
   quantity: number;
   price_min?: number;
   price_max?: number;
+  original_price_min?: number;
+  original_price_max?: number;
   cost_min?: number;
   cost_max?: number;
 };
@@ -45,6 +47,8 @@ export type Cover = {
   // selling and cost price ranges, for the price viewer only
   price_min?: number;
   price_max?: number;
+  original_price_min?: number;
+  original_price_max?: number;
   cost_min?: number;
   cost_max?: number;
 };
@@ -155,6 +159,7 @@ export type CatalogStore = {
   map_url?: string;
   // Instagram username for the message button ("" = no button)
   instagram?: string;
+  discounts_enabled?: boolean;
 };
 
 export function useCatalogStore() {

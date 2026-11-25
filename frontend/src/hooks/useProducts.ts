@@ -24,6 +24,8 @@ export type ProductBatch = {
   quantity: number;
   cost_price: number;
   sale_price: number;
+  discount_price?: number | null;
+  original_price?: number | null;
   is_deleted?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -37,6 +39,8 @@ export type Product = {
   category_id: string | "";
   cost_price: number;
   sale_price: number;
+  discount_price?: number | null;
+  original_price?: number | null;
   stock_quantity: number;
   unit: string;
   status: string;

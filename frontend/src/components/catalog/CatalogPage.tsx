@@ -36,6 +36,7 @@ import axiosInstance from "@/lib/axiosInstance";
 import CoverViewer from "./CoverViewer";
 import FilterSheet from "./FilterSheet";
 import ShopSplash from "./ShopSplash";
+import BlackFridayBanner from "./BlackFridayBanner";
 
 const inStockModels = (c: Cover) => c.models.filter((m) => m.quantity > 0);
 
@@ -203,6 +204,19 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
     categories.filter((c) => c.has_sizes).map((c) => c.id),
   );
   const activeCount = models.length;
+  const isSlipperCategory = Boolean(
+    categoryName && /slipper|拖鞋/i.test(categoryName)
+  );
+
+  const goToSlippers = () => {
+    const sc = categories.find((c) =>
+      /slipper|拖鞋/i.test(c.name || c.name_zh || "")
+    );
+    if (sc) {
+      pick(sc.id);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   return (
     <div className="min-h-dvh bg-gray-50">
@@ -212,7 +226,15 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
         error={categoriesError && !categoriesFetching}
         onRetry={() => refetchCategories()}
       />
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+      {!priceView && store?.discounts_enabled !== false && (
+        <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-600 text-white shadow-sm pt-[env(safe-area-inset-top)]">
+          <BlackFridayBanner
+            onShopSlippers={goToSlippers}
+            isSlipperCategory={isSlipperCategory}
+          />
+        </div>
+      )}
+      <header className={`border-b border-gray-200 bg-white/95 backdrop-blur ${priceView ? "pt-[env(safe-area-inset-top)]" : ""}`}>
         {priceView && (
           <div className="bg-emerald-600 text-white">
             <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-1.5 text-xs">
@@ -389,15 +411,16 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
 
       <main className="mx-auto max-w-5xl px-3 pb-[max(6rem,env(safe-area-inset-bottom))] pt-4 sm:px-4">
         {showMenu ? (
-          <CategoryMenu
-            categories={categories}
-            loading={categoriesLoading}
-            error={categoriesError}
-            onRetry={() => refetchCategories()}
-            onPick={pick}
-            t={t}
-            nameOf={nameOf}
-          />
+            <CategoryMenu
+              categories={categories}
+              loading={categoriesLoading}
+              error={categoriesError}
+              onRetry={() => refetchCategories()}
+              onPick={pick}
+              t={t}
+              nameOf={nameOf}
+              discountsEnabled={store?.discounts_enabled !== false}
+            />
         ) : (
           <>
             {q && suggestions.length > 0 && (
@@ -527,8 +550,31 @@ export default function CatalogPage({ priceView = false }: { priceView?: boolean
                             </span>
                           )}
                           {priceLabel(cover.price_min, cover.price_max) && (
-                            <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
-                              {priceLabel(cover.price_min, cover.price_max)}
+                            <span className="flex items-center gap-1 flex-wrap">
+                              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                                {priceLabel(cover.price_min, cover.price_max)}
+                              </span>
+                              {cover.original_price_min != null &&
+                                cover.original_price_min > (cover.price_min || 0) && (
+                                  <>
+                                    <span className="rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] font-medium text-white/80 line-through backdrop-blur-sm shadow-sm">
+                                      {priceLabel(
+                                        cover.original_price_min,
+                                        cover.original_price_max,
+                                      )}
+                                    </span>
+                                    <span className="rounded-full bg-rose-600 px-1 py-0.5 text-[9px] font-extrabold text-white shadow-sm">
+                                      -
+                                      {Math.round(
+                                        ((cover.original_price_min -
+                                          (cover.price_min || 0)) /
+                                          cover.original_price_min) *
+                                          100,
+                                      )}
+                                      %
+                                    </span>
+                                  </>
+                                )}
                             </span>
                           )}
                         </span>
@@ -690,6 +736,7 @@ function CategoryMenu({
   onPick,
   t,
   nameOf,
+  discountsEnabled = true,
 }: {
   categories: CatalogCategory[];
   loading: boolean;
@@ -698,6 +745,7 @@ function CategoryMenu({
   onPick: (id: string) => void;
   t: Tr;
   nameOf: (c: CatalogCategory) => string | undefined;
+  discountsEnabled?: boolean;
 }) {
   if (loading) {
     return (
@@ -748,6 +796,12 @@ function CategoryMenu({
             onClick={() => onPick(c.id)}
             className="group relative aspect-square overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 active:scale-[0.98]"
           >
+            {discountsEnabled &&
+              /slipper|拖鞋/i.test(c.name || c.name_zh || "") && (
+                <span className="absolute left-2.5 top-2.5 z-10 rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs">
+                  Flat Rs. 999
+                </span>
+              )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={coverImage(c.photo_url, 480)}

@@ -103,6 +103,15 @@ export default function ProductModal({
   useEffect(() => {
     setNameZh(selectedProduct?.product_name_zh || "");
     if (selectedProduct) {
+      let regularPrice = selectedProduct.sale_price || 0;
+      let discountedPrice: number | null = selectedProduct.discount_price ?? null;
+
+      // If old format was stored (original_price > sale_price with no discount_price):
+      if (!discountedPrice && selectedProduct.original_price && selectedProduct.original_price > regularPrice) {
+        discountedPrice = regularPrice;
+        regularPrice = selectedProduct.original_price;
+      }
+
       setFormData({
         product_name: selectedProduct.product_name || "",
         barcode: selectedProduct.barcode || "",
@@ -111,7 +120,9 @@ export default function ProductModal({
         category_id: selectedProduct.category_id || "",
         unit: selectedProduct.unit || "",
         cost_price: selectedProduct.cost_price || 0,
-        sale_price: selectedProduct.sale_price || 0,
+        sale_price: regularPrice,
+        discount_price: discountedPrice,
+        original_price: discountedPrice ? regularPrice : null,
         stock_quantity: selectedProduct.stock_quantity || 0,
         variants: [],
       });
@@ -358,7 +369,7 @@ export default function ProductModal({
 
   const handleChange = (
     field: keyof ProductFormData,
-    value: string | number,
+    value: ProductFormData[keyof ProductFormData],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -466,6 +477,20 @@ export default function ProductModal({
 
     if (Number(formData.sale_price) < 0) {
       toast.error(t("Sale price cannot be negative."));
+      return false;
+    }
+
+    if (formData.discount_price != null && Number(formData.discount_price) < 0) {
+      toast.error(t("Discounted price cannot be negative."));
+      return false;
+    }
+
+    if (
+      formData.discount_price != null &&
+      Number(formData.discount_price) > 0 &&
+      Number(formData.discount_price) >= Number(formData.sale_price)
+    ) {
+      toast.error(t("Discounted price must be less than regular sale price."));
       return false;
     }
 
@@ -879,24 +904,129 @@ export default function ProductModal({
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   {t("Sale Price")}{" "}
                   <span className="font-normal text-slate-400">
-                    ({t("optional")})
+                    ({t("original / regular price")})
                   </span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder={t("Optional")}
+                  placeholder={t("e.g. 1199")}
                   value={formData.sale_price ? String(formData.sale_price) : ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "sale_price",
-                      e.target.value === "" ? 0 : parseFloat(e.target.value),
-                    )
-                  }
+                  onChange={(e) => {
+                    const nextSale = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    handleChange("sale_price", nextSale);
+                    if (formData.discount_price != null) {
+                      handleChange("original_price", nextSale);
+                    }
+                  }}
                   disabled={isSubmitting}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="block text-sm font-semibold text-slate-800">
+                      {t("Give Discount")}
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      {t("Enter discounted offer price (regular price above will be crossed out)")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={Boolean(
+                      formData.discount_price != null &&
+                        formData.discount_price > 0 &&
+                        formData.discount_price < formData.sale_price,
+                    )}
+                    onClick={() => {
+                      const isCurrentlyActive = Boolean(
+                        formData.discount_price != null &&
+                          formData.discount_price > 0 &&
+                          formData.discount_price < formData.sale_price,
+                      );
+                      if (isCurrentlyActive) {
+                        handleChange("discount_price", null);
+                        handleChange("original_price", null);
+                      } else {
+                        const regular = Number(formData.sale_price) || 0;
+                        const defaultDiscount = regular > 0 ? Math.round(regular * 0.8) : 999;
+                        handleChange("discount_price", defaultDiscount);
+                        handleChange("original_price", regular);
+                      }
+                    }}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                      formData.discount_price != null &&
+                      formData.discount_price > 0 &&
+                      formData.discount_price < formData.sale_price
+                        ? "bg-rose-600"
+                        : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        formData.discount_price != null &&
+                        formData.discount_price > 0 &&
+                        formData.discount_price < formData.sale_price
+                          ? "translate-x-5"
+                          : "translate-x-0.5"
+                      } mt-0.5`}
+                    />
+                  </button>
+                </div>
+
+                {formData.discount_price != null && (
+                  <div className="pt-2">
+                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                      {t("Discounted Price / Offer Price")}{" "}
+                      <span className="font-normal text-slate-400">
+                        ({t("price customer pays")})
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={t("e.g. 999")}
+                      value={formData.discount_price ? String(formData.discount_price) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                        handleChange("discount_price", val);
+                        handleChange("original_price", formData.sale_price);
+                      }}
+                      disabled={isSubmitting}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    />
+                    {Number(formData.discount_price) > 0 &&
+                      Number(formData.sale_price) > 0 &&
+                      Number(formData.discount_price) < Number(formData.sale_price) && (
+                        <p className="mt-1.5 text-xs font-semibold text-emerald-600">
+                          {t("Discount active")}: NPR{" "}
+                          {(
+                            Number(formData.sale_price) - Number(formData.discount_price)
+                          ).toFixed(0)}{" "}
+                          (
+                          {Math.round(
+                            ((Number(formData.sale_price) -
+                              Number(formData.discount_price)) /
+                              Number(formData.sale_price)) *
+                              100,
+                          )}
+                          % {t("off")}) · {t("Original NPR")} {formData.sale_price} {t("crossed out on store")}
+                        </p>
+                      )}
+                    {Number(formData.discount_price) >= Number(formData.sale_price) &&
+                      Number(formData.discount_price) > 0 && (
+                        <p className="mt-1.5 text-xs font-semibold text-rose-600">
+                          {t("Discounted price must be less than regular sale price")} (NPR {formData.sale_price})
+                        </p>
+                      )}
+                  </div>
+                )}
               </div>
 
               {stockOnModelsOnly && (

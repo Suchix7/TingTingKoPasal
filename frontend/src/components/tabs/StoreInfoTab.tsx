@@ -22,6 +22,7 @@ type FormState = {
   map_url: string;
   instagram: string;
   pan_vat_number: string;
+  discounts_enabled: boolean;
 };
 
 const initialForm: FormState = {
@@ -32,6 +33,7 @@ const initialForm: FormState = {
   // the shop's Instagram until another is saved
   instagram: "tingtingkopasal",
   pan_vat_number: "",
+  discounts_enabled: true,
 };
 
 export default function StorePage() {
@@ -56,6 +58,7 @@ export default function StorePage() {
         map_url: store.map_url || "",
         instagram: store.instagram ?? "",
         pan_vat_number: store.pan_vat_number || "",
+        discounts_enabled: store.discounts_enabled !== false,
       });
     }
   }, [store]);
@@ -95,6 +98,7 @@ export default function StorePage() {
       map_url: form.map_url.trim(),
       instagram: form.instagram.trim(),
       pan_vat_number: form.pan_vat_number.trim(),
+      discounts_enabled: form.discounts_enabled,
     };
 
     const promise = store
@@ -351,6 +355,45 @@ export default function StorePage() {
                     placeholder={t("Enter PAN/VAT number")}
                     className="block w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 transition focus:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-100"
                   />
+                </div>
+              </div>
+
+              {/* Promotional Offers & Discounts Master Switch */}
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 sm:col-span-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <span className="block text-sm font-semibold text-neutral-900">
+                      {t("Enable Discounts & Promotional Offers")}
+                    </span>
+                    <span className="block text-xs text-neutral-500">
+                      {t(
+                        "Show Black Friday & Cyber Monday sale banner and crossed-out discounts on the shop.",
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={form.discounts_enabled}
+                    onClick={() => {
+                      setForm((prev) => ({
+                        ...prev,
+                        discounts_enabled: !prev.discounts_enabled,
+                      }));
+                      setHasChanges(true);
+                    }}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                      form.discounts_enabled ? "bg-rose-600" : "bg-neutral-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        form.discounts_enabled
+                          ? "translate-x-5"
+                          : "translate-x-0.5"
+                      } mt-0.5`}
+                    />
+                  </button>
                 </div>
               </div>
             </div>

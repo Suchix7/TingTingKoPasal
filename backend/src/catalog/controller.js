@@ -37,7 +37,7 @@ const baseFilter = () => ({
 // shown under a colour.
 async function loadModelsByProduct() {
   const batches = await ProductBatch.find({ isDeleted: false })
-    .select("productId batchNumber variant size model position quantity salePrice costPrice")
+    .select("productId batchNumber variant size model position quantity salePrice costPrice discountPrice originalPrice")
     .lean();
 
   const map = new Map();
@@ -57,6 +57,7 @@ async function loadModelsByProduct() {
       quantity: Math.max(Number(b.quantity) || 0, 0),
       price: Number(b.salePrice) || 0,
       cost: Number(b.costPrice) || 0,
+      originalPrice: Number(b.originalPrice) || 0,
       // order set in the stock editor (null for lines saved before it)
       position: b.position ?? null,
     });
@@ -184,6 +185,14 @@ function priceRange(lines, fallback) {
   return { price_min: Math.min(...prices), price_max: Math.max(...prices) };
 }
 
+function originalPriceRange(lines, fallback) {
+  const prices = lines
+    .map((e) => (e.originalPrice && e.originalPrice > e.price ? e.originalPrice : fallback))
+    .filter((p) => p > 0);
+  if (!prices.length) return fallback ? { original_price_min: fallback, original_price_max: fallback } : {};
+  return { original_price_min: Math.min(...prices), original_price_max: Math.max(...prices) };
+}
+
 // the same for cost prices
 function costRange(lines, fallback) {
   const costs = lines.map((e) => e.cost).filter((p) => p > 0);
@@ -198,22 +207,55 @@ const fitsName = (e, name) => e.fits.some((f) => f.toLowerCase() === name.toLowe
 // Selling prices for everyone; cost prices and names only for the price
 // viewer (`staff`), kept apart so the public site never gets them: one range
 // for the product, and per model / colour / size.
-function withPrices(cover, product, entries, staff) {
+function withPrices(cover, product, entries, staff, discountsActive = true) {
   const own = Number(product.salePrice) || 0;
   const ownCost = Number(product.costPrice) || 0;
+  const ownDiscount = Number(product.discountPrice) || 0;
+  const ownOriginal = Number(product.originalPrice) || 0;
+
+  let activeOwn = own;
+  let originalOwn = 0;
+
+  if (discountsActive) {
+    if (ownDiscount > 0 && ownDiscount < own) {
+      activeOwn = ownDiscount;
+      originalOwn = own;
+    } else if (ownOriginal > own) {
+      activeOwn = own;
+      originalOwn = ownOriginal;
+    }
+  }
+
   // price the range on what is left; everything when it is all sold out
   const left = entries.filter((e) => e.quantity > 0);
   const priced = left.length ? left : entries;
   const costs = (lines) => (staff ? costRange(lines, ownCost) : {});
   const linePrices = (lines) => ({
-    price: priceRange(lines, own).price_min,
+    price: priceRange(lines, activeOwn).price_min,
     ...(staff ? { cost: costRange(lines, ownCost).cost_min } : {}),
   });
+
+  const pricesObj = priceRange(priced, activeOwn);
+  let discountObj = {};
+  if (
+    discountsActive &&
+    (originalOwn > pricesObj.price_min ||
+      entries.some(
+        (e) => (e.originalPrice || 0) > e.price || (e.discountPrice && e.discountPrice < e.price),
+      ))
+  ) {
+    const origRange = originalPriceRange(priced, originalOwn || activeOwn);
+    if (origRange.original_price_min > pricesObj.price_min) {
+      discountObj = origRange;
+    }
+  }
+
   return {
     ...cover,
     // the price viewer also sees what each product is called
     ...(staff ? { name: product.productName || "", name_zh: product.productNameZh || "" } : {}),
-    ...priceRange(priced, own),
+    ...pricesObj,
+    ...discountObj,
     ...costs(priced),
     models: cover.models.map((m) => ({
       ...m,
@@ -234,7 +276,7 @@ function withPrices(cover, product, entries, staff) {
   };
 }
 
-const toCover = (product, entries = [], prices = false) => {
+const toCover = (product, entries = [], prices = false, discountsActive = true) => {
   // one entry per single phone / size; a size held in several colours adds
   // up. A line for several phones ("iPhone 13/14/15 Pro Max") is one piece
   // that fits each of them: it is listed under every one, and once sold they
@@ -286,7 +328,7 @@ const toCover = (product, entries = [], prices = false) => {
     quantity,
     in_stock: quantity > 0,
   };
-  return withPrices(cover, product, entries, prices);
+  return withPrices(cover, product, entries, prices, discountsActive);
 };
 
 export const getCovers = async (req, res) => {
@@ -376,6 +418,8 @@ export const getCovers = async (req, res) => {
             categoryId: 1,
             "stock.currentStock": 1,
             salePrice: 1,
+            discountPrice: 1,
+            originalPrice: 1,
             ...(prices ? { costPrice: 1, productName: 1, productNameZh: 1 } : {}),
           },
         },
@@ -383,9 +427,12 @@ export const getCovers = async (req, res) => {
       Product.countDocuments(filter),
     ]);
 
+    const store = await StoreInfo.findOne().select("discountsEnabled").lean();
+    const discountsActive = store?.discountsEnabled !== false;
+
     return res.json({
       success: true,
-      data: products.map((p) => toCover(p, modelMap.get(String(p._id)), prices)),
+      data: products.map((p) => toCover(p, modelMap.get(String(p._id)), prices, discountsActive)),
       pagination: { total, hasMore: page * limit < total },
       fuzzy,
       suggestions,
@@ -404,7 +451,7 @@ export const getCover = async (req, res) => {
     }
     const product = await Product.findOne({ ...baseFilter(), _id: id })
       .select(
-        "photoUrl photos.url photos.type photos.variant photos.sizeGuide photos.cover categoryId stock.currentStock salePrice costPrice productName productNameZh",
+        "photoUrl photos.url photos.type photos.variant photos.sizeGuide photos.cover categoryId stock.currentStock salePrice discountPrice originalPrice costPrice productName productNameZh",
       )
       .lean();
     if (!product) {
@@ -413,10 +460,12 @@ export const getCover = async (req, res) => {
     const prices = canSeePrices(req);
     if (prices) noSharedCache(res);
     else publicCache(req, res);
+    const store = await StoreInfo.findOne().select("discountsEnabled").lean();
+    const discountsActive = store?.discountsEnabled !== false;
     const modelMap = await modelsByProduct();
     return res.json({
       success: true,
-      data: toCover(product, modelMap.get(String(product._id)), prices),
+      data: toCover(product, modelMap.get(String(product._id)), prices, discountsActive),
     });
   } catch (error) {
     console.error("Catalog cover error:", error);
@@ -518,7 +567,7 @@ export const getCategories = async (req, res) => {
 export const getStore = async (req, res) => {
   try {
     publicCache(req, res);
-    const store = await StoreInfo.findOne().select("storeName address phone mapUrl instagram").lean();
+    const store = await StoreInfo.findOne().select("storeName address phone mapUrl instagram discountsEnabled").lean();
     return res.json({
       success: true,
       data: {
@@ -528,6 +577,7 @@ export const getStore = async (req, res) => {
         map_url: store?.mapUrl || "",
         // "" when the shop turned the button off
         instagram: store?.instagram ?? DEFAULT_INSTAGRAM,
+        discounts_enabled: store?.discountsEnabled !== false,
       },
     });
   } catch (error) {

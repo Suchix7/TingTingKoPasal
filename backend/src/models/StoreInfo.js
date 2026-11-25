@@ -10,6 +10,8 @@ const storeInfoSchema = new mongoose.Schema(
     // Instagram username for the "message us" button on the shop ("" hides it)
     instagram: { type: String, default: "tingtingkopasal" },
     panVatNumber: { type: String, default: "" },
+    // When enabled, customer shop shows promotional banner and crossed-out discount prices
+    discountsEnabled: { type: Boolean, default: true },
   },
   { timestamps: true },
 );

@@ -49,6 +49,8 @@ export type ProductFormData = {
   category_id: string | "";
   cost_price: number;
   sale_price: number;
+  discount_price?: number | null;
+  original_price?: number | null;
   stock_quantity: number;
   unit: string;
   status: string;
@@ -62,6 +64,8 @@ export const initialFormData: ProductFormData = {
   category_id: "",
   cost_price: 0,
   sale_price: 0,
+  discount_price: null,
+  original_price: null,
   stock_quantity: 0,
   unit: "",
   status: "Active",
@@ -141,6 +145,22 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const discountInfo = (product: Product) => {
+  if (product.discount_price != null && product.discount_price > 0 && product.discount_price < product.sale_price) {
+    const orig = product.sale_price;
+    const finalPrice = product.discount_price;
+    const pct = Math.round(((orig - finalPrice) / orig) * 100);
+    return { hasDiscount: true, orig, finalPrice, pct };
+  }
+  if (product.original_price != null && product.original_price > product.sale_price) {
+    const orig = product.original_price;
+    const finalPrice = product.sale_price;
+    const pct = Math.round(((orig - finalPrice) / orig) * 100);
+    return { hasDiscount: true, orig, finalPrice, pct };
+  }
+  return { hasDiscount: false, orig: product.sale_price, finalPrice: product.sale_price, pct: 0 };
+};
+
 export default function ProductsPage() {
   const { t, tn, lang } = useLang();
   const [page, setPage] = useState(1);
@@ -199,6 +219,8 @@ export default function ProductsPage() {
       category_id: product.category_id || "",
       cost_price: product.cost_price ?? 0,
       sale_price: product.sale_price ?? 0,
+      discount_price: product.discount_price ?? null,
+      original_price: product.original_price ?? null,
       stock_quantity: product.stock_quantity ?? 0,
       unit: product.unit || "",
       status: product.status || "Active",
@@ -506,9 +528,26 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="mt-2 flex items-baseline justify-between gap-2">
-                      <p className="font-bold text-gray-900">
-                        {money(product.sale_price)}
-                      </p>
+                      {(() => {
+                        const disc = discountInfo(product);
+                        return (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-gray-900">
+                              {money(disc.finalPrice)}
+                            </p>
+                            {disc.hasDiscount && (
+                              <>
+                                <span className="text-xs text-gray-400 line-through">
+                                  {money(disc.orig)}
+                                </span>
+                                <span className="rounded bg-rose-50 px-1 py-0.5 text-[10px] font-bold text-rose-600">
+                                  -{disc.pct}%
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <p
                         className={`text-sm font-medium ${
                           totalStock <= 0
@@ -744,20 +783,39 @@ export default function ProductsPage() {
                         </td>
 
                         <td className="px-5 py-4">
-                          <p className="font-semibold text-gray-900">
-                            {money(product.sale_price)}
-                          </p>
-                          {product.cost_price && product.sale_price && (
-                            <p className="text-xs text-green-600">
-                              {t("Margin")}:{" "}
-                              {(
-                                ((product.sale_price - product.cost_price) /
-                                  product.cost_price) *
-                                100
-                              ).toFixed(2)}
-                              %
-                            </p>
-                          )}
+                          {(() => {
+                            const disc = discountInfo(product);
+                            return (
+                              <>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="font-semibold text-gray-900">
+                                    {money(disc.finalPrice)}
+                                  </p>
+                                  {disc.hasDiscount && (
+                                    <>
+                                      <span className="text-xs text-gray-400 line-through">
+                                        {money(disc.orig)}
+                                      </span>
+                                      <span className="rounded bg-rose-50 px-1 py-0.5 text-[10px] font-bold text-rose-600">
+                                        -{disc.pct}%
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                                {product.cost_price && disc.finalPrice && (
+                                  <p className="text-xs text-green-600">
+                                    {t("Margin")}:{" "}
+                                    {(
+                                      ((disc.finalPrice - product.cost_price) /
+                                        product.cost_price) *
+                                      100
+                                    ).toFixed(2)}
+                                    %
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()}
                         </td>
 
                         <td className="px-5 py-4">

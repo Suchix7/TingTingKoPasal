@@ -23,6 +23,8 @@ const productBatchSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, default: 0 },
     costPrice: { type: Number, required: true, min: 0 },
     salePrice: { type: Number, required: true, min: 0 },
+    discountPrice: { type: Number, default: null, min: 0 },
+    originalPrice: { type: Number, default: null, min: 0 },
     // Auto-generated; lets a scan identify exactly this model/batch
     barcode: { type: String, unique: true, sparse: true },
     isDeleted: { type: Boolean, default: false },

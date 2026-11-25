@@ -12,6 +12,10 @@ export function serializeProduct(doc) {
     category_id: obj.categoryId ? String(obj.categoryId) : null,
     cost_price: obj.costPrice,
     sale_price: obj.salePrice,
+    discount_price: obj.discountPrice ?? null,
+    original_price:
+      obj.originalPrice ??
+      (obj.discountPrice && obj.discountPrice < obj.salePrice ? obj.salePrice : null),
     unit: obj.unit,
     status: obj.status,
     barcode: obj.barcode || null,
@@ -64,6 +68,10 @@ export function serializeBatch(doc, extra = {}) {
     quantity: obj.quantity,
     cost_price: obj.costPrice,
     sale_price: obj.salePrice,
+    discount_price: obj.discountPrice ?? null,
+    original_price:
+      obj.originalPrice ??
+      (obj.discountPrice && obj.discountPrice < obj.salePrice ? obj.salePrice : null),
     is_deleted: !!obj.isDeleted,
     deleted_at: obj.deletedAt || null,
     created_at: obj.createdAt,

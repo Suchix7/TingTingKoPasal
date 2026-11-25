@@ -158,16 +158,26 @@ export default function CoverViewer({
           </h2>
         )}
         {(coverPrice || coverCost) && (
-          <p className="mb-3 flex flex-wrap justify-center gap-2 text-center">
+          <p className="mb-3 flex flex-wrap items-center justify-center gap-2 text-center">
             {coverCost && (
               <span className="rounded-full bg-orange-500 px-3 py-1 text-base font-bold text-white">
                 {coverCost}
               </span>
             )}
             {coverPrice && (
-              <span className="rounded-full bg-emerald-600 px-3 py-1 text-base font-bold text-white">
+              <span className="rounded-full bg-emerald-600 px-3 py-1 text-base font-bold text-white shadow-sm">
                 {coverPrice}
               </span>
+            )}
+            {cover.original_price_min != null && cover.original_price_min > (cover.price_min || 0) && (
+              <>
+                <span className="text-sm font-semibold text-white/60 line-through">
+                  {priceLabel(cover.original_price_min, cover.original_price_max)}
+                </span>
+                <span className="rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white shadow-sm">
+                  -{Math.round(((cover.original_price_min - (cover.price_min || 0)) / cover.original_price_min) * 100)}%
+                </span>
+              </>
             )}
           </p>
         )}

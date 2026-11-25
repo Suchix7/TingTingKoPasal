@@ -275,11 +275,21 @@ export default function PointOfSalesPage() {
     unitPrice?: number,
     batchId?: string,
   ) => {
-    const price = unitPrice || product.sale_price;
-
     const selectedBatch = batchId
       ? product.batches?.find((b) => b.id === batchId)
       : null;
+
+    const hasDiscount = Boolean(
+      !unitPrice &&
+        product.discount_price != null &&
+        product.discount_price > 0 &&
+        product.discount_price < product.sale_price,
+    );
+    const regular = unitPrice || selectedBatch?.sale_price || product.sale_price;
+    const finalPrice = hasDiscount
+      ? (product.discount_price as number)
+      : regular;
+    const discountAmount = hasDiscount ? Math.max(regular - finalPrice, 0) : 0;
 
     const costPrice = selectedBatch?.cost_price ?? product.cost_price;
 
@@ -317,11 +327,12 @@ export default function PointOfSalesPage() {
           product_name: product.product_name,
           sku: product.sku,
           quantity: 1,
-          unit_price: price,
-          discount_amount: 0,
+          unit_price: regular,
+          sold_price: hasDiscount ? finalPrice : undefined,
+          discount_amount: discountAmount,
           tax_amount: 0,
           tax_inclusive: false,
-          total_price: price,
+          total_price: finalPrice,
           cost_price: costPrice,
           batch_id: batchId,
           batch_number: selectedBatch?.batch_number,

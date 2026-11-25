@@ -20,13 +20,14 @@ const toApiStore = (doc) => ({
   map_url: doc.mapUrl || "",
   instagram: doc.instagram ?? DEFAULT_INSTAGRAM,
   pan_vat_number: doc.panVatNumber,
+  discounts_enabled: doc.discountsEnabled !== false,
   created_at: doc.createdAt,
   updated_at: doc.updatedAt,
 });
 
 export const createStore = async (req, res) => {
   try {
-    const { store_name, address, phone, pan_vat_number, map_url, instagram } = req.body;
+    const { store_name, address, phone, pan_vat_number, map_url, instagram, discounts_enabled } = req.body;
 
     if (!store_name || !address || !phone) {
       return res.status(400).json({
@@ -63,6 +64,7 @@ export const createStore = async (req, res) => {
       panVatNumber: trimmedPanVatNumber,
       mapUrl: String(map_url || "").trim(),
       instagram: instagram === undefined ? DEFAULT_INSTAGRAM : cleanInstagram(instagram),
+      discountsEnabled: discounts_enabled !== undefined ? Boolean(discounts_enabled) : true,
     });
 
     return res.status(201).json({
@@ -114,7 +116,7 @@ export const getStore = async (req, res) => {
 
 export const updateStore = async (req, res) => {
   try {
-    const { store_name, address, phone, pan_vat_number, map_url, instagram } = req.body;
+    const { store_name, address, phone, pan_vat_number, map_url, instagram, discounts_enabled } = req.body;
 
     const existingStore = await StoreInfo.findOne();
 
@@ -165,6 +167,7 @@ export const updateStore = async (req, res) => {
     existingStore.phone = updatedPhone;
     if (map_url !== undefined) existingStore.mapUrl = String(map_url || "").trim();
     if (instagram !== undefined) existingStore.instagram = cleanInstagram(instagram);
+    if (discounts_enabled !== undefined) existingStore.discountsEnabled = Boolean(discounts_enabled);
     existingStore.panVatNumber = updatedPanVatNumber;
 
     await existingStore.save();

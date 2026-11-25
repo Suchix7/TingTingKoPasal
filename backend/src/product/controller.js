@@ -25,6 +25,8 @@ export const createProduct = async (req, res) => {
       category_id,
       cost_price,
       sale_price,
+      discount_price,
+      original_price,
       stock_quantity,
       unit,
       status,
@@ -152,6 +154,22 @@ export const createProduct = async (req, res) => {
     // SKU is optional in the form; fall back to one derived from the barcode
     const finalSku = trimmedSku || `SKU-${finalBarcode}`;
 
+    let finalDiscountPrice = null;
+    let finalOriginalPrice = null;
+    if (discount_price !== undefined && discount_price !== null && discount_price !== "") {
+      const dp = Number(discount_price);
+      if (dp > 0 && dp < parsedSalePrice) {
+        finalDiscountPrice = dp;
+        finalOriginalPrice = parsedSalePrice;
+      }
+    } else if (original_price !== undefined && original_price !== null && original_price !== "") {
+      const op = Number(original_price);
+      if (op > parsedSalePrice) {
+        finalOriginalPrice = op;
+        finalDiscountPrice = parsedSalePrice;
+      }
+    }
+
     const newProduct = await Product.create({
       productName: product_name.trim(),
       productNameZh: String(product_name_zh || "").trim(),
@@ -159,6 +177,8 @@ export const createProduct = async (req, res) => {
       categoryId: category_id,
       costPrice: parsedCostPrice,
       salePrice: parsedSalePrice,
+      discountPrice: finalDiscountPrice,
+      originalPrice: finalOriginalPrice,
       unit: unit.trim(),
       status,
       barcode: finalBarcode,
@@ -261,6 +281,8 @@ export const updateProduct = async (req, res) => {
       category_id,
       cost_price,
       sale_price,
+      discount_price,
+      original_price,
       stock_quantity,
       unit,
       status,
@@ -294,6 +316,34 @@ export const updateProduct = async (req, res) => {
       sale_price !== undefined && sale_price !== ""
         ? Number(sale_price)
         : Number(existingProduct.salePrice);
+    let updatedDiscountPrice = existingProduct.discountPrice ?? null;
+    let updatedOriginalPrice = existingProduct.originalPrice ?? null;
+    if (discount_price !== undefined) {
+      if (discount_price === "" || discount_price === null) {
+        updatedDiscountPrice = null;
+        updatedOriginalPrice = null;
+      } else {
+        const dp = Number(discount_price);
+        if (dp > 0 && dp < updatedSalePrice) {
+          updatedDiscountPrice = dp;
+          updatedOriginalPrice = updatedSalePrice;
+        } else {
+          updatedDiscountPrice = null;
+          updatedOriginalPrice = null;
+        }
+      }
+    } else if (original_price !== undefined) {
+      if (original_price === "" || original_price === null) {
+        updatedOriginalPrice = null;
+        updatedDiscountPrice = null;
+      } else {
+        const op = Number(original_price);
+        if (op > updatedSalePrice) {
+          updatedOriginalPrice = op;
+          updatedDiscountPrice = updatedSalePrice;
+        }
+      }
+    }
     // With sizes, stock lives on the sizes, not on the product itself
     const updatedStockQuantity =
       syncSizes && sizeList.length > 0
@@ -336,6 +386,8 @@ export const updateProduct = async (req, res) => {
     existingProduct.categoryId = updatedCategory;
     existingProduct.costPrice = updatedCostPrice;
     existingProduct.salePrice = updatedSalePrice;
+    existingProduct.discountPrice = updatedDiscountPrice;
+    existingProduct.originalPrice = updatedOriginalPrice;
     existingProduct.unit = updatedUnit;
     existingProduct.status = updatedStatus;
     existingProduct.description = updatedDescription;
