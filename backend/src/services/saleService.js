@@ -18,12 +18,24 @@ const holdsStock = (status) => status === "Completed" || status === "Pending";
 
 export function serializeSale(sale) {
   const obj = sale.toObject ? sale.toObject() : sale;
+  const isCustomerPopulated =
+    obj.customerId && typeof obj.customerId === "object";
+  const customerId = isCustomerPopulated
+    ? String(obj.customerId._id)
+    : obj.customerId
+      ? String(obj.customerId)
+      : null;
+  const customerDoc = isCustomerPopulated ? obj.customerId : null;
+
   return {
     id: String(obj._id),
     invoice_no: obj.invoiceNo,
-    customer_id: obj.customerId ? String(obj.customerId) : null,
-    customer_name: obj.customerName || null,
-    customer_phone: obj.customerPhone || null,
+    customer_id: customerId,
+    customer_name: obj.customerName || customerDoc?.name || null,
+    customer_phone: obj.customerPhone || customerDoc?.phone || null,
+    customer_address: obj.customerAddress || customerDoc?.address || null,
+    customer_email: customerDoc?.email || null,
+    customer_credit: customerDoc?.creditAmount ?? null,
     subtotal: obj.subtotal,
     discount_amount: obj.discountAmount,
     tax_amount: obj.taxAmount,
@@ -146,6 +158,7 @@ export async function createSale(body) {
     customer_id,
     customer_name,
     customer_phone,
+    customer_address,
     subtotal,
     discount_amount = 0,
     grand_total,
@@ -413,12 +426,20 @@ export async function createSale(body) {
     await session.withTransaction(async () => {
       let customerSnapshotName = customer_name ? customer_name.trim() : null;
       let customerSnapshotPhone = customer_phone ? customer_phone.trim() : null;
+      let customerSnapshotAddress = customer_address ? customer_address.trim() : null;
 
       if (customer_id) {
         const customer = await Customer.findById(customer_id).session(session);
         if (!customer) throw new Error(`Customer with ID ${customer_id} not found`);
         customerSnapshotName = customerSnapshotName || customer.name;
         customerSnapshotPhone = customerSnapshotPhone || customer.phone;
+        customerSnapshotAddress = customerSnapshotAddress || customer.address;
+
+        // Synchronize address to the Customer record if customer had none or if provided during sale
+        if (customerSnapshotAddress && (!customer.address || customerSnapshotAddress !== customer.address)) {
+          customer.address = customerSnapshotAddress;
+          await customer.save({ session });
+        }
       }
 
       const itemsForSale = [];
@@ -483,6 +504,7 @@ export async function createSale(body) {
             customerId: customer_id || null,
             customerName: customerSnapshotName,
             customerPhone: customerSnapshotPhone,
+            customerAddress: customerSnapshotAddress,
             subtotal: Number(subtotal),
             discountAmount: Number(discount_amount),
             taxAmount: computedTaxAmount,
@@ -547,7 +569,10 @@ export async function createSale(body) {
 
       saleDoc = sale;
     });
-    await saleDoc.populate(PAYMENT_METHOD_POPULATE);
+    await saleDoc.populate([
+      PAYMENT_METHOD_POPULATE,
+      { path: "customerId", select: "name phone address email creditAmount creditLimit notes" },
+    ]);
     return serializeSale(saleDoc);
   } finally {
     session.endSession();
@@ -613,6 +638,7 @@ export async function updateSale(id, body) {
         customer_id,
         customer_name,
         customer_phone,
+        customer_address,
         subtotal,
         discount_amount,
         tax_amount,
@@ -828,11 +854,11 @@ export async function updateSale(id, body) {
 
       const validPayments = hasPayments
         ? payments
-            .map((p) => ({
-              paymentMethodId: p.payment_method_id,
-              amount: Number(p.amount || 0),
-            }))
-            .filter((p) => p.amount > 0)
+          .map((p) => ({
+            paymentMethodId: p.payment_method_id,
+            amount: Number(p.amount || 0),
+          }))
+          .filter((p) => p.amount > 0)
         : sale.payments;
 
       let updatedPaidAmount = Number(sale.paidAmount || 0);
@@ -859,6 +885,7 @@ export async function updateSale(id, body) {
 
       let snapshotName = customer_name !== undefined ? customer_name?.trim() || null : sale.customerName;
       let snapshotPhone = customer_phone !== undefined ? customer_phone?.trim() || null : sale.customerPhone;
+      let snapshotAddress = customer_address !== undefined ? customer_address?.trim() || null : sale.customerAddress;
 
       if (updatedCustomerId) {
         const customer = await Customer.findById(updatedCustomerId).session(session);
@@ -882,6 +909,13 @@ export async function updateSale(id, body) {
         }
         snapshotName = snapshotName || customer.name;
         snapshotPhone = snapshotPhone || customer.phone;
+        snapshotAddress = snapshotAddress || customer.address;
+
+        // If customer address was updated or filled in during sale edit, update the Customer document
+        if (snapshotAddress && customer.address !== snapshotAddress) {
+          customer.address = snapshotAddress;
+          await customer.save({ session });
+        }
       }
 
       if (wasCompleted && sale.customerId) {
@@ -889,8 +923,8 @@ export async function updateSale(id, body) {
         if (oldCustomer) {
           oldCustomer.creditAmount = Math.max(
             Number(oldCustomer.creditAmount || 0) -
-              Number(sale.remainingAmount || 0) +
-              Number(sale.changeAmount || 0),
+            Number(sale.remainingAmount || 0) +
+            Number(sale.changeAmount || 0),
             0,
           );
           await oldCustomer.save({ session });
@@ -1008,6 +1042,7 @@ export async function updateSale(id, body) {
       sale.customerId = updatedCustomerId || null;
       sale.customerName = snapshotName;
       sale.customerPhone = snapshotPhone;
+      sale.customerAddress = snapshotAddress;
       sale.subtotal = updatedSubtotal;
       sale.discountAmount = updatedDiscount;
       sale.taxAmount = updatedTax;
@@ -1027,7 +1062,10 @@ export async function updateSale(id, body) {
       await sale.save({ session });
       resultDoc = sale;
     });
-    await resultDoc.populate(PAYMENT_METHOD_POPULATE);
+    await resultDoc.populate([
+      PAYMENT_METHOD_POPULATE,
+      { path: "customerId", select: "name phone address email creditAmount creditLimit notes" },
+    ]);
     return serializeSale(resultDoc);
   } finally {
     session.endSession();
@@ -1101,8 +1139,8 @@ export async function deleteSale(id) {
           if (customer) {
             customer.creditAmount = Math.max(
               Number(customer.creditAmount || 0) -
-                Number(sale.remainingAmount || 0) +
-                Number(sale.changeAmount || 0),
+              Number(sale.remainingAmount || 0) +
+              Number(sale.changeAmount || 0),
               0,
             );
             await customer.save({ session });

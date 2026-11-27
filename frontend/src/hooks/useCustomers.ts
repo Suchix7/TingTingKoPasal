@@ -5,6 +5,7 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axiosInstance";
+import type { Sale } from "./useSales";
 
 export type Customer = {
   id: string;
@@ -110,5 +111,31 @@ export const useDeleteCustomer = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
+  });
+};
+
+export type CustomerPurchasesData = {
+  customer: Customer;
+  summary: {
+    total_orders: number;
+    total_spent: number;
+    total_items_bought: number;
+    last_order_date: string | null;
+  };
+  sales: Sale[];
+};
+
+export const useCustomerSales = (customerId: string | null) => {
+  return useQuery<CustomerPurchasesData>({
+    queryKey: ["customer-sales", customerId],
+    queryFn: async () => {
+      if (!customerId) throw new Error("Customer ID required");
+      const res = await axiosInstance.get<{
+        success: boolean;
+        data: CustomerPurchasesData;
+      }>(`/customers/${customerId}/sales`);
+      return res.data.data;
+    },
+    enabled: Boolean(customerId),
   });
 };

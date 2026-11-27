@@ -24,8 +24,10 @@ import {
   Filter,
   CheckCircle,
   DollarSign,
+  ShoppingBag,
 } from "lucide-react";
 import CustomerModal from "@/components/customers/modal";
+import CustomerPurchasesModal from "@/components/customers/CustomerPurchasesModal";
 import { useDebounced } from "@/hooks/useDebounced";
 import Pagination from "@/components/layout/Pagination";
 import { StatCardsSkeleton, TableRowsSkeleton } from "@/components/layout/Skeleton";
@@ -53,6 +55,8 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
+  const [viewPurchasesCustomer, setViewPurchasesCustomer] =
+    useState<Customer | null>(null);
   const [formData, setFormData] = useState(emptyCustomer);
   const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null);
 
@@ -444,6 +448,15 @@ export default function CustomersPage() {
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-2">
                             <button
+                              onClick={() => setViewPurchasesCustomer(customer)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                              title={t("View what this customer bought")}
+                            >
+                              <ShoppingBag className="h-3.5 w-3.5 text-indigo-600" />
+                              {t("Purchases")}
+                            </button>
+
+                            <button
                               onClick={() => openEditModal(customer)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors"
                             >
@@ -482,6 +495,15 @@ export default function CustomersPage() {
         <CustomerModal
           selectedCustomer={selectedCustomer}
           setIsModalOpen={setIsModalOpen}
+        />
+      )}
+
+      {/* Customer Purchases Modal */}
+      {viewPurchasesCustomer && (
+        <CustomerPurchasesModal
+          customer={viewPurchasesCustomer}
+          onClose={() => setViewPurchasesCustomer(null)}
+          onEditCustomer={(cust) => openEditModal(cust)}
         />
       )}
 

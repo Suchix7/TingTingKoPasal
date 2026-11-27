@@ -1,4 +1,7 @@
 import Customer from "../models/Customer.js";
+import Sale from "../models/Sale.js";
+import { serializeSale, PAYMENT_METHOD_POPULATE } from "../services/saleService.js";
+import { attachSalePhotos } from "../utils/saleItemPhotos.js";
 
 import { escapeRegex } from "../utils/escapeRegex.js";
 const toApiCustomer = (doc) => ({
@@ -321,6 +324,19 @@ export const deleteCustomer = async (req, res) => {
 
     await Customer.findByIdAndDelete(id);
 
+    // Keep the sales history intact, but unlink customerId
+    await Sale.updateMany(
+      { customerId: id },
+      {
+        $set: {
+          customerName: existingCustomer.name,
+          customerPhone: existingCustomer.phone || "",
+          customerAddress: existingCustomer.address || "",
+          customerId: null,
+        },
+      },
+    );
+
     return res.status(200).json({
       success: true,
       message: "Customer deleted successfully",
@@ -328,6 +344,65 @@ export const deleteCustomer = async (req, res) => {
   } catch (error) {
     console.error("Delete customer error:", error.message);
 
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getCustomerSales = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const customer = await Customer.findById(id);
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    const matchQuery = {
+      $or: [
+        { customerId: id },
+        ...(customer.phone ? [{ customerPhone: customer.phone }] : []),
+      ],
+    };
+
+    const sales = await Sale.find(matchQuery)
+      .sort({ createdAt: -1 })
+      .populate(PAYMENT_METHOD_POPULATE)
+      .populate("customerId", "name phone address email creditAmount creditLimit notes");
+
+    const serialized = await attachSalePhotos(sales.map(serializeSale));
+
+    let totalSpent = 0;
+    let totalItemsBought = 0;
+    for (const s of serialized) {
+      if (s.sale_status === "Completed") {
+        totalSpent += Number(s.grand_total || 0);
+      }
+      for (const item of s.items || []) {
+        totalItemsBought += Number(item.quantity || 0);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        customer: toApiCustomer(customer),
+        summary: {
+          total_orders: serialized.length,
+          total_spent: totalSpent,
+          total_items_bought: totalItemsBought,
+          last_order_date: serialized[0]?.created_at || null,
+        },
+        sales: serialized,
+      },
+    });
+  } catch (error) {
+    console.error("Get customer sales error:", error.message);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Clock, Eye, Truck, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Eye, MapPin, Pencil, Truck, XCircle } from "lucide-react";
 
 import { usePendingCodSales, waitingSince, type PendingCodSale } from "@/hooks/useSales";
 import { useLang } from "@/lib/i18n";
@@ -13,11 +13,13 @@ export default function PendingCodSection({
   onComplete,
   onCancel,
   onView,
+  onEdit,
 }: {
   money: (value?: number | null) => string;
   onComplete: (order: PendingCodSale) => void;
   onCancel: (order: PendingCodSale) => void;
   onView: (id: string) => void;
+  onEdit: (order: PendingCodSale) => void;
 }) {
   const { t } = useLang();
   const { data } = usePendingCodSales(50);
@@ -62,11 +64,23 @@ export default function PendingCodSection({
                   <Clock size={11} /> {t("Pending")}
                 </span>
               </div>
-              <p className="truncate text-sm text-gray-600">
-                {order.customer_name || t("Walk-in customer")}
-                {order.customer_phone ? ` · ${order.customer_phone}` : ""}
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold text-gray-900">{order.customer_name || t("Walk-in customer")}</span>
+                {order.customer_phone ? <span className="text-gray-500"> · {order.customer_phone}</span> : ""}
               </p>
-              <p className="text-xs text-gray-400">
+              {order.customer_address ? (
+                <p className="mt-0.5 flex items-start gap-1 text-xs text-gray-600 break-words">
+                  <MapPin size={12} className="mt-0.5 shrink-0 text-amber-700" />
+                  <span>{order.customer_address}</span>
+                </p>
+              ) : null}
+              {order.notes ? (
+                <p className="mt-1 flex items-start gap-1 rounded-lg border border-amber-200/70 bg-amber-100/60 px-2 py-1 text-xs text-amber-900 break-words whitespace-pre-wrap">
+                  <span className="font-semibold shrink-0">{t("Note")}:</span>
+                  <span>{order.notes}</span>
+                </p>
+              ) : null}
+              <p className="text-xs text-gray-400 mt-1">
                 {t("Sent")} {waitingSince(order.created_at)}
               </p>
             </div>
@@ -81,6 +95,14 @@ export default function PendingCodSection({
                   title={t("View sale")}
                 >
                   <Eye size={18} />
+                </button>
+                <button
+                  onClick={() => onEdit(order)}
+                  className="rounded-xl p-2 text-gray-500 transition hover:bg-amber-100 hover:text-amber-800"
+                  aria-label={t("Edit COD order")}
+                  title={t("Edit COD order")}
+                >
+                  <Pencil size={18} />
                 </button>
                 <button
                   onClick={() => onCancel(order)}

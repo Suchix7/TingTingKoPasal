@@ -17,6 +17,7 @@ import {
   Undo2,
   CheckCircle2,
   Truck,
+  MapPin,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,6 +28,7 @@ import {
   useSales,
   useSaleItems,
   SaleItem,
+  type PendingCodSale,
 } from "@/hooks/useSales";
 import {
   SalePayment as FullSalePayment,
@@ -231,6 +233,27 @@ export default function SalesPage() {
     setEditSaleId(sale.id);
   };
 
+  const handleEditCodOrder = async (order: PendingCodSale) => {
+    const existing = sales.find((s) => s.id === order.id);
+    if (existing) {
+      handleEditSale(existing);
+      return;
+    }
+    try {
+      toast.loading(t("Loading sale details..."), { id: "edit-cod-loading" });
+      const res = await axiosInstance.get<{ success: boolean; data: Sale }>(
+        `/sales/${order.id}`,
+      );
+      toast.dismiss("edit-cod-loading");
+      if (res.data?.data) {
+        handleEditSale(res.data.data);
+      }
+    } catch {
+      toast.dismiss("edit-cod-loading");
+      toast.error(t("Failed to load sale details"));
+    }
+  };
+
   const handleRevoke = async () => {
     if (!revokeTarget) return;
 
@@ -395,6 +418,7 @@ export default function SalesPage() {
       <PendingCodSection
         money={money}
         onView={(id) => setSelectedSaleId(id)}
+        onEdit={(order) => handleEditCodOrder(order)}
         onComplete={(order) => setCodToComplete(order)}
         onCancel={(order) => {
           setRevokeReason("");
@@ -496,11 +520,23 @@ export default function SalesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-bold text-gray-900">{sale.invoice_no}</p>
-                      <p className="truncate text-sm text-gray-600">
-                        {sale.customer_name || t("Walk-in customer")}
-                        {sale.customer_phone ? ` · ${sale.customer_phone}` : ""}
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold text-gray-900">{sale.customer_name || t("Walk-in customer")}</span>
+                        {sale.customer_phone ? <span className="text-gray-500"> · {sale.customer_phone}</span> : ""}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      {sale.customer_address && (
+                        <p className="mt-0.5 flex items-start gap-1 text-xs text-gray-600 break-words">
+                          <MapPin size={11} className="mt-0.5 shrink-0 text-amber-700" />
+                          <span>{sale.customer_address}</span>
+                        </p>
+                      )}
+                      {sale.notes && (
+                        <p className="mt-1 flex items-start gap-1 rounded-lg border border-amber-200/60 bg-amber-50/70 p-1.5 text-xs text-amber-900 break-words">
+                          <FileText size={11} className="mt-0.5 shrink-0 text-amber-600" />
+                          <span className="line-clamp-2">{sale.notes}</span>
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">
                         {dateTime(sale.created_at)}
                       </p>
                     </div>
@@ -665,12 +701,24 @@ export default function SalesPage() {
                     </td>
 
                     <td className="px-5 py-4">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-semibold text-gray-900">
                         {sale.customer_name || t("Walk-in customer")}
                       </p>
                       <p className="text-xs text-gray-500">
                         {sale.customer_phone || t("No phone")}
                       </p>
+                      {sale.customer_address && (
+                        <p className="mt-0.5 flex items-start gap-1 text-xs text-gray-600 break-words max-w-[220px]">
+                          <MapPin size={11} className="mt-0.5 shrink-0 text-amber-700" />
+                          <span>{sale.customer_address}</span>
+                        </p>
+                      )}
+                      {sale.notes && (
+                        <p className="mt-1 flex items-start gap-1 rounded-md border border-amber-200/60 bg-amber-50/70 px-1.5 py-0.5 text-[11px] text-amber-900 break-words max-w-[220px]" title={sale.notes}>
+                          <FileText size={11} className="mt-0.5 shrink-0 text-amber-600" />
+                          <span className="line-clamp-2">{sale.notes}</span>
+                        </p>
+                      )}
                     </td>
 
                     <td className="px-5 py-4">

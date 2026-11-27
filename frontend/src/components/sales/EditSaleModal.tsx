@@ -12,6 +12,8 @@ import {
   Info,
   ImagePlus,
   Package,
+  Edit2,
+  LayoutGrid,
 } from "lucide-react";
 import Image from "next/image";
 import { coverImage, variantPhoto } from "@/components/catalog/image";
@@ -36,6 +38,7 @@ import {
 } from "../layout/ProductBatchDropdown";
 import CustomerModal from "../customers/modal";
 import ProductModal from "../product/modal";
+import ProductCardPickerModal from "./ProductCardPickerModal";
 import { useConvertQuickSale } from "@/hooks/useQuickSales";
 import { useLang } from "@/lib/i18n";
 import Tn from "@/components/layout/Tn";
@@ -63,6 +66,7 @@ type EditableSaleItem = {
   batch_id?: string | null;
   cost_price?: number;
   profit_amount?: number;
+  photo_url?: string | null;
 };
 
 type EditablePayment = {
@@ -163,11 +167,10 @@ function ProductTaxModal({
                   }
                   setTaxType("percentage");
                 }}
-                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${
-                  taxType === "percentage"
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${taxType === "percentage"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 {t("Percentage (%)")}
               </button>
@@ -179,11 +182,10 @@ function ProductTaxModal({
                   }
                   setTaxType("fixed");
                 }}
-                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${
-                  taxType === "fixed"
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${taxType === "fixed"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 {t("Fixed (Rs.)")}
               </button>
@@ -278,14 +280,12 @@ function ProductTaxModal({
               <button
                 type="button"
                 onClick={() => setIsInclusive(!isInclusive)}
-                className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                  isInclusive ? "bg-blue-600" : "bg-gray-300"
-                }`}
+                className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${isInclusive ? "bg-blue-600" : "bg-gray-300"
+                  }`}
               >
                 <span
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                    isInclusive ? "translate-x-5" : "translate-x-0"
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isInclusive ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
             </div>
@@ -337,6 +337,7 @@ export default function EditSaleModal({
   );
   const [customerName, setCustomerName] = useState(sale.customer_name || "");
   const [customerPhone, setCustomerPhone] = useState(sale.customer_phone || "");
+  const [customerAddress, setCustomerAddress] = useState(sale.customer_address || "");
   const [discountAmount, setDiscountAmount] = useState(
     Number(sale.discount_amount || 0),
   );
@@ -347,6 +348,10 @@ export default function EditSaleModal({
   const [items, setItems] = useState<EditableSaleItem[]>([]);
   const [payments, setPayments] = useState<EditablePayment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
+  const [cardPickerItemIndex, setCardPickerItemIndex] = useState<number | null>(
+    null,
+  );
   const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(
     sale.payment_proof_url || null,
   );
@@ -365,12 +370,15 @@ export default function EditSaleModal({
   );
   // Photo of the line: the sold colour's photo, else the product's cover
   const itemPhoto = (item: EditableSaleItem) => {
+    if (item.photo_url) return item.photo_url;
     const product = productById.get(item.product_id);
-    if (!product) return null;
-    const batch = item.batch_id
-      ? product.batches?.find((b) => b.id === item.batch_id)
-      : null;
-    return variantPhoto(product, batch) || product.photo_url || null;
+    if (product) {
+      const batch = item.batch_id
+        ? product.batches?.find((b) => b.id === item.batch_id)
+        : null;
+      return variantPhoto(product, batch) || product.photo_url || null;
+    }
+    return saleItems.find((s) => s.id === item.id)?.photo_url || null;
   };
   // Colour/size the line was sold in ("Blue / iPhone 13"), from the sale
   const itemColour = (item: EditableSaleItem) =>
@@ -398,6 +406,7 @@ export default function EditSaleModal({
     setCustomerId(sale.customer_id ?? null);
     setCustomerName(sale.customer_name || "");
     setCustomerPhone(sale.customer_phone || "");
+    setCustomerAddress(sale.customer_address || "");
     setDiscountAmount(Number(sale.discount_amount || 0));
     setNotes(sale.notes || "");
     setSaleStatus(sale.sale_status);
@@ -420,6 +429,7 @@ export default function EditSaleModal({
         batch_id: item.batch_id || null,
         cost_price: Number(item.cost_price || 0),
         profit_amount: Number(item.profit_amount || 0),
+        photo_url: item.photo_url || null,
       })),
     );
   }, [saleItems]);
@@ -524,6 +534,7 @@ export default function EditSaleModal({
       setCustomerId(null);
       setCustomerName("");
       setCustomerPhone("");
+      setCustomerAddress("");
       return;
     }
 
@@ -536,6 +547,7 @@ export default function EditSaleModal({
     setCustomerId(selectedCustomer.id);
     setCustomerName(selectedCustomer.name || "");
     setCustomerPhone(selectedCustomer.phone || "");
+    setCustomerAddress(selectedCustomer.address || "");
   };
 
   const addItem = () => {
@@ -553,6 +565,7 @@ export default function EditSaleModal({
         batch_id: null,
         cost_price: 0,
         profit_amount: 0,
+        photo_url: null,
       },
     ]);
   };
@@ -608,6 +621,7 @@ export default function EditSaleModal({
           product_id: "",
           product_name: "",
           batch_id: null,
+          photo_url: null,
           cost_price: 0,
           profit_amount: 0,
         };
@@ -623,6 +637,7 @@ export default function EditSaleModal({
       currentItem.product_id = selection.productId || "";
       currentItem.product_name = selection.productName || "";
       currentItem.batch_id = selection.batchId || null;
+      currentItem.photo_url = selection.photoUrl ?? null;
 
       // Use batch price if available, otherwise product price
       if (selection.salePrice !== undefined && selection.salePrice !== null) {
@@ -818,6 +833,7 @@ export default function EditSaleModal({
       customer_id: customerId,
       customer_name: customerName.trim() || null,
       customer_phone: customerPhone.trim() || null,
+      customer_address: customerAddress.trim() || null,
       subtotal,
       discount_amount: discountAmount,
       tax_amount: totalTax,
@@ -851,6 +867,7 @@ export default function EditSaleModal({
         total_price: Number(item.total_price || 0),
         cost_price: Number(item.cost_price || 0),
         profit_amount: Number(item.profit_amount || 0),
+        photo_url: item.photo_url || null,
       })),
     } as any;
 
@@ -893,23 +910,23 @@ export default function EditSaleModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex max-h-dvh items-start justify-center overflow-y-auto p-4">
+      <div className="fixed inset-0 z-50 flex max-h-dvh items-center sm:items-start justify-center overflow-y-auto p-2 sm:p-4">
         <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
           onClick={onClose}
         />
 
-        <div className="relative my-8 max-h-[85dvh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-slate-200 bg-white px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-slate-900 p-2">
-                <Receipt className="h-5 w-5 text-white" />
+        <div className="relative my-2 sm:my-8 max-h-[96dvh] sm:max-h-[88dvh] w-full max-w-4xl overflow-y-auto overflow-x-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-2 rounded-t-2xl sm:rounded-t-3xl border-b border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-5">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="rounded-xl bg-slate-900 p-1.5 sm:p-2 shrink-0">
+                <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-slate-900 truncate">
                   {isQuickSaleConversion ? t("Create Sale") : t("Edit Sale")}
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs sm:text-sm text-slate-500 truncate">
                   {t("Invoice")}: {sale.invoice_no}
                 </p>
               </div>
@@ -919,24 +936,41 @@ export default function EditSaleModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="rounded-xl p-2 cursor-pointer text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+              className="rounded-xl p-1.5 sm:p-2 cursor-pointer text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 p-6">
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium text-slate-700">
-                  {t("Customer")}
-                </label>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 p-3 sm:p-6">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs sm:text-sm font-medium text-slate-700">
+                    {t("Customer")}
+                  </label>
+                  {customerId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cust = customers.find((c) => c.id === customerId);
+                        if (cust) setEditingCustomer(cust);
+                      }}
+                      className="text-2xs sm:text-xs text-slate-600 hover:text-slate-800 hover:underline flex items-center gap-1 font-medium"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                      {t("Edit Customer")}
+                    </button>
+                  )}
+                </div>
                 <DropdownWithSearch
                   options={
                     customers.map((c) => ({
                       id: c.id,
                       label: c.name,
-                      sublabel: c.phone,
+                      sublabel:
+                        [c.phone, c.address].filter(Boolean).join(" • ") ||
+                        c.email,
                       metadata: c,
                     })) || []
                   }
@@ -955,34 +989,47 @@ export default function EditSaleModal({
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-medium text-slate-700">
                   {t("Customer Name")}
                 </label>
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                   placeholder={t("Walk-in customer")}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-medium text-slate-700">
                   {t("Customer Phone")}
                 </label>
                 <input
                   type="text"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                   placeholder={t("Phone number")}
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs sm:text-sm font-medium text-slate-700">
+                  {t("Customer Address")}
+                </label>
+                <input
+                  type="text"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                  placeholder={t("Customer address / delivery location")}
+                />
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs sm:text-sm font-medium text-slate-700">
                   {t("Sale Status")}
                 </label>
                 <select
@@ -990,7 +1037,7 @@ export default function EditSaleModal({
                   onChange={(e) =>
                     setSaleStatus(e.target.value as Sale["sale_status"])
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                 >
                   {/* only a COD order that is still unpaid can stay Pending */}
                   {sale.sale_status === "Pending" && (
@@ -1025,59 +1072,84 @@ export default function EditSaleModal({
                 {items.map((item, index) => (
                   <div
                     key={`${item.id || "new"}-${index}`}
-                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4"
+                    className="rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50/50 p-2.5 sm:p-4 transition hover:border-slate-300"
                   >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-                      <div className="flex shrink-0 h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {/* Row 1: Photo + Dropdown + Actions */}
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      {/* Product Photo — tap opens Card Picker */}
+                      <button
+                        type="button"
+                        onClick={() => setCardPickerItemIndex(index)}
+                        className="group relative flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg sm:rounded-xl border border-slate-200 bg-white transition hover:border-slate-400 hover:ring-1 hover:ring-slate-400/30 shadow-2xs"
+                        title={t("Browse products visually")}
+                      >
                         {itemPhoto(item) ? (
                           <Image
                             src={coverImage(itemPhoto(item) as string, 160)}
                             alt={item.product_name}
-                            width={64}
-                            height={64}
+                            width={48}
+                            height={48}
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <Package className="h-6 w-6 text-slate-300" />
+                          <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-300 group-hover:text-slate-500 transition-colors" />
                         )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors">
+                          <LayoutGrid className="h-3 w-3 text-white opacity-0 drop-shadow group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
+
+                      {/* Product dropdown — takes remaining width */}
+                      <div className="min-w-0 flex-1">
+                        <ProductBatchDropdown
+                          selectedProductId={item.product_id || null}
+                          selectedBatchId={item.batch_id || null}
+                          initialProductName={item.product_name}
+                          initialBatchNumber={itemColour(item) || undefined}
+                          initialPhotoUrl={itemPhoto(item)}
+                          onSelect={(selection) =>
+                            handleProductBatchSelect(index, selection)
+                          }
+                          placeholder={t("Select product...")}
+                          searchPlaceholder={t("Search products...")}
+                          emptyMessage={t("No products found")}
+                          showBatchPrices={true}
+                          showTriggerPhoto={false}
+                          maxHeight="max-h-64"
+                        />
                       </div>
 
-                      <div className="flex-1 space-y-2">
-                        <label className="text-xs font-medium text-slate-500">
-                          {t("Product")}
-                        </label>
-                        {item.id ? (
-                          // already sold: show what was sold; its colour
-                          // stays on the line so stock comes back right
-                          <div className="flex min-h-[45px] items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
-                            <span className="truncate">
-                              <Tn v={item.product_name} />
-                              {itemColour(item) ? (
-                                <span className="font-normal text-slate-500">
-                                  {" "}· <Tn v={itemColour(item) as string} />
-                                </span>
-                              ) : null}
-                            </span>
-                          </div>
-                        ) : (
-                          <ProductBatchDropdown
-                            selectedProductId={item.product_id || null}
-                            selectedBatchId={item.batch_id || null}
-                            onSelect={(selection) =>
-                              handleProductBatchSelect(index, selection)
-                            }
-                            placeholder={t("Select product")}
-                            searchPlaceholder={t("Search products by name...")}
-                            emptyMessage={t("No products found")}
-                            showBatchPrices={true}
-                            maxHeight="max-h-64"
-                          />
-                        )}
-                      </div>
+                      {/* Action buttons — always visible */}
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setEditingTaxItem({ item, index })}
+                          className={`rounded-lg p-1.5 sm:p-2 cursor-pointer transition ${
+                            item.tax_amount > 0
+                              ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                              : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          }`}
+                          title={t("Tax")}
+                        >
+                          <Percent className="h-3.5 w-3.5" />
+                        </button>
 
-                      <div className="space-y-2 lg:w-24">
-                        <label className="text-xs font-medium text-slate-500">
-                          {t("Quantity")}
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          className="rounded-lg p-1.5 sm:p-2 cursor-pointer text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          title={t("Remove")}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Numeric fields — 2x2 on mobile, 4-col on sm+ */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 mt-2.5 sm:mt-3">
+                      <div className="min-w-0 space-y-0.5">
+                        <label className="text-3xs sm:text-2xs font-medium text-slate-500">
+                          {t("Qty")}
                         </label>
                         <input
                           type="number"
@@ -1091,14 +1163,14 @@ export default function EditSaleModal({
                             )
                           }
                           onWheel={(e) => e.currentTarget.blur()}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                           required
                         />
                       </div>
 
-                      <div className="space-y-2 lg:w-28">
-                        <label className="text-xs font-medium text-slate-500">
-                          {t("Unit Price")}
+                      <div className="space-y-0.5">
+                        <label className="text-3xs sm:text-2xs font-medium text-slate-500">
+                          {t("Price")}
                         </label>
                         <input
                           type="number"
@@ -1113,14 +1185,14 @@ export default function EditSaleModal({
                             )
                           }
                           onWheel={(e) => e.currentTarget.blur()}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                           required
                         />
                       </div>
 
-                      <div className="space-y-2 lg:w-28">
-                        <label className="text-xs font-medium text-slate-500">
-                          {t("Discount")}
+                      <div className="space-y-0.5">
+                        <label className="text-3xs sm:text-2xs font-medium text-slate-500">
+                          {t("Disc.")}
                         </label>
                         <input
                           type="number"
@@ -1135,61 +1207,36 @@ export default function EditSaleModal({
                             )
                           }
                           onWheel={(e) => e.currentTarget.blur()}
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                         />
                       </div>
 
-                      <div className="space-y-2 lg:w-28">
-                        <label className="text-xs font-medium text-slate-500">
+                      <div className="space-y-0.5">
+                        <label className="text-3xs sm:text-2xs font-medium text-slate-500">
                           {t("Total")}
                         </label>
                         <input
                           type="text"
                           value={money(item.total_price)}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-900"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-bold text-slate-900"
                           disabled
                         />
                       </div>
-
-                      <div className="flex items-end gap-1">
-                        {/* Tax Button */}
-                        <button
-                          type="button"
-                          onClick={() => setEditingTaxItem({ item, index })}
-                          className={`rounded-xl p-2 cursor-pointer transition ${
-                            item.tax_amount > 0
-                              ? "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                              : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                          }`}
-                          title={t("Set product tax")}
-                        >
-                          <Percent className="h-4 w-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          className="rounded-xl p-2 cursor-pointer text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
                     </div>
 
-                    {/* Tax Info Display */}
+                    {/* Tax badge (only when tax applied) */}
                     {item.tax_amount > 0 && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2 text-2xs sm:text-xs">
+                        <span className="text-blue-600 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-full">
                           {t("Tax")}: Rs. {item.tax_amount}/{t("unit")}
                         </span>
                         {item.tax_inclusive && (
-                          <span className="text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                          <span className="text-purple-600 bg-purple-50 px-1.5 sm:px-2 py-0.5 rounded-full">
                             {t("Inclusive")}
                           </span>
                         )}
                         <span className="text-slate-500">
-                          {t("Total tax")}: Rs.{" "}
-                          {(item.tax_amount * item.quantity).toFixed(2)}
+                          = Rs. {(item.tax_amount * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     )}
@@ -1204,9 +1251,9 @@ export default function EditSaleModal({
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-medium text-slate-700">
                   {t("Sale Discount")}
                 </label>
                 <input
@@ -1216,20 +1263,20 @@ export default function EditSaleModal({
                   value={String(discountAmount)}
                   onChange={(e) => setDiscountAmount(Number(e.target.value))}
                   onWheel={(e) => e.currentTarget.blur()}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label className="text-xs sm:text-sm font-medium text-slate-700">
                   {t("Notes")}
                 </label>
-                <input
-                  type="text"
+                <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm text-slate-700 outline-none transition focus:border-slate-400 resize-none"
                   placeholder={t("Optional notes")}
+                  rows={2}
                 />
               </div>
             </div>
@@ -1271,9 +1318,9 @@ export default function EditSaleModal({
                 {payments.map((payment, index) => (
                   <div
                     key={`${payment.id || "new"}-${index}`}
-                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 md:flex-row md:items-end"
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4 sm:flex-row sm:items-end"
                   >
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-1.5">
                       <label className="text-xs font-medium text-slate-500">
                         {t("Payment Method")}
                       </label>
@@ -1286,7 +1333,7 @@ export default function EditSaleModal({
                             e.target.value,
                           )
                         }
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
                         required
                       >
                         <option value="">{t("Select method")}</option>
@@ -1298,31 +1345,34 @@ export default function EditSaleModal({
                       </select>
                     </div>
 
-                    <div className="space-y-2 md:w-40">
-                      <label className="text-xs font-medium text-slate-500">
-                        {t("Amount")}
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={String(payment.amount)}
-                        onChange={(e) =>
-                          updatePayment(index, "amount", Number(e.target.value))
-                        }
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
-                        required
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                    </div>
+                    <div className="flex items-end gap-2 sm:w-48">
+                      <div className="flex-1 space-y-1.5">
+                        <label className="text-xs font-medium text-slate-500">
+                          {t("Amount")}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={String(payment.amount)}
+                          onChange={(e) =>
+                            updatePayment(index, "amount", Number(e.target.value))
+                          }
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-slate-400"
+                          required
+                          onWheel={(e) => e.currentTarget.blur()}
+                        />
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removePayment(index)}
-                      className="rounded-xl p-2 cursor-pointer text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => removePayment(index)}
+                        className="rounded-xl p-2 cursor-pointer text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 shrink-0"
+                        title={t("Remove payment")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
 
@@ -1342,27 +1392,53 @@ export default function EditSaleModal({
                   paymentMethods.find((m) => m.id === p.payment_method_id)
                     ?.type !== "Cash",
               )) && (
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                  {t("Online Payment Proof")}
-                </h3>
+                <div className="rounded-2xl border border-slate-200 p-4">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                    {t("Online Payment Proof")}
+                  </h3>
 
-                {paymentProofUrl && !paymentProofFile ? (
-                  <div className="space-y-2">
-                    <a
-                      href={paymentProofUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <img
-                        src={paymentProofUrl}
-                        alt={t("Payment proof")}
-                        className="max-h-48 rounded-xl border border-slate-200 object-contain"
-                      />
-                    </a>
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
-                      <ImagePlus size={14} />
-                      {t("Replace photo")}
+                  {paymentProofUrl && !paymentProofFile ? (
+                    <div className="space-y-2">
+                      <a
+                        href={paymentProofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={paymentProofUrl}
+                          alt={t("Payment proof")}
+                          className="max-h-48 rounded-xl border border-slate-200 object-contain"
+                        />
+                      </a>
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                        <ImagePlus size={14} />
+                        {t("Replace photo")}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setPaymentProofFile(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                  ) : paymentProofFile ? (
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                      <span className="truncate">{paymentProofFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentProofFile(null)}
+                        className="ml-2 shrink-0 text-red-500 hover:text-red-600"
+                      >
+                        {t("Remove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
+                      <ImagePlus size={16} />
+                      {t("Attach screenshot/photo of payment (optional)")}
                       <input
                         type="file"
                         accept="image/*"
@@ -1373,42 +1449,16 @@ export default function EditSaleModal({
                         }}
                       />
                     </label>
-                  </div>
-                ) : paymentProofFile ? (
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                    <span className="truncate">{paymentProofFile.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentProofFile(null)}
-                      className="ml-2 shrink-0 text-red-500 hover:text-red-600"
-                    >
-                      {t("Remove")}
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
-                    <ImagePlus size={16} />
-                    {t("Attach screenshot/photo of payment (optional)")}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setPaymentProofFile(file);
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-slate-900">
+            <div className="rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-5">
+              <h3 className="mb-3 sm:mb-4 text-xs sm:text-sm font-semibold text-slate-900">
                 {t("Summary")}
               </h3>
 
-              <div className="grid gap-3 text-sm md:grid-cols-2">
+              <div className="grid gap-2 sm:gap-3 text-xs sm:text-sm md:grid-cols-2">
                 <div className="flex justify-between">
                   <span className="text-slate-500">{t("Subtotal")}</span>
                   <span className="font-medium text-slate-900">
@@ -1473,13 +1523,12 @@ export default function EditSaleModal({
                 <div className="flex justify-between border-t border-slate-200 pt-3">
                   <span className="text-slate-500">{t("Payment Status")}</span>
                   <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      paymentStatus === "Paid"
-                        ? "bg-green-100 text-green-700"
-                        : paymentStatus === "Partial"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                    }`}
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${paymentStatus === "Paid"
+                      ? "bg-green-100 text-green-700"
+                      : paymentStatus === "Partial"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
+                      }`}
                   >
                     {t(paymentStatus)}
                   </span>
@@ -1487,12 +1536,12 @@ export default function EditSaleModal({
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="flex-1 rounded-xl cursor-pointer border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                className="flex-1 rounded-xl cursor-pointer border border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 {t("Cancel")}
               </button>
@@ -1500,7 +1549,7 @@ export default function EditSaleModal({
               <button
                 type="submit"
                 disabled={isSubmitting || isPaymentsLoading || items.length === 0}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1531,10 +1580,55 @@ export default function EditSaleModal({
       )}
 
       {isModalOpen && (
-        <CustomerModal selectedCustomer={null} setIsModalOpen={setIsModalOpen} />
+        <CustomerModal
+          selectedCustomer={null}
+          setIsModalOpen={setIsModalOpen}
+          onSaved={(newCustomer) => {
+            setCustomerId(newCustomer.id);
+            setCustomerName(newCustomer.name || "");
+            setCustomerPhone(newCustomer.phone || "");
+            setCustomerAddress(newCustomer.address || "");
+          }}
+        />
+      )}
+      {editingCustomer && (
+        <CustomerModal
+          selectedCustomer={editingCustomer}
+          setIsModalOpen={() => setEditingCustomer(null)}
+          onSaved={(updated) => {
+            setCustomerName(updated.name);
+            setCustomerPhone(updated.phone || "");
+            setCustomerAddress(updated.address || "");
+            setEditingCustomer(null);
+          }}
+          onDeleted={(deletedId) => {
+            if (customerId === deletedId) {
+              setCustomerId(null);
+              setCustomerName("");
+              setCustomerPhone("");
+              setCustomerAddress("");
+            }
+            setEditingCustomer(null);
+          }}
+        />
       )}
       {showProductModal && (
         <ProductModal closeModal={() => setShowProductModal(false)} />
+      )}
+
+      {cardPickerItemIndex !== null && (
+        <ProductCardPickerModal
+          isOpen={cardPickerItemIndex !== null}
+          onClose={() => setCardPickerItemIndex(null)}
+          onApply={(selection) => {
+            if (cardPickerItemIndex !== null) {
+              handleProductBatchSelect(cardPickerItemIndex, selection);
+            }
+          }}
+          initialProductId={items[cardPickerItemIndex]?.product_id || null}
+          initialBatchId={items[cardPickerItemIndex]?.batch_id || null}
+          products={productsData?.data || []}
+        />
       )}
     </>
   );

@@ -15,31 +15,26 @@ export default function BlackFridayBanner({
     hours: number;
     minutes: number;
     seconds: number;
-    phase: "bf" | "cm";
     isExpired: boolean;
   } | null>(null);
 
   useEffect(() => {
-    // Black Friday deadline: Friday Nov 27 23:59:59 (+05:45)
     // Cyber Monday deadline: Monday Nov 30 23:59:59 (+05:45)
-    const bfDeadline = new Date("2026-11-27T23:59:59+05:45").getTime();
     const cmDeadline = new Date("2026-11-30T23:59:59+05:45").getTime();
 
     const update = () => {
       const now = Date.now();
-      const isBF = now < bfDeadline;
-      const deadline = isBF ? bfDeadline : cmDeadline;
-      const diff = deadline - now;
+      const diff = cmDeadline - now;
 
       if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, phase: "cm", isExpired: true });
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true });
         return;
       }
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((diff / (1000 * 60)) % 60);
       const seconds = Math.floor((diff / 1000) % 60);
-      setTimeLeft({ days, hours, minutes, seconds, phase: isBF ? "bf" : "cm", isExpired: false });
+      setTimeLeft({ days, hours, minutes, seconds, isExpired: false });
     };
 
     update();
@@ -62,14 +57,14 @@ export default function BlackFridayBanner({
         {/* Left: Event badge & core offer */}
         <div className="flex items-center gap-2 min-w-0">
           <span className="shrink-0 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ring-1 ring-white/30 shadow-xs">
-            {timeLeft.phase === "bf" ? "Black Friday" : "Cyber Monday"}
+            Cyber Monday
           </span>
           <span className="truncate text-xs sm:text-sm font-medium text-white">
-            Offer on Slippers:{" "}
+            Cyber Monday Offer on Slippers:{" "}
             <span className="font-extrabold text-amber-200">Flat Rs. 999</span>
           </span>
           <span className="hidden lg:inline text-xs text-rose-100">
-            · Black Friday & Cyber Monday Deals
+            · Valid up to Monday Midnight
           </span>
         </div>
 
@@ -77,7 +72,7 @@ export default function BlackFridayBanner({
         <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
           <div className="flex items-center gap-1.5 text-rose-100">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-200">
-              Ends in
+              Ends Monday in
             </span>
             <div className="flex items-center gap-1 font-mono text-xs font-bold tabular-nums text-white">
               {timeLeft.days > 0 && (

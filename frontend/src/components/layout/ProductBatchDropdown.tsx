@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
+import Image from "next/image";
 import {
   Search,
   Check,
@@ -11,10 +13,12 @@ import {
   Boxes,
 } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
+import { useDropdownPosition } from "@/hooks/useDropdownPosition";
 import { useProducts, Product, ProductBatch } from "@/hooks/useProducts";
 import { useLang } from "@/lib/i18n";
 import Tn from "@/components/layout/Tn";
 import { Skeleton } from "@/components/layout/Skeleton";
+import { coverImage, linePhoto } from "@/components/catalog/image";
 
 export type ProductBatchSelection = {
   productId: string | null;
@@ -24,6 +28,7 @@ export type ProductBatchSelection = {
   quantity?: number;
   salePrice?: number;
   costPrice?: number;
+  photoUrl?: string | null;
 };
 
 type ProductBatchDropdownProps = {
@@ -41,6 +46,11 @@ type ProductBatchDropdownProps = {
   debounceDelay?: number;
   autoFocus?: boolean;
   maxHeight?: string;
+  initialProductName?: string | null;
+  initialBatchNumber?: string | null;
+  initialPhotoUrl?: string | null;
+  showPhotos?: boolean;
+  showTriggerPhoto?: boolean;
 };
 
 export function ProductBatchDropdown({
@@ -56,6 +66,11 @@ export function ProductBatchDropdown({
   debounceDelay = 300,
   autoFocus = true,
   maxHeight = "max-h-80",
+  initialProductName = null,
+  initialBatchNumber = null,
+  initialPhotoUrl = null,
+  showPhotos = true,
+  showTriggerPhoto = true,
 }: ProductBatchDropdownProps) {
   const { t } = useLang();
   const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +82,9 @@ export function ProductBatchDropdown({
   const debouncedSearchTerm = useDebounced(searchTerm, debounceDelay);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const position = useDropdownPosition(isOpen, dropdownRef, menuRef, 320);
 
   const {
     data: productsData,
@@ -103,9 +120,11 @@ export function ProductBatchDropdown({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(target) &&
+        (!menuRef.current || !menuRef.current.contains(target))
       ) {
         setIsOpen(false);
         setSearchTerm("");
@@ -154,6 +173,7 @@ export function ProductBatchDropdown({
       productName: product.product_name,
       salePrice: product.sale_price,
       costPrice: product.cost_price,
+      photoUrl: linePhoto(product, null),
     });
   };
 
@@ -166,6 +186,7 @@ export function ProductBatchDropdown({
       quantity: batch.quantity,
       salePrice: batch.sale_price,
       costPrice: batch.cost_price,
+      photoUrl: linePhoto(product, batch),
     });
   };
 
@@ -184,6 +205,13 @@ export function ProductBatchDropdown({
     }).format(price);
   };
 
+  const selectedPhoto = useMemo(() => {
+    if (selectedProduct) {
+      return linePhoto(selectedProduct, selectedBatch);
+    }
+    return initialPhotoUrl || null;
+  }, [selectedProduct, selectedBatch, initialPhotoUrl]);
+
   const getDisplayText = () => {
     if (selectedProduct && selectedBatch) {
       return (
@@ -195,6 +223,19 @@ export function ProductBatchDropdown({
 
     if (selectedProduct) {
       return <Tn v={selectedProduct.product_name} />;
+    }
+
+    if (initialProductName) {
+      return (
+        <>
+          <Tn v={initialProductName} />
+          {initialBatchNumber ? (
+            <span className="font-normal text-slate-500">
+              {" "}· <Tn v={initialBatchNumber} />
+            </span>
+          ) : null}
+        </>
+      );
     }
 
     return null;
@@ -212,29 +253,42 @@ export function ProductBatchDropdown({
             : "cursor-not-allowed bg-slate-50"
         }`}
       >
-        <div className="flex min-h-[45px] items-center justify-between px-4 py-2">
-          <div className="flex-1 min-w-0">
-            {getDisplayText() ? (
-              <>
-                <div className="text-sm font-medium text-slate-700 truncate">
-                  {getDisplayText()}
-                </div>
-
-                {getDisplaySubtext() && (
-                  <div className="mt-0.5 text-xs text-slate-500 truncate">
-                    {getDisplaySubtext()}
+        <div className="flex min-h-[40px] sm:min-h-[45px] items-center justify-between gap-2 px-3 py-1.5">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {showPhotos && showTriggerPhoto && selectedPhoto ? (
+              <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                <Image
+                  src={coverImage(selectedPhoto, 80)}
+                  alt="Product"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : null}
+            <div className="flex-1 min-w-0">
+              {getDisplayText() ? (
+                <>
+                  <div className="text-xs sm:text-sm font-medium text-slate-700 truncate">
+                    {getDisplayText()}
                   </div>
-                )}
-              </>
-            ) : isLoading && selectedProductId ? (
-              <Skeleton className="h-4 w-32" />
-            ) : (
-              <span className="text-sm text-slate-400">{t(placeholder)}</span>
-            )}
+
+                  {getDisplaySubtext() && (
+                    <div className="mt-0.5 text-xs text-slate-500 truncate">
+                      {getDisplaySubtext()}
+                    </div>
+                  )}
+                </>
+              ) : isLoading && selectedProductId ? (
+                <Skeleton className="h-4 w-32" />
+              ) : (
+                <span className="text-xs sm:text-sm text-slate-400 truncate block">{t(placeholder)}</span>
+              )}
+            </div>
           </div>
 
           <svg
-            className={`h-5 w-5 flex-shrink-0 text-slate-400 transition-transform duration-200 ${
+            className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-slate-400 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
             fill="none"
@@ -251,25 +305,39 @@ export function ProductBatchDropdown({
         </div>
       </div>
 
-      {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-          <div className="border-b border-slate-100 p-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {isOpen && position && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              top: position.top,
+              bottom: position.bottom,
+              left: position.left,
+              width: position.width,
+            }}
+            className="z-[70] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+          >
+            <div className="border-b border-slate-100 p-2.5 sm:p-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={t(searchPlaceholder)}
-                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                onClick={(event) => event.stopPropagation()}
-              />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder={t(searchPlaceholder)}
+                  className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  onClick={(event) => event.stopPropagation()}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className={`${maxHeight} overflow-y-auto`}>
+            <div
+              style={{ maxHeight: position.maxListHeight }}
+              className="overflow-y-auto overflow-x-hidden"
+            >
             {isError ? (
               <div className="px-4 py-8 text-center">
                 <div className="text-sm font-medium text-rose-500">
@@ -325,13 +393,15 @@ export function ProductBatchDropdown({
                     Array.isArray(product.batches) &&
                     product.batches.length > 0;
 
+                  const productPhoto = linePhoto(product, null);
+
                   return (
                     <div
                       key={product.id}
                       className="border-b border-slate-50 last:border-b-0"
                     >
                       <div
-                        className={`flex w-full items-center transition hover:bg-slate-50 ${
+                        className={`flex w-full min-w-0 items-center transition hover:bg-slate-50 ${
                           isSelected ? "bg-blue-50" : ""
                         }`}
                       >
@@ -345,10 +415,28 @@ export function ProductBatchDropdown({
                               ? handleToggleProduct(product)
                               : handleSelectProductOnly(product)
                           }
-                          className="flex-1 cursor-pointer px-4 py-3 text-left"
+                          className="min-w-0 flex-1 cursor-pointer px-3 sm:px-4 py-2.5 text-left"
                         >
-                          <div className="flex items-center gap-3">
-                            <Package className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                            {showPhotos ? (
+                              productPhoto ? (
+                                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                  <Image
+                                    src={coverImage(productPhoto, 100)}
+                                    alt={product.product_name}
+                                    width={40}
+                                    height={40}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-slate-400">
+                                  <Package className="h-5 w-5" />
+                                </div>
+                              )
+                            ) : (
+                              <Package className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                            )}
 
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
@@ -361,14 +449,19 @@ export function ProductBatchDropdown({
                                 )}
                               </div>
 
-                              <div className="mt-0.5 text-xs text-slate-500">
+                              <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                {product.sku ? <span>SKU: {product.sku}</span> : null}
                                 {showBatchPrices &&
                                   product.sale_price !== undefined && (
-                                    <span className="ml-2">
+                                    <span>
                                       {t("Price")}: {formatPrice(product.sale_price)}
                                     </span>
                                   )}
-
+                                {hasBatches && (
+                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">
+                                    {product.batches!.length} {t("colours / sizes")}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -395,11 +488,13 @@ export function ProductBatchDropdown({
                       </div>
 
                       {isExpanded && hasBatches && (
-                        <div className="ml-4 border-l-4 border-l-blue-200 bg-slate-50">
+                        <div className="ml-4 sm:ml-6 min-w-0 border-l-2 border-l-blue-300 bg-slate-50/70">
                           {product.batches!.map((batch) => {
                             const isBatchSelected =
                               selectedBatchId === batch.id &&
                               selectedProductId === product.id;
+
+                            const batchPhoto = linePhoto(product, batch);
 
                             return (
                               <button
@@ -408,25 +503,52 @@ export function ProductBatchDropdown({
                                 onClick={() =>
                                   handleSelectBatch(product, batch)
                                 }
-                                className={`w-full cursor-pointer px-4 py-2.5 text-left transition hover:bg-white ${
+                                className={`w-full min-w-0 cursor-pointer px-3 sm:px-4 py-2 text-left transition hover:bg-white ${
                                   isBatchSelected ? "bg-white" : ""
                                 }`}
                               >
-                                <div className="flex items-center gap-2">
-                                  <Boxes className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                  {showPhotos ? (
+                                    batchPhoto ? (
+                                      <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+                                        <Image
+                                          src={coverImage(batchPhoto, 80)}
+                                          alt={batch.batch_number}
+                                          width={32}
+                                          height={32}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400">
+                                        <Boxes className="h-4 w-4" />
+                                      </div>
+                                    )
+                                  ) : (
+                                    <Boxes className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                                  )}
 
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-slate-700 truncate">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-sm font-medium text-slate-800 truncate">
                                         <Tn v={batch.batch_number} />
                                       </span>
-
-                                      {isBatchSelected && (
-                                        <Check className="h-4 w-4 flex-shrink-0 text-green-600" />
+                                      {showBatchPrices && batch.sale_price !== undefined && (
+                                        <span className="text-xs font-semibold text-slate-600 shrink-0">
+                                          {formatPrice(batch.sale_price)}
+                                        </span>
                                       )}
                                     </div>
-
+                                    {batch.quantity !== undefined && (
+                                      <p className="text-[11px] text-slate-400">
+                                        {t("Stock")}: {batch.quantity}
+                                      </p>
+                                    )}
                                   </div>
+
+                                  {isBatchSelected && (
+                                    <Check className="h-4 w-4 flex-shrink-0 text-green-600" />
+                                  )}
                                 </div>
                               </button>
                             );
@@ -438,9 +560,10 @@ export function ProductBatchDropdown({
                 })}
               </div>
             )}
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

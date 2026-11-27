@@ -15,6 +15,13 @@ import {
   Loader2,
   ImageIcon,
   Truck,
+  MapPin,
+  User,
+  Edit2,
+  ShoppingBag,
+  X,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { coverImage } from "@/components/catalog/image";
 import { ListSkeleton } from "@/components/layout/Skeleton";
@@ -63,7 +70,10 @@ interface BillingSectionProps {
   ) => void;
   customerId: string | null;
   setCustomerId: (id: string | null) => void;
+  selectedCustomer?: Customer | null;
+  onSelectCustomer?: (customer: Customer | null) => void;
   openCustomerModal: (customer?: Customer | null) => void;
+  onViewPurchases?: (customer: Customer) => void;
 
   paymentMethods: PaymentMethod[];
   paymentMethodsLoading?: boolean;
@@ -224,11 +234,10 @@ function ProductTaxModal({
                     setTaxValue((taxValue / item.unit_price) * 100);
                   }
                 }}
-                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${
-                  taxType === "percentage"
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${taxType === "percentage"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 {t("Percentage (%)")}
               </button>
@@ -241,11 +250,10 @@ function ProductTaxModal({
                     setTaxValue((item.unit_price * taxValue) / 100);
                   }
                 }}
-                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${
-                  taxType === "fixed"
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`flex-1 rounded-lg cursor-pointer px-3 py-2 text-sm font-medium transition-colors ${taxType === "fixed"
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 {t("Fixed (Rs.)")}
               </button>
@@ -340,14 +348,12 @@ function ProductTaxModal({
               <button
                 type="button"
                 onClick={() => setIsInclusive(!isInclusive)}
-                className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                  isInclusive ? "bg-blue-600" : "bg-gray-300"
-                }`}
+                className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${isInclusive ? "bg-blue-600" : "bg-gray-300"
+                  }`}
               >
                 <span
-                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                    isInclusive ? "translate-x-5" : "translate-x-0"
-                  }`}
+                  className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isInclusive ? "translate-x-5" : "translate-x-0"
+                    }`}
                 />
               </button>
             </div>
@@ -389,7 +395,10 @@ export default function BillingSection({
   updateItemDiscount,
   customerId,
   setCustomerId,
+  selectedCustomer: selectedCustomerProp,
+  onSelectCustomer,
   openCustomerModal,
+  onViewPurchases,
   paymentMethods,
   paymentMethodsLoading = false,
   payments,
@@ -456,6 +465,12 @@ export default function BillingSection({
   );
 
   const customers = customersData?.data ?? [];
+  const selectedCustomer =
+    (customerId && selectedCustomerProp?.id === customerId
+      ? selectedCustomerProp
+      : customers.find((c) => c.id === customerId) ||
+      selectedCustomerProp ||
+      null);
   const createQuickSale = useCreateQuickSale();
 
   const changeAmount = Math.max(paidAmount - cartSummary.grandTotal, 0);
@@ -540,8 +555,8 @@ export default function BillingSection({
   const finalPriceDiscount = (finalPrice: number) =>
     finalPrice > 0
       ? Math.round(
-          Math.min(Math.max(itemsTotal - finalPrice, 0), itemsTotal) * 100,
-        ) / 100
+        Math.min(Math.max(itemsTotal - finalPrice, 0), itemsTotal) * 100,
+      ) / 100
       : 0;
 
   // In "final price" mode the discount follows the cart if items change
@@ -654,11 +669,10 @@ export default function BillingSection({
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab("regular")}
-            className={`flex-1 py-3 px-4 cursor-pointer text-sm font-semibold transition-colors relative ${
-              activeTab === "regular"
-                ? "text-gray-900"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+            className={`flex-1 py-3 px-4 cursor-pointer text-sm font-semibold transition-colors relative ${activeTab === "regular"
+              ? "text-gray-900"
+              : "text-gray-500 hover:text-gray-700"
+              }`}
           >
             <div className="flex items-center justify-center gap-2">
               <ShoppingCart className="h-4 w-4" />
@@ -671,11 +685,10 @@ export default function BillingSection({
 
           <button
             onClick={() => setActiveTab("quick")}
-            className={`flex-1 py-3 cursor-pointer px-4 text-sm font-semibold transition-colors relative ${
-              activeTab === "quick"
-                ? "text-gray-900"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+            className={`flex-1 py-3 cursor-pointer px-4 text-sm font-semibold transition-colors relative ${activeTab === "quick"
+              ? "text-gray-900"
+              : "text-gray-500 hover:text-gray-700"
+              }`}
           >
             <div className="flex items-center justify-center gap-2">
               <Zap className="h-4 w-4" />
@@ -703,6 +716,140 @@ export default function BillingSection({
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Top Customer Status Bar & Profile Card */}
+            <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50/70">
+              {selectedCustomer ? (
+                <div className="rounded-xl border border-blue-200/90 bg-blue-50/50 p-3 space-y-2 text-xs shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <User className="h-4 w-4 text-blue-600 shrink-0" />
+                      <span className="font-bold text-gray-900 truncate text-sm">
+                        {selectedCustomer.name}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${selectedCustomer.status === "Active"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-gray-200 text-gray-700"
+                          }`}
+                      >
+                        {selectedCustomer.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {onViewPurchases && (
+                        <button
+                          type="button"
+                          onClick={() => onViewPurchases(selectedCustomer)}
+                          className="text-xs text-indigo-700 hover:text-indigo-800 hover:underline flex items-center gap-1 font-medium bg-indigo-50 px-2 py-1 rounded-md border border-indigo-200/60 transition"
+                          title={t("View purchase history")}
+                        >
+                          <ShoppingBag className="h-3 w-3" />
+                          <span>{t("History")}</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => openCustomerModal(selectedCustomer)}
+                        className="text-xs text-blue-700 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium bg-white px-2 py-1 rounded-md border border-gray-200 transition"
+                        title={t("Edit details")}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        <span>{t("Edit")}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerId(null);
+                          onSelectCustomer?.(null);
+                        }}
+                        className="text-gray-400 hover:text-gray-700 p-1 rounded-md hover:bg-gray-200/60 transition"
+                        title={t("Remove customer")}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Customer details: phone, address, credit, email */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-gray-600 pt-0.5">
+                    {selectedCustomer.phone && (
+                      <div className="flex items-center gap-1.5 font-mono">
+                        <Phone className="h-3 w-3 text-gray-400 shrink-0" />
+                        <span>{selectedCustomer.phone}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3 w-3 text-gray-400 shrink-0" />
+                      {selectedCustomer.address ? (
+                        <span className="truncate font-medium text-gray-800">
+                          {selectedCustomer.address}
+                        </span>
+                      ) : (
+                        <span className="italic text-amber-700">
+                          {t("No address saved")}{" "}
+                          <button
+                            type="button"
+                            onClick={() => openCustomerModal(selectedCustomer)}
+                            className="underline text-blue-600 font-normal ml-0.5"
+                          >
+                            {t("Add")}
+                          </button>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="h-3 w-3 text-gray-400 shrink-0" />
+                      <span>
+                        {t("Credit")}:{" "}
+                        <strong
+                          className={
+                            selectedCustomer.credit_amount > 0
+                              ? "text-red-600"
+                              : "text-gray-900"
+                          }
+                        >
+                          Rs. {Number(selectedCustomer.credit_amount || 0).toLocaleString()}
+                        </strong>
+                        {selectedCustomer.credit_limit > 0 && (
+                          <span className="text-gray-400 text-2xs">
+                            {" "}
+                            / Rs. {Number(selectedCustomer.credit_limit).toLocaleString()}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
+                    {selectedCustomer.email && (
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Mail className="h-3 w-3 text-gray-400 shrink-0" />
+                        <span className="truncate">{selectedCustomer.email}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between py-0.5">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <User className="h-3.5 w-3.5 text-gray-400" />
+                    <span>
+                      {t("Customer")}:{" "}
+                      <strong className="text-gray-700">{t("Walk-in customer")}</strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openCustomerModal(null)}
+                    className="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium cursor-pointer"
+                  >
+                    + {t("Add New Customer")}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
@@ -931,21 +1078,41 @@ export default function BillingSection({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t("Customer")}
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t("Customer")}
+                    </label>
+                    {selectedCustomer && (
+                      <button
+                        type="button"
+                        onClick={() => openCustomerModal(selectedCustomer)}
+                        className="text-xs text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 font-medium"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        {t("Edit Details")}
+                      </button>
+                    )}
+                  </div>
 
                   <DropdownWithSearch
                     options={customers.map((customer) => ({
                       id: customer.id,
                       label: customer.name,
-                      sublabel: customer.phone || customer.email,
+                      sublabel:
+                        [customer.phone, customer.address]
+                          .filter(Boolean)
+                          .join(" • ") || customer.email,
                       metadata: customer,
                     }))}
                     selectedId={customerId}
-                    onSelect={(option) => setCustomerId(option?.id || null)}
+                    onSelect={(option) => {
+                      setCustomerId(option?.id || null);
+                      onSelectCustomer?.(
+                        (option?.metadata as Customer) || null,
+                      );
+                    }}
                     placeholder={t("Select a customer")}
-                    searchPlaceholder={t("Search customers by name or phone...")}
+                    searchPlaceholder={t("Search customers by name, phone, address...")}
                     onSearch={(searchTerm) => setSearchCustomer(searchTerm)}
                     isLoading={customersLoading}
                     emptyMessage={t("No customers found")}
@@ -953,25 +1120,93 @@ export default function BillingSection({
                     addNewLabel={t("Add new customer")}
                     onAddNew={() => openCustomerModal(null)}
                   />
+
+                  {selectedCustomer && (
+                    <div className="mt-2.5 rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-semibold text-gray-900">
+                          <User className="h-3.5 w-3.5 text-gray-500" />
+                          <span>{selectedCustomer.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {onViewPurchases && (
+                            <button
+                              type="button"
+                              onClick={() => onViewPurchases(selectedCustomer)}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-1 font-medium"
+                              title={t("View what this customer bought")}
+                            >
+                              <ShoppingBag className="h-3 w-3" />
+                              {t("History")}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openCustomerModal(selectedCustomer)}
+                            className="text-xs text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 font-medium"
+                            title={t("Edit or delete customer")}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                            {t("Edit Details")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomerId(null);
+                              onSelectCustomer?.(null);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 p-0.5 rounded transition"
+                            title={t("Remove customer from bill")}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {selectedCustomer.phone && (
+                        <p className="text-gray-600 pl-5 font-mono">
+                          {selectedCustomer.phone}
+                        </p>
+                      )}
+
+                      <div className="flex items-start gap-1.5 text-gray-600">
+                        <MapPin className="h-3.5 w-3.5 text-gray-400 shrink-0 mt-0.5" />
+                        {selectedCustomer.address ? (
+                          <span className="text-gray-800 font-medium">
+                            {selectedCustomer.address}
+                          </span>
+                        ) : (
+                          <span className="text-amber-700 italic flex items-center gap-1">
+                            {t("No address saved.")}
+                            <button
+                              type="button"
+                              onClick={() => openCustomerModal(selectedCustomer)}
+                              className="text-blue-600 underline font-normal ml-1"
+                            >
+                              {t("Add Address")}
+                            </button>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Cash on Delivery: send the order now, collect the money later */}
                 {setIsCod && (
                   <div
-                    className={`rounded-xl border p-3 transition-colors ${
-                      isCod
-                        ? "border-amber-300 bg-amber-50"
-                        : "border-gray-200 bg-white"
-                    }`}
+                    className={`rounded-xl border p-3 transition-colors ${isCod
+                      ? "border-amber-300 bg-amber-50"
+                      : "border-gray-200 bg-white"
+                      }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                            isCod
-                              ? "bg-amber-500 text-white"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isCod
+                            ? "bg-amber-500 text-white"
+                            : "bg-gray-100 text-gray-600"
+                            }`}
                         >
                           <Truck className="h-4 w-4" />
                         </div>
@@ -998,182 +1233,195 @@ export default function BillingSection({
                             setPaymentProofFile?.(null);
                           }
                         }}
-                        className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${
-                          isCod ? "bg-amber-500" : "bg-gray-300"
-                        }`}
+                        className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${isCod ? "bg-amber-500" : "bg-gray-300"
+                          }`}
                       >
                         <span
-                          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                            isCod ? "translate-x-5" : "translate-x-0"
-                          }`}
+                          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isCod ? "translate-x-5" : "translate-x-0"
+                            }`}
                         />
                       </button>
                     </div>
                     {isCod && (
-                      <p className="mt-2.5 rounded-lg bg-white/70 px-3 py-2 text-xs text-amber-800">
-                        {t("The order is saved as Pending and stock goes out now. When the money arrives, mark it Completed in Sales.")}
-                        {!customerId && (
-                          <span className="mt-1 block font-semibold">
+                      <div className="mt-2.5 space-y-1 rounded-lg bg-white/70 px-3 py-2 text-xs text-amber-800">
+                        <p>
+                          {t("The order is saved as Pending and stock goes out now. When the money arrives, mark it Completed in Sales.")}
+                        </p>
+                        {!customerId ? (
+                          <span className="mt-1 block font-semibold text-amber-900">
                             {t("Choose the customer this order goes to.")}
                           </span>
+                        ) : selectedCustomer?.address ? (
+                          <div className="mt-1.5 flex items-center gap-1 text-emerald-800 font-medium bg-emerald-50 rounded-md px-2 py-1 border border-emerald-200">
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                            <span>{t("Delivery to:")} {selectedCustomer.address}</span>
+                          </div>
+                        ) : (
+                          <div className="mt-1.5 flex items-center justify-between text-amber-900 font-medium bg-amber-100/70 rounded-md px-2 py-1 border border-amber-300">
+                            <span>{t("⚠️ No delivery address saved for this customer!")}</span>
+                            <button
+                              type="button"
+                              onClick={() => openCustomerModal(selectedCustomer)}
+                              className="underline text-blue-700 font-semibold"
+                            >
+                              {t("Add Address")}
+                            </button>
+                          </div>
                         )}
-                      </p>
+                      </div>
                     )}
                   </div>
                 )}
 
                 {!isCod && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-700">
-                      {t("Payment Method")}
-                    </label>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="block text-sm font-medium text-gray-700">
+                        {t("Payment Method")}
+                      </label>
 
-                    <span className="text-xs text-gray-500">
-                      {t("Paid")}: Rs. {paidAmount}
-                    </span>
-                  </div>
-
-                  {paymentMethodsLoading && paymentMethods.length === 0 ? (
- <ListSkeleton rows={3} />
- ) : paymentMethods.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
-                      {t("No payment methods available. Please add payment methods first.")}
+                      <span className="text-xs text-gray-500">
+                        {t("Paid")}: Rs. {paidAmount}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-                      {paymentMethods.map((method) => {
-                        const amount = getPaymentAmount(method.id);
-                        const isSelected = amount > 0;
 
-                        const selectMethod = () => {
-                          if (isSelected) {
-                            clearPaymentAmount(method.id);
-                            return;
-                          }
-                          const amountToPay =
-                            cartSummary.grandTotal > 0
-                              ? cartSummary.grandTotal
-                              : 0;
-                          setPayments(
-                            amountToPay > 0
-                              ? [
+                    {paymentMethodsLoading && paymentMethods.length === 0 ? (
+                      <ListSkeleton rows={3} />
+                    ) : paymentMethods.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
+                        {t("No payment methods available. Please add payment methods first.")}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                        {paymentMethods.map((method) => {
+                          const amount = getPaymentAmount(method.id);
+                          const isSelected = amount > 0;
+
+                          const selectMethod = () => {
+                            if (isSelected) {
+                              clearPaymentAmount(method.id);
+                              return;
+                            }
+                            const amountToPay =
+                              cartSummary.grandTotal > 0
+                                ? cartSummary.grandTotal
+                                : 0;
+                            setPayments(
+                              amountToPay > 0
+                                ? [
                                   {
                                     payment_method_id: method.id,
                                     amount: amountToPay,
                                   },
                                 ]
-                              : [],
-                          );
-                        };
+                                : [],
+                            );
+                          };
 
-                        return (
-                          <div
-                            key={method.id}
-                            className={`rounded-xl border bg-white p-3 transition-all ${
-                              isSelected
+                          return (
+                            <div
+                              key={method.id}
+                              className={`rounded-xl border bg-white p-3 transition-all ${isSelected
                                 ? "border-gray-900 shadow-sm"
                                 : "border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              onClick={selectMethod}
-                              className="flex w-full cursor-pointer items-center gap-2 text-left"
+                                }`}
                             >
-                              <div
-                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                                  isSelected
+                              <button
+                                type="button"
+                                onClick={selectMethod}
+                                className="flex w-full cursor-pointer items-center gap-2 text-left"
+                              >
+                                <div
+                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isSelected
                                     ? "bg-gray-900 text-white"
                                     : "bg-gray-100 text-gray-600"
-                                }`}
-                              >
-                                {getPaymentMethodIcon(method.type)}
-                              </div>
+                                    }`}
+                                >
+                                  {getPaymentMethodIcon(method.type)}
+                                </div>
 
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-semibold text-gray-900">
-                                  <Tn v={method.payment_method} />
-                                </p>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-semibold text-gray-900">
+                                    <Tn v={method.payment_method} />
+                                  </p>
 
-                                <span
-                                  className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                    method.type === "Cash"
+                                  <span
+                                    className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${method.type === "Cash"
                                       ? "bg-green-100 text-green-700"
                                       : "bg-blue-100 text-blue-700"
-                                  }`}
-                                >
-                                  <Tn v={method.type} />
-                                </span>
-                              </div>
-
-                              {isSelected && (
-                                <span className="shrink-0 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                  {t("Selected")}
-                                </span>
-                              )}
-                            </button>
-
-                            {method.qr_code && isSelected && (
-                              <button
-                                className="mt-3 w-full text-center cursor-pointer hover:shadow-lg transition rounded-lg bg-gray-50 p-2"
-                                onClick={() => {
-                                  setShowQr(method.qr_code);
-                                  setShowPaymentName(method.payment_method);
-                                }}
-                              >
-                                <img
-                                  src={method.qr_code}
-                                  alt={method.payment_method}
-                                  className="mx-auto h-24 w-full object-contain"
-                                />
-                              </button>
-                            )}
-
-                            {method.type !== "Cash" &&
-                              isSelected &&
-                              setPaymentProofFile && (
-                                <div className="mt-3">
-                                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                                    {t("Payment proof photo (optional)")}
-                                  </label>
-                                  {paymentProofFile ? (
-                                    <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700">
-                                      <span className="truncate">
-                                        {paymentProofFile.name}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setPaymentProofFile(null)
-                                        }
-                                        className="ml-2 shrink-0 text-red-500 hover:text-red-600"
-                                      >
-                                        {t("Remove")}
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 hover:border-gray-400">
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (file) setPaymentProofFile(file);
-                                        }}
-                                      />
-                                      {t("Attach screenshot/photo of payment")}
-                                    </label>
-                                  )}
+                                      }`}
+                                  >
+                                    <Tn v={method.type} />
+                                  </span>
                                 </div>
+
+                                {isSelected && (
+                                  <span className="shrink-0 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                    {t("Selected")}
+                                  </span>
+                                )}
+                              </button>
+
+                              {method.qr_code && isSelected && (
+                                <button
+                                  className="mt-3 w-full text-center cursor-pointer hover:shadow-lg transition rounded-lg bg-gray-50 p-2"
+                                  onClick={() => {
+                                    setShowQr(method.qr_code);
+                                    setShowPaymentName(method.payment_method);
+                                  }}
+                                >
+                                  <img
+                                    src={method.qr_code}
+                                    alt={method.payment_method}
+                                    className="mx-auto h-24 w-full object-contain"
+                                  />
+                                </button>
                               )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+
+                              {method.type !== "Cash" &&
+                                isSelected &&
+                                setPaymentProofFile && (
+                                  <div className="mt-3">
+                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                      {t("Payment proof photo (optional)")}
+                                    </label>
+                                    {paymentProofFile ? (
+                                      <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700">
+                                        <span className="truncate">
+                                          {paymentProofFile.name}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setPaymentProofFile(null)
+                                          }
+                                          className="ml-2 shrink-0 text-red-500 hover:text-red-600"
+                                        >
+                                          {t("Remove")}
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 hover:border-gray-400">
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) setPaymentProofFile(file);
+                                          }}
+                                        />
+                                        {t("Attach screenshot/photo of payment")}
+                                      </label>
+                                    )}
+                                  </div>
+                                )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Discount Section */}
@@ -1192,14 +1440,12 @@ export default function BillingSection({
                     <button
                       type="button"
                       onClick={handleEnableDiscount}
-                      className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                        isDiscountEnabled ? "bg-gray-900" : "bg-gray-300"
-                      }`}
+                      className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${isDiscountEnabled ? "bg-gray-900" : "bg-gray-300"
+                        }`}
                     >
                       <span
-                        className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                          isDiscountEnabled ? "translate-x-5" : "translate-x-0"
-                        }`}
+                        className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${isDiscountEnabled ? "translate-x-5" : "translate-x-0"
+                          }`}
                       />
                     </button>
                   </div>
@@ -1218,11 +1464,10 @@ export default function BillingSection({
                             key={type}
                             type="button"
                             onClick={() => handleDiscountTypeChange(type)}
-                            className={`flex-1 rounded-lg cursor-pointer px-2 py-2 text-xs font-medium transition-colors sm:text-sm ${
-                              localDiscountType === type
-                                ? "bg-gray-900 text-white"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
+                            className={`flex-1 rounded-lg cursor-pointer px-2 py-2 text-xs font-medium transition-colors sm:text-sm ${localDiscountType === type
+                              ? "bg-gray-900 text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
                           >
                             {t(label)}
                           </button>
@@ -1373,11 +1618,10 @@ export default function BillingSection({
                   type="button"
                   onClick={handleCheckout}
                   disabled={isCheckingOut}
-                  className={`w-full cursor-pointer text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                    isCod
-                      ? "bg-amber-600 hover:bg-amber-700"
-                      : "bg-gray-900 hover:bg-gray-800"
-                  }`}
+                  className={`w-full cursor-pointer text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isCod
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-gray-900 hover:bg-gray-800"
+                    }`}
                 >
                   {isCheckingOut ? (
                     <>
@@ -1411,8 +1655,8 @@ export default function BillingSection({
                 {t("Payment Methods")}
               </label>
               {paymentMethodsLoading && paymentMethods.length === 0 ? (
- <ListSkeleton rows={3} />
- ) : paymentMethods.length === 0 ? (
+                <ListSkeleton rows={3} />
+              ) : paymentMethods.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
                   {t("No payment methods available. Please add payment methods first.")}
                 </div>
@@ -1425,20 +1669,18 @@ export default function BillingSection({
                     return (
                       <div
                         key={method.id}
-                        className={`rounded-xl border bg-white p-3 transition-all ${
-                          isSelected
-                            ? "border-gray-900 shadow-sm"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                        className={`rounded-xl border bg-white p-3 transition-all ${isSelected
+                          ? "border-gray-900 shadow-sm"
+                          : "border-gray-200 hover:border-gray-300"
+                          }`}
                       >
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
                             <div
-                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                                isSelected
-                                  ? "bg-gray-900 text-white"
-                                  : "bg-gray-100 text-gray-600"
-                              }`}
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isSelected
+                                ? "bg-gray-900 text-white"
+                                : "bg-gray-100 text-gray-600"
+                                }`}
                             >
                               {getPaymentMethodIcon(method.type)}
                             </div>

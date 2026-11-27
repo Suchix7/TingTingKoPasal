@@ -39,6 +39,7 @@ const saleSchema = new mongoose.Schema(
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", default: null },
     customerName: { type: String, default: "" },
     customerPhone: { type: String, default: "" },
+    customerAddress: { type: String, default: "" },
 
     subtotal: { type: Number, required: true },
     discountAmount: { type: Number, default: 0 },

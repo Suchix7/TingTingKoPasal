@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Search, Check, Loader2, Plus } from "lucide-react";
 import { useDebounced } from "@/hooks/useDebounced";
+import { useDropdownPosition } from "@/hooks/useDropdownPosition";
 import { useLang } from "@/lib/i18n";
 import { Skeleton } from "@/components/layout/Skeleton";
 
@@ -61,8 +63,10 @@ export function DropdownWithSearch<T extends DropdownOption>({
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounced(searchTerm, debounceDelay);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastTriggeredSearchRef = useRef<string>("");
+  const position = useDropdownPosition(isOpen, dropdownRef, menuRef, 280);
 
   const selectedOption = options.find((opt) => opt.id === selectedId);
 
@@ -76,9 +80,11 @@ export function DropdownWithSearch<T extends DropdownOption>({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(target) &&
+        (!menuRef.current || !menuRef.current.contains(target))
       ) {
         setIsOpen(false);
         setSearchTerm("");
@@ -97,10 +103,6 @@ export function DropdownWithSearch<T extends DropdownOption>({
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
-      const element = document.getElementById("dropdown");
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
     }
   }, [isOpen, autoFocus]);
 
@@ -134,14 +136,14 @@ export function DropdownWithSearch<T extends DropdownOption>({
       : option.sublabel;
 
     return (
-      <div className="flex items-center justify-between w-full">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-900">{label}</span>
-            {isSelected && <Check className="h-4 w-4 text-green-600" />}
+      <div className="flex items-center justify-between w-full min-w-0">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium text-slate-900 truncate">{label}</span>
+            {isSelected && <Check className="h-4 w-4 shrink-0 text-green-600" />}
           </div>
           {sublabel && (
-            <div className="text-xs text-slate-500 mt-1">{sublabel}</div>
+            <div className="text-xs text-slate-500 mt-1 truncate">{sublabel}</div>
           )}
         </div>
       </div>
@@ -159,16 +161,16 @@ export function DropdownWithSearch<T extends DropdownOption>({
             : "cursor-not-allowed bg-slate-50"
         }`}
       >
-        <div className="flex min-h-[45px] items-center justify-between px-4 py-2">
+        <div className="flex min-h-[42px] sm:min-h-[45px] items-center justify-between gap-2 px-3 sm:px-4 py-2">
           {selectedOption ? (
-            <div className="flex-1">
-              <div className=" text-slate-700 text-sm">
+            <div className="flex-1 min-w-0">
+              <div className="text-slate-700 text-xs sm:text-sm truncate">
                 {getOptionLabel
                   ? getOptionLabel(selectedOption)
                   : selectedOption.label}
               </div>
               {getOptionSublabel && getOptionSublabel(selectedOption) && (
-                <div className="text-xs text-slate-500 mt-0.5">
+                <div className="text-xs text-slate-500 mt-0.5 truncate">
                   {getOptionSublabel(selectedOption)}
                 </div>
               )}
@@ -176,10 +178,10 @@ export function DropdownWithSearch<T extends DropdownOption>({
           ) : isLoading && selectedId ? (
             <Skeleton className="h-4 w-32" />
           ) : (
-            <span className="text-sm text-slate-400">{t(placeholder)}</span>
+            <span className="text-xs sm:text-sm text-slate-400 truncate">{t(placeholder)}</span>
           )}
           <svg
-            className={`h-5 w-5 text-slate-400 transition-transform duration-200 ${
+            className={`h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-slate-400 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
             fill="none"
@@ -197,35 +199,45 @@ export function DropdownWithSearch<T extends DropdownOption>({
       </div>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div
-          className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
-          id="dropdown"
-        >
-          {/* Search Input */}
-          <div className="border-b border-slate-100 p-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={t(searchPlaceholder)}
-                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-
-          {/* Options List */}
+      {isOpen && position && typeof document !== "undefined" &&
+        createPortal(
           <div
-            className={`max-h-64 overflow-y-auto transition-opacity ${
-              isLoading && options.length > 0
-                ? "pointer-events-none opacity-60"
-                : ""
-            }`}
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              top: position.top,
+              bottom: position.bottom,
+              left: position.left,
+              width: position.width,
+            }}
+            className="z-[70] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+            id="dropdown"
           >
+            {/* Search Input */}
+            <div className="border-b border-slate-100 p-2.5 sm:p-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={t(searchPlaceholder)}
+                  className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+
+            {/* Options List */}
+            <div
+              style={{ maxHeight: position.maxListHeight }}
+              className={`overflow-y-auto overflow-x-hidden transition-opacity ${
+                isLoading && options.length > 0
+                  ? "pointer-events-none opacity-60"
+                  : ""
+              }`}
+            >
             {isLoading && options.length === 0 ? (
               <div role="status" aria-label={t("Loading...")} className="space-y-1 px-4 py-3">
                 <div className="flex items-center gap-2 pb-1 text-xs text-slate-400">
@@ -289,9 +301,10 @@ export function DropdownWithSearch<T extends DropdownOption>({
                 )}
               </>
             )}
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

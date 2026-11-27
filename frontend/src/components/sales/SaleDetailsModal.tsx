@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, CreditCard, ImageIcon, Phone, Truck, User, X } from "lucide-react";
+import { Calendar, CreditCard, FileText, ImageIcon, Mail, MapPin, Phone, Truck, User, X } from "lucide-react";
 import { coverImage } from "@/components/catalog/image";
 import { SaleItem, useSaleById, useSaleItems } from "@/hooks/useSales";
 import {
@@ -112,22 +112,71 @@ export default function SaleDetailsModal({
             <div className="space-y-6">
               {sale.is_cod && (
                 <div
-                  className={`flex items-start gap-3 rounded-2xl border p-4 text-sm ${
+                  className={`rounded-2xl border p-4 text-sm ${
                     sale.sale_status === "Pending"
-                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                      ? "border-amber-300 bg-amber-50 text-amber-900"
                       : "border-gray-200 bg-gray-50 text-gray-700"
                   }`}
                 >
-                  <Truck className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>
-                    <span className="font-semibold">{t("Cash on Delivery")}</span>
-                    {" · "}
-                    {sale.sale_status === "Pending"
-                      ? `${t("Pending - waiting for payment of")} ${money(sale.grand_total)}`
-                      : sale.sale_status === "Completed"
-                        ? `${t("Paid")}${sale.completed_at ? ` ${dateTime(sale.completed_at)}` : ""}`
-                        : t(sale.sale_status)}
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-amber-500 p-2 text-white shadow-sm shrink-0">
+                      <Truck size={18} />
+                    </div>
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900">{t("Cash on Delivery")}</span>
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                              sale.sale_status === "Pending"
+                                ? "border-amber-300 bg-amber-100 text-amber-800"
+                                : "border-gray-200 bg-white text-gray-700"
+                            }`}
+                          >
+                            {t(sale.sale_status === "Pending" ? "Pending Payment" : sale.sale_status)}
+                          </span>
+                        </div>
+                        <p className="text-base font-bold text-gray-900">
+                          {money(sale.grand_total)}
+                        </p>
+                      </div>
+
+                      {sale.sale_status === "Pending" ? (
+                        <p className="text-xs font-medium text-amber-800">
+                          {t("Collect from customer on delivery")}: <span className="font-bold">{money(sale.grand_total)}</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">
+                          {t("Completed")}{sale.completed_at ? ` · ${dateTime(sale.completed_at)}` : ""}
+                        </p>
+                      )}
+
+                      {(sale.customer_name || sale.customer_phone || sale.customer_address) && (
+                        <div className="mt-2.5 rounded-xl border border-amber-200/80 bg-white/95 p-3 text-xs space-y-1.5 shadow-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
+                              <User size={13} className="text-amber-700" />
+                              {sale.customer_name || t("Walk-in customer")}
+                            </span>
+                            {sale.customer_phone && (
+                              <a
+                                href={`tel:${sale.customer_phone}`}
+                                className="font-semibold text-blue-600 hover:underline"
+                              >
+                                {sale.customer_phone}
+                              </a>
+                            )}
+                          </div>
+                          {sale.customer_address && (
+                            <div className="flex items-start gap-1.5 text-gray-700 pt-1.5 border-t border-amber-100">
+                              <MapPin size={13} className="shrink-0 mt-0.5 text-amber-600" />
+                              <span className="font-medium whitespace-pre-wrap break-words">{sale.customer_address}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
@@ -178,17 +227,57 @@ export default function SaleDetailsModal({
                   <h3 className="mb-3 font-bold text-gray-900">
                     {t("Customer")}
                   </h3>
-                  <div className="space-y-2 text-sm text-gray-700">
+                  <div className="space-y-2.5 text-sm text-gray-700">
                     <p className="flex items-center gap-2">
-                      <User size={16} className="text-gray-400" />
-                      {sale.customer_name || t("Walk-in customer")}
+                      <User size={16} className="shrink-0 text-gray-400" />
+                      <span className="font-semibold text-gray-900">{sale.customer_name || t("Walk-in customer")}</span>
                     </p>
-                    <p className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-400" />
-                      {sale.customer_phone || t("No phone")}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Calendar size={16} className="text-gray-400" />
+                    {sale.customer_phone ? (
+                      <p className="flex items-center gap-2">
+                        <Phone size={16} className="shrink-0 text-gray-400" />
+                        <a
+                          href={`tel:${sale.customer_phone}`}
+                          className="font-medium text-blue-600 hover:underline"
+                          title={t("Call customer")}
+                        >
+                          {sale.customer_phone}
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="flex items-center gap-2 text-gray-400">
+                        <Phone size={16} className="shrink-0 text-gray-300" />
+                        <span>{t("No phone")}</span>
+                      </p>
+                    )}
+                    {sale.customer_address && (
+                      <div className="flex items-start gap-2">
+                        <MapPin size={16} className="shrink-0 mt-0.5 text-amber-600" />
+                        <span className="font-medium text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
+                          {sale.customer_address}
+                        </span>
+                      </div>
+                    )}
+                    {sale.customer_email && (
+                      <p className="flex items-center gap-2">
+                        <Mail size={16} className="shrink-0 text-gray-400" />
+                        <a
+                          href={`mailto:${sale.customer_email}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {sale.customer_email}
+                        </a>
+                      </p>
+                    )}
+                    {sale.customer_credit !== undefined &&
+                      sale.customer_credit !== null &&
+                      Number(sale.customer_credit) > 0 && (
+                        <p className="flex items-center gap-2 rounded-lg border border-amber-200/60 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 w-fit">
+                          <span>{t("Due Credit Balance")}:</span>
+                          <span>{money(sale.customer_credit)}</span>
+                        </p>
+                      )}
+                    <p className="flex items-center gap-2 border-t border-gray-100 pt-1 text-xs text-gray-500">
+                      <Calendar size={14} className="shrink-0 text-gray-400" />
                       {dateTime(sale.created_at)}
                     </p>
                   </div>
@@ -420,9 +509,14 @@ export default function SaleDetailsModal({
               ) : null}
 
               {sale.notes ? (
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  <h3 className="mb-2 font-bold text-gray-900">{t("Notes")}</h3>
-                  <p className="text-sm text-gray-600">{sale.notes}</p>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-xs">
+                  <div className="mb-2 flex items-center gap-2 text-amber-900">
+                    <FileText size={18} className="text-amber-700" />
+                    <h3 className="font-bold text-sm text-gray-900">{t("Notes / Instructions")}</h3>
+                  </div>
+                  <div className="rounded-xl border border-amber-200/70 bg-white p-3.5 text-sm text-gray-800 shadow-sm leading-relaxed whitespace-pre-wrap break-words">
+                    {sale.notes}
+                  </div>
                 </div>
               ) : null}
             </div>

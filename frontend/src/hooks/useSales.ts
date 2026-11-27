@@ -42,6 +42,9 @@ export type Sale = {
   customer_id: string | null;
   customer_name?: string | null;
   customer_phone?: string | null;
+  customer_address?: string | null;
+  customer_email?: string | null;
+  customer_credit?: number | null;
   subtotal: number;
   discount_amount: number;
   tax_amount: number;
@@ -334,6 +337,8 @@ export type PendingCodSale = {
   customer_id: string | null;
   customer_name: string | null;
   customer_phone: string | null;
+  customer_address?: string | null;
+  notes?: string | null;
   grand_total: number;
   created_at: string;
 };

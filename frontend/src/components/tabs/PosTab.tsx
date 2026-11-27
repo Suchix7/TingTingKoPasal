@@ -20,6 +20,7 @@ import {
   Customer,
 } from "@/hooks/useCustomers";
 import CustomerModal from "@/components/customers/modal";
+import CustomerPurchasesModal from "@/components/customers/CustomerPurchasesModal";
 import BillingSection from "@/components/pos/billing";
 import type { PaymentMethod } from "@/hooks/usePaymentMethods";
 import type { Product } from "@/hooks/useProducts";
@@ -82,6 +83,10 @@ export default function PointOfSalesPage() {
 
   const [showQrModal, setShowQrModal] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [selectedCustomerObj, setSelectedCustomerObj] =
+    useState<Customer | null>(null);
+  const [viewPurchasesCustomer, setViewPurchasesCustomer] =
+    useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
@@ -197,9 +202,12 @@ export default function PointOfSalesPage() {
 
   const customers = customersData?.data ?? [];
 
-  const selectedBillCustomer = customers.find(
-    (customer) => customer.id === customerId,
-  );
+  const selectedBillCustomer =
+    (customerId && selectedCustomerObj?.id === customerId
+      ? selectedCustomerObj
+      : customers.find((customer) => customer.id === customerId)) ||
+    selectedCustomerObj ||
+    null;
 
   const products = productsData?.data ?? [];
   const paymentMethods = paymentMethodsData?.data ?? [];
@@ -456,6 +464,7 @@ export default function PointOfSalesPage() {
     setPaymentProofFile(null);
     setShowQrModal(false);
     setCustomerId(null);
+    setSelectedCustomerObj(null);
     setDiscountAmount(0);
     setDiscountValue(0);
     setIsDiscountEnabled(false);
@@ -482,6 +491,7 @@ export default function PointOfSalesPage() {
         customer_id: customerId,
         customer_name: selectedBillCustomer?.name ?? null,
         customer_phone: selectedBillCustomer?.phone ?? null,
+        customer_address: selectedBillCustomer?.address ?? null,
         subtotal,
         tax_amount: totalTaxAmount,
         discount_amount: discountAmount,
@@ -584,6 +594,7 @@ export default function PointOfSalesPage() {
         customer_id: customerId,
         customer_name: selectedBillCustomer?.name ?? null,
         customer_phone: selectedBillCustomer?.phone ?? null,
+        customer_address: selectedBillCustomer?.address ?? null,
         subtotal: subtotal,
         tax_amount: totalTaxAmount,
         discount_amount: discountAmount,
@@ -822,10 +833,13 @@ export default function PointOfSalesPage() {
           updateItemDiscount={updateItemDiscount}
           customerId={customerId}
           setCustomerId={setCustomerId}
+          selectedCustomer={selectedBillCustomer}
+          onSelectCustomer={(c) => setSelectedCustomerObj(c)}
           openCustomerModal={(customer) => {
             setSelectedCustomer(customer || null);
             setIsModalOpen(true);
           }}
+          onViewPurchases={(c) => setViewPurchasesCustomer(c)}
           paymentMethods={paymentMethods}
           paymentMethodsLoading={paymentMethodsLoading}
           payments={payments}
@@ -923,8 +937,30 @@ export default function PointOfSalesPage() {
           selectedCustomer={selectedCustomer}
           setIsModalOpen={setIsModalOpen}
           onSaved={(customer, isNew) => {
-            // A customer added from the bill goes straight onto the bill
-            if (isNew) setCustomerId(customer.id);
+            // A customer added or updated from the bill goes straight onto the bill
+            if (isNew) {
+              setCustomerId(customer.id);
+              setSelectedCustomerObj(customer);
+            } else if (customerId === customer.id) {
+              setSelectedCustomerObj(customer);
+            }
+          }}
+          onDeleted={(deletedId) => {
+            if (customerId === deletedId) {
+              setCustomerId(null);
+              setSelectedCustomerObj(null);
+            }
+          }}
+        />
+      )}
+
+      {viewPurchasesCustomer && (
+        <CustomerPurchasesModal
+          customer={viewPurchasesCustomer}
+          onClose={() => setViewPurchasesCustomer(null)}
+          onEditCustomer={(cust) => {
+            setSelectedCustomer(cust);
+            setIsModalOpen(true);
           }}
         />
       )}

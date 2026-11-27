@@ -35,9 +35,8 @@ export const createSale = async (req, res) => {
           .map((i) => {
             const marked = Number(i.unit_price);
             const sold = marked - Number(i.discount_amount) / Number(i.quantity);
-            return `${i.product_name}: marked ${rs(marked)}, sold ${rs(sold)}${
-              i.discount_reason ? ` (${i.discount_reason})` : ""
-            }`;
+            return `${i.product_name}: marked ${rs(marked)}, sold ${rs(sold)}${i.discount_reason ? ` (${i.discount_reason})` : ""
+              }`;
           }),
         bill_discount: Number(sale.discount_amount) > 0 ? sale.discount_amount : null,
       },
@@ -83,7 +82,8 @@ export const getSales = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(offset)
         .limit(limitNum)
-        .populate(PAYMENT_METHOD_POPULATE),
+        .populate(PAYMENT_METHOD_POPULATE)
+        .populate("customerId", "name phone address email creditAmount creditLimit notes"),
       Sale.countDocuments(match),
       Sale.aggregate([
         { $match: { ...match, saleStatus: "Completed" } },
@@ -138,7 +138,9 @@ export const getSales = async (req, res) => {
 export const getSaleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const sale = await Sale.findById(id).populate(PAYMENT_METHOD_POPULATE);
+    const sale = await Sale.findById(id)
+      .populate(PAYMENT_METHOD_POPULATE)
+      .populate("customerId", "name phone address email creditAmount creditLimit notes");
     if (!sale) {
       return res.status(404).json({ success: false, message: "Sale not found" });
     }
@@ -192,9 +194,8 @@ export const deleteSale = async (req, res) => {
       action: "SALE_DELETED",
       entityType: "Sale",
       entityId: id,
-      summary: `Sale ${before?.invoiceNo || id} deleted${
-        before ? ` (${rs(before.grandTotal)}, was ${before.saleStatus})` : ""
-      }`,
+      summary: `Sale ${before?.invoiceNo || id} deleted${before ? ` (${rs(before.grandTotal)}, was ${before.saleStatus})` : ""
+        }`,
       details: before ? { invoice_no: before.invoiceNo, total: before.grandTotal } : null,
     });
     return res.status(200).json({ success: true, message: "Sale deleted successfully" });
@@ -240,9 +241,8 @@ ${note}` : note,
       action: wasPendingCod ? "SALE_COD_CANCELLED" : "SALE_REVOKED",
       entityType: "Sale",
       entityId: id,
-      summary: `${wasPendingCod ? "COD order" : "Sale"} ${existing.invoiceNo} ${
-        wasPendingCod ? "cancelled" : "revoked"
-      } (${rs(existing.grandTotal)})${reason ? ` - ${reason}` : ""}`,
+      summary: `${wasPendingCod ? "COD order" : "Sale"} ${existing.invoiceNo} ${wasPendingCod ? "cancelled" : "revoked"
+        } (${rs(existing.grandTotal)})${reason ? ` - ${reason}` : ""}`,
       details: { invoice_no: existing.invoiceNo, total: existing.grandTotal, reason: reason || null },
     });
 
@@ -355,7 +355,8 @@ export const getPendingCodSales = async (req, res) => {
       Sale.find({ saleStatus: "Pending" })
         .sort({ createdAt: 1 })
         .limit(limit)
-        .select("invoiceNo customerId customerName customerPhone grandTotal createdAt")
+        .select("invoiceNo customerId customerName customerPhone customerAddress notes grandTotal createdAt")
+        .populate("customerId", "name phone address")
         .lean(),
       Sale.aggregate([
         { $match: { saleStatus: "Pending" } },
@@ -369,9 +370,24 @@ export const getPendingCodSales = async (req, res) => {
       data: docs.map((s) => ({
         id: String(s._id),
         invoice_no: s.invoiceNo,
-        customer_id: s.customerId ? String(s.customerId) : null,
-        customer_name: s.customerName || null,
-        customer_phone: s.customerPhone || null,
+        customer_id: s.customerId
+          ? typeof s.customerId === "object"
+            ? String(s.customerId._id)
+            : String(s.customerId)
+          : null,
+        customer_name:
+          s.customerName ||
+          (typeof s.customerId === "object" ? s.customerId.name : null) ||
+          null,
+        customer_phone:
+          s.customerPhone ||
+          (typeof s.customerId === "object" ? s.customerId.phone : null) ||
+          null,
+        customer_address:
+          s.customerAddress ||
+          (typeof s.customerId === "object" ? s.customerId.address : null) ||
+          null,
+        notes: s.notes || null,
         grand_total: s.grandTotal,
         created_at: s.createdAt,
       })),

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Plus, Trash2, Truck, X } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, Plus, Trash2, Truck, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
@@ -16,6 +16,8 @@ export type CodOrder = {
   customer_id?: string | null;
   customer_name?: string | null;
   customer_phone?: string | null;
+  customer_address?: string | null;
+  notes?: string | null;
 };
 
 type Row = { payment_method_id: string; amount: number };
@@ -123,6 +125,12 @@ export default function CompleteCodModal({
                 {order.invoice_no} · {order.customer_name || t("Walk-in customer")}
                 {order.customer_phone ? ` · ${order.customer_phone}` : ""}
               </p>
+              {order.customer_address && (
+                <p className="mt-0.5 flex items-start gap-1 text-xs text-slate-600 break-words">
+                  <MapPin size={12} className="mt-0.5 shrink-0 text-amber-600" />
+                  <span>{order.customer_address}</span>
+                </p>
+              )}
             </div>
           </div>
           <button
